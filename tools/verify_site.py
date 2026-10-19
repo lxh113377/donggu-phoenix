@@ -143,6 +143,23 @@ for fn in ("CraftScene", "RedScene", "PhoenixScene", "create"):
 durs = [int(x) for x in re.findall(r"duration: (\d+)", ar_data)]
 if sum(durs) != 152:
     fails.append("AR 三段时长合计应为 152s，实际 %d" % sum(durs))
+# 场景直连码必须生成且非空
+for sid in ("craft", "red", "phoenix"):
+    qp = os.path.join(BASE, "qr", "qr-ar-%s.png" % sid)
+    if not os.path.exists(qp) or os.path.getsize(qp) < 500:
+        fails.append("场景直连码缺失或过小: qr/qr-ar-%s.png" % sid)
+meta_p = os.path.join(BASE, "qr", "meta.json")
+if os.path.exists(meta_p):
+    try:
+        meta = json.loads(rd(meta_p).decode("utf-8"))
+        links = meta.get("sceneDeepLinks") or {}
+        for sid in ("craft", "red", "phoenix"):
+            if "#ar=" + sid not in (links.get(sid) or ""):
+                fails.append("sceneDeepLinks 缺少 %s" % sid)
+    except Exception as e:
+        fails.append("qr/meta.json 解析失败: %s" % e)
+print(f"[{'PASS' if not any('场景直连码' in f or 'sceneDeepLinks' in f for f in fails) else 'FAIL'}] 场景直连码 3 枚 + meta.json 深链")
+
 # 页面必须挂载 AR 层与入口
 for token in ('id="ar"', 'id="ar-stage"', 'id="ar-cards"', "ar-data.js", "ar-scenes.js", "ar.js"):
     if token not in html:
