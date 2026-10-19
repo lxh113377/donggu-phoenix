@@ -376,6 +376,36 @@
 <script src="assets/js/wood-demo.js"></script>
 <script src="assets/js/main.js"></script>
 <script>
+/* 版本对账守卫（2026-10-20 轮5 新增）
+ * 背景：站点注册了 Service Worker，静态资源走 cache-first。改版后老访客第一次进来时，
+ * 拿到的是新 index.html + 旧缓存 main.css —— 缺规则的新结构会被渲染成一堆无样式文本，
+ * 比白屏更难看，而且看起来像「网站坏了」。VERSION bump 只能保证下次访问正常，
+ * 救不了这一次。故用 CSS 里的 --build 与本文常量对账：不等则清缓存重载一次（有防循环闸）。 */
+(function () {
+  var BUILD = '3';
+  var KEY = 'dg-build-fix';
+  var got = '';
+  try { got = (getComputedStyle(document.documentElement).getPropertyValue('--build') || '').trim(); } catch (e) {}
+  if (got === BUILD) { try { sessionStorage.removeItem(KEY); } catch (e) {} return; }
+  if (sessionStorage.getItem(KEY) === BUILD) { return; }   // 已经重载过仍不等：放弃，不无限刷新
+  try { sessionStorage.setItem(KEY, BUILD); } catch (e) {}
+  var done = function () { location.reload(); };
+  var jobs = [];
+  if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+    jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+      return Promise.all(rs.map(function (r) { return r.unregister(); }));
+    }).catch(function () {}));
+  }
+  if (window.caches && caches.keys) {
+    jobs.push(caches.keys().then(function (ks) {
+      return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+    }).catch(function () {}));
+  }
+  if (!jobs.length) { done(); return; }
+  Promise.all(jobs).then(done, done);
+})();
+</script>
+<script>
 /* Service Worker 注册：现场断网时仍可打开页面。
  * 仅 https / localhost 注册；file:// 双击打开不注册（否则缓存路径不可靠）。
  * 注册失败不影响任何功能——站点本身零依赖，SW 只是离线增益。 */

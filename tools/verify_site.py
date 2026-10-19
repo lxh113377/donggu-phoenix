@@ -409,6 +409,22 @@ for token in (".sec-idx{", ".ink-divider{", ".road::before{", ".merch-item.is-fe
         fails.append("设计系统规则缺失: " + token)
 print(f"[{'PASS' if not any('设计结构' in f or '设计系统规则' in f for f in fails) else 'FAIL'}] 设计结构：段落编号 / 墨线分隔 / 场景动线 / 文创特写格")
 
+# 13) 版本对账守卫：新 HTML 撞旧缓存 CSS 会把页面渲染成无样式文本（比白屏更难解释）。
+#     判据两侧必须同值：CSS 的 --build 与 HTML 里守常量的 BUILD。
+css_build = re.search(r'--build:\s*([\w.]+)\s*;', css_txt)
+html_build = re.search(r"var\s+BUILD\s*=\s*['\"]([\w.]+)['\"]", html)
+if not css_build:
+    fails.append("版本对账：CSS 缺少 --build 锚点")
+if not html_build:
+    fails.append("版本对账：index.html 缺少 BUILD 常量（老访客会拿到旧 CSS 而版式崩坏）")
+if css_build and html_build and css_build.group(1) != html_build.group(1):
+    fails.append("版本对账不一致：CSS --build=%s ≠ HTML BUILD=%s" % (css_build.group(1), html_build.group(1)))
+if "getRegistrations" not in html or "caches.delete" not in html:
+    fails.append("版本对账守卫未实现（应清 SW 注册与 caches 后重载一次）")
+if "sessionStorage.getItem(KEY) === BUILD" not in html:
+    fails.append("版本对账守卫缺少防循环闸（会无限刷新）")
+print(f"[{'PASS' if not any('版本对账' in f for f in fails) else 'FAIL'}] 版本对账守卫：CSS --build 与 HTML BUILD 同值 + 防循环闸")
+
 print()
 if warns:
     print("WARNINGS:")

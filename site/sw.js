@@ -16,9 +16,11 @@
 
 /* 版本由 PRECACHE 内容参与计算：改清单即换缓存名，避免旧缓存赖着不走。
  * 手工 bump 也允许（改文案不动文件清单时）。 */
-/* v3：设计系统 v2 —— 新增自托管字体（首批字节里最大的一块，必须离线可得），
- * 且 index.html / main.css / main.js / ar.js 全部改版。清单变了，缓存名随之换。 */
-var VERSION = 'v3';
+/* v4：新增「版本对账守卫」—— index.html 内联脚本会把 CSS 的 --build 与自身 BUILD 常量对账，
+ * 不等则清 SW 与 caches 后重载一次，解决「新 HTML + 旧缓存 CSS」渲染成无样式文本的问题。
+ * 本次 index.html / main.css 都变了，缓存名随之换。
+ * 注意：SW 的 VERSION 只管缓存名；跨版本对账的唯一锚点是 CSS --build ⇄ HTML BUILD。 */
+var VERSION = 'v4';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [
