@@ -47,3 +47,26 @@ python tools\make_ar_assets.py  # AR 分镜脚本重生成
 - verify_live_qr.py：线上 qr.png 解码 == 线上 URL ✅
 - 桌面 1280×800：粒子 2634，fps 288，无报错
 - 手机 390×844：scrollWidth == innerWidth == 390
+## 轮5 结果（2026-10-20 07:20 · 对标驱动的四项工程改造）
+
+- **I-1 CI 门禁**：`verify` 独立 job + `deploy needs: verify`。CI run 39286281457 /
+  39340960282 的 **Verify site** job 真实执行脚本（Linux runner 日志正文可读到
+  15 项 PASS 与 RESULT: PASS）——此前是「11 绿 0 检」（脚本存在但从未在 CI 跑）
+- **反向验证 10/10 判红**：注入 A 引用缺失 / B 删 manifest / C og 退回相对 /
+  D 加外部 CDN / E1 退 1 处 px / E2 根字号写死 16px / F 删 skip-link /
+  G 删 canonical / H 删 JSON-LD / I PRECACHE 指向不存在文件；还原后 exit 0
+- **I-2 PWA 线上子路径实测**（本地根路径不算数，scope 解析不同）：
+  getRegistrations N=1 scope=/donggu-phoenix/ active=true；controller activated；
+  donggu-core-v2 精确 14 条且路径解析为 /donggu-phoenix/assets/...；
+  **清缓存 + 断网 + 重载** → 9 区块 / 2634 粒子 / carve 在 / bg=rgb(11,9,8)；
+  **断网中开 AR** → playing=true t=3.3s 156fps 章节文案渲染正常
+- **I-4 无障碍零回归**：86 处 font-size px→rem 后实测渲染值不变
+  （html/body 16px、hero 52px、正文 14px），390×844 scrollWidth==innerWidth，0 报错
+- **I-3 治理件 7/7**：gh api 现取 license 由「空」变为 NOASSERTION
+  （自定义双轨授权，GitHub 无法自动归类，非 OSI 认证许可 —— 刻意选择）
+- 提交：3546c87（治理件）→ fb28c1c（PWA+无障碍）→ e5a78b9（CI 门禁）→
+  05eba02（补交漏暂存的 CSS）→ 4c3f2c9（报告）→ aa9ed4f（报告 §9 勘误）
+- **门禁首次拦住真实风险**：并发字体子集化把站点推到 1,448KB，判红
+  「体积超预算 1200KB」。**不调阈值**，留给字体方案收口
+- 教训入库：门禁必须在**干净克隆**里验一次 —— 我用 LF 写文件测出 PRECACHE 14 项，
+  checkout 转 CRLF 后正则一条不匹配却仍打 PASS（由并发进程 3daad0f 修复）
