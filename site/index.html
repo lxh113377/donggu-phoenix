@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>畲 · 凤鸣东固 — 扫描凤凰图腾，见畲族凤凰飞舞</title>
+<meta name="description" content="扫描畲族凤凰图腾，呈现动态化凤凰飞舞动画与畲族文化介绍；同步展示东固非遗文创设计。江西科技学院薪火寰行实践团 × 东固畲族乡。">
+<meta name="theme-color" content="#0B0908">
+<meta property="og:type" content="website">
+<meta property="og:title" content="畲 · 凤鸣东固 — 扫描凤凰图腾，见畲族凤凰飞舞">
+<meta property="og:description" content="动态凤凰飞舞动画 × 畲族文化 × 东固非遗文创">
+<meta property="og:image" content="assets/img/og-cover.jpg">
+<link rel="icon" href="assets/img/phoenix-mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/img/phoenix-mark.svg">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+<div id="boot"><div class="seal"><span>畲</span></div></div>
+
+<header class="nav" id="nav">
+  <a class="brand" href="#top"><img src="assets/img/phoenix-mark.svg" alt="">畲 · 凤鸣东固</a>
+  <nav aria-label="主导航">
+    <ul>
+      <li><a href="#totem">图腾</a></li>
+      <li><a href="#culture">文化</a></li>
+      <li><a href="#craft">匠人</a></li>
+      <li><a href="#merch">文创</a></li>
+      <li><a href="#scan">扫码</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- ========== Hero + 粒子凤凰 ========== -->
+  <section class="hero" id="hero">
+    <canvas id="stage" aria-hidden="true"></canvas>
+    <div class="hero-grid">
+      <div class="hero-inner">
+        <p class="hero-tag">She Ethnic Phoenix · Donggu</p>
+        <h1 id="hero-title">凤鸣东固<em>畲 · SHE PHOENIX</em></h1>
+        <p class="hero-lead" id="hero-lead"></p>
+        <button class="hero-cta" id="cta-summon" type="button">轻触图腾 · 唤凤</button>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <span class="hero-ring"></span>
+        <span class="hero-ring b"></span>
+        <span class="hero-word">畲</span>
+      </div>
+    </div>
+    <div class="scroll-hint" aria-hidden="true">SCROLL</div>
+  </section>
+
+  <!-- ========== 图腾 + 扫描入口 ========== -->
+  <section class="totem-sec" id="totem">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>凤凰图腾<small>Scan the Totem</small></h2>
+        <p>畲族没有本民族的文字，纹样便是他们的经卷。这枚图腾以凤凰装为骨：凤髻为冠、花边为翼、金腰带作尾羽、银器化星点。</p>
+      </div>
+
+      <div class="totem-grid">
+        <div class="totem-frame reveal">
+          <span class="totem-ring" aria-hidden="true"></span>
+          <span class="totem-ring b" aria-hidden="true"></span>
+          <button class="totem-hit" id="totem-hit" type="button" aria-label="轻触图腾，唤出凤凰">
+            <img src="assets/img/phoenix-totem.svg" alt="畲族凤凰图腾：凤凰展翅于圆光之中，外环为织带纹" width="520" height="520">
+          </button>
+        </div>
+
+        <div class="totem-copy reveal">
+          <h3>一枚图腾的两种读法</h3>
+          <p>它是非遗展陈的入口，也是可拆解的设计资产：单色线稿进徽章与蚀刻，双色版上丝网印，全彩版走 UV 打印与数码印花。</p>
+          <ol class="totem-steps">
+            <li>点击图腾，或在下方开启摄像头对准图腾</li>
+            <li>图腾碎裂为金羽粒子，凤凰自圆心振翅</li>
+            <li>继续下滑，读它的传说、形制与在地故事</li>
+          </ol>
+          <button class="btn-ask" id="btn-scan" type="button">开启摄像头扫描</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 畲族文化 ========== -->
+  <section id="culture">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>畲族文化<small>Culture</small></h2>
+        <p>凤凰不是装饰，是身份与祝福。以下四段，从盘瓠的传说讲到东固的乌饭节。</p>
+      </div>
+      <div class="culture-grid reveal" id="culture-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== 匠人 ========== -->
+  <section id="craft">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>匠人与土地<small>People</small></h2>
+        <p>两段田野录音的整理稿：一位雕銮匠的后人，一位 38 年党龄的畲族党员。</p>
+      </div>
+      <div class="craft" id="craft-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== 文创 ========== -->
+  <section id="merch">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>凤凰落地<small>Merchandise</small></h2>
+        <p>从 58mm 徽章到 900mm 丝巾，同一枚图腾按工艺拆成三版：单色线稿、双色丝印、全彩渐变。</p>
+      </div>
+      <div class="merch-tabs reveal" id="merch-tabs" role="tablist" aria-label="文创分类"></div>
+      <div class="merch-grid reveal" id="merch-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== 场景路线 ========== -->
+  <section id="road">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>三大场景<small>Roadmap</small></h2>
+        <p>对应「东固 · 匠灵幻境」AR 小程序的规划：本次交付第三条，前两条保留结构位。</p>
+      </div>
+      <div class="road reveal" id="road-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== 扫码 ========== -->
+  <section class="foot" id="scan">
+    <div class="wrap">
+      <div class="foot-grid reveal">
+        <div class="qr-box"><img id="qr-img" src="assets/img/qr.png" alt="本站二维码" width="512" height="512"></div>
+        <div class="foot-copy">
+          <h2>扫它，凤凰就飞起来</h2>
+          <p>用手机相机或微信扫一扫对准二维码，即可打开本页；在页首轻触图腾，看凤凰自圆心振翅。</p>
+          <p class="url" id="site-url">…</p>
+        </div>
+      </div>
+      <div class="foot-meta">
+        <span>江西科技学院 · 薪火寰行实践团</span>
+        <span>江西省吉安市青原区东固畲族乡</span>
+        <span>东固传统造像 · 国家级非物质文化遗产</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="summon-veil" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div id="cam" role="dialog" aria-modal="true" aria-label="摄像头扫描">
+  <video id="cam-video" playsinline muted></video>
+  <div class="guide"></div>
+  <p class="hint" id="cam-hint">把图腾放进取景框中央</p>
+  <button class="close" id="cam-close" type="button" aria-label="关闭">✕</button>
+</div>
+
+<script src="assets/data/culture.js"></script>
+<script src="assets/js/phoenix.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

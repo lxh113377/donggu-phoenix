@@ -1,0 +1,13 @@
+# 开发中间产物（不发布）
+_dev/
+_work/
+tools/__pycache__/
+__pycache__/
+*.pyc
+# 平台缓存
+.wrangler/
+# 素材原件（保留在本地，避免仓库过大；发布用 site/ 内已优化版本）
+素材/*.jpg
+素材/*.png
+素材/*.jpg
+相关内容/
