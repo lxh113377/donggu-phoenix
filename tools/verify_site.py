@@ -211,7 +211,11 @@ else:
         if "site/sw.js" not in tracked:
             untracked_refs.append("site/sw.js（SW 本体未跟踪 ⇒ 不部署，离线兜底静默失效）")
         sw_txt = rd(swp).decode("utf-8")
-        prec = re.findall(r"^\s+'([^']+\.(?:html|css|js|svg|webmanifest))',?$", sw_txt, re.M)
+        # 行尾必须容忍 \r：sw.js 在 Windows 工作区常是 CRLF，
+        # 用 ',?$ 会一条都匹配不到 ⇒ 门禁解析到 0 项却打印 PASS，等于没检查（假绿）。
+        prec = re.findall(r"^\s+'([^']+\.(?:html|css|js|svg|webmanifest))',?\r?$", sw_txt, re.M)
+        if not prec:
+            fails.append("SW PRECACHE 解析到 0 项（正则失配或清单为空 ⇒ 本项检查失效）")
         for f in prec:
             if not os.path.exists(os.path.join(SITE, f)):
                 fails.append("SW PRECACHE 指向不存在的文件: " + f)
