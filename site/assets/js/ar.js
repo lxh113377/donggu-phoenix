@@ -185,12 +185,7 @@
     if (line) {
       line.textContent = all ? "三章集齐 · 已解锁完整动线" : (D.ui.stamps || "集章") + " " + state.stamps.length + "/" + D.scenes.length;
     }
-    var stats = $("#ar-stats-line");
-    if (stats) {
-      stats.textContent = "三段合计 " + D.scenes.reduce(function (a, s) { return a + s.duration; }, 0) +
-        " 秒 · 集章 " + state.stamps.length + "/" + D.scenes.length +
-        " · 停留计时与集章全部在本地完成，不上传任何数据。";
-    }
+    updateStats();
   }
 
   function paintDots() {
@@ -372,6 +367,15 @@
     if (back) { back.focus({ preventScroll: true }); }
   }
 
+  function updateStats() {
+    var stats = $("#ar-stats-line");
+    if (!stats) { return; }
+    var total = D.scenes.reduce(function (a, s) { return a + s.duration; }, 0);
+    stats.textContent = "三段合计 " + total + " 秒 · " + ((D.meta && D.meta.dwell) || "") +
+      " · 集章 " + state.stamps.length + "/" + D.scenes.length +
+      " · 停留计时与集章全部在本地完成，不上传任何数据。";
+  }
+
   /* ---------- 落地页场景卡 ---------- */
   function renderCards() {
     var box = $("#ar-cards");
@@ -391,12 +395,7 @@
         '<a class="go" role="button" tabindex="0" data-ar="' + s.id + '" href="#ar-gallery" aria-label="开演 ' + s.name + '">开演</a>' +
         "</article>";
     }).join("");
-    var stats = $("#ar-stats-line");
-    if (stats) {
-      stats.textContent = "三段合计 " + D.scenes.reduce(function (a, s) { return a + s.duration; }, 0) +
-        " 秒 · 集章 " + state.stamps.length + "/" + D.scenes.length +
-        " · 停留计时与集章全部在本地完成，不上传任何数据。";
-    }
+    updateStats();
   }
 
   /* ---------- 交互绑定 ---------- */

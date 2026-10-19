@@ -4,7 +4,7 @@
 
 **线上地址**：https://lxh113377.github.io/donggu-phoenix/
 **备用地址**：https://donggu-phoenix.pages.dev/
-**交付说明**：[`docs/交付说明.md`](docs/交付说明.md)
+**交付说明**：[`docs/交付说明.md`](docs/交付说明.md) ｜ **体验与 AR 方案**：[`docs/体验设计与AR方案.md`](docs/体验设计与AR方案.md) ｜ **AR 分镜**：[`docs/ar-storyboard.md`](docs/ar-storyboard.md)
 
 ---
 
@@ -30,6 +30,7 @@ python tools\make_qr.py
 | `site/assets/js/ar-scenes.js` | 三场景 Canvas 渲染器（零模型文件） |
 | `site/assets/js/ar.js` | AR 展陈控制层（全屏层 / 取景锁定 / 集章 / 停留计时） |
 | `docs/ar-storyboard.md` | AR 分镜脚本（自动生成） |
+| `docs/体验设计与AR方案.md` | 命题应答：轻量化定义、沉浸感手法、停留机制、边界清单 |
 | `merch/print/` | 三版印刷图腾 SVG（单色/全彩/金线） |
 | `merch/mock/` | 6 张文创效果图 |
 | `qr/` | 5 规格二维码 |
