@@ -1,0 +1,65 @@
+{
+  "id": "./",
+  "name": "畲 · 凤鸣东固 — 轻量化 AR 展陈馆",
+  "short_name": "凤鸣东固",
+  "description": "扫描畲族凤凰图腾，看东固传统造像五道工序、红色地标历史复原与凤凰图腾动态演绎。零下载、可离线。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0B0908",
+  "theme_color": "#0B0908",
+  "categories": [
+    "education",
+    "culture",
+    "travel"
+  ],
+  "icons": [
+    {
+      "src": "assets/img/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icons/icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "造像技艺流程",
+      "short_name": "造像",
+      "description": "选木→定像→开坯→修光彩绘贴金→开光",
+      "url": "./#ar=craft"
+    },
+    {
+      "name": "红色地标复原",
+      "short_name": "红色",
+      "description": "东固会师 / 龙冈大捷 / 白云山首战 / 六渡坳",
+      "url": "./#ar=red"
+    },
+    {
+      "name": "凤凰图腾演绎",
+      "short_name": "图腾",
+      "description": "图腾浮现→三公主羽衣→振翅盘旋→落羽归位",
+      "url": "./#ar=phoenix"
+    }
+  ]
+}
