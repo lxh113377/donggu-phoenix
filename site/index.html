@@ -23,6 +23,7 @@
   <nav aria-label="主导航">
     <ul>
       <li><a href="#totem">图腾</a></li>
+      <li><a href="#ar-gallery">AR</a></li>
       <li><a href="#culture">文化</a></li>
       <li><a href="#craft">匠人</a></li>
       <li><a href="#merch">文创</a></li>
@@ -42,6 +43,7 @@
         <h1 id="hero-title">凤鸣东固<em>畲 · SHE PHOENIX</em></h1>
         <p class="hero-lead" id="hero-lead"></p>
         <button class="hero-cta" id="cta-summon" type="button">轻触图腾 · 唤凤</button>
+        <a class="hero-cta ar-entry" data-ar="craft" data-nocam="0" href="#ar-gallery">开演 AR 展陈 · 三段</a>
       </div>
       <div class="hero-visual" aria-hidden="true">
         <span class="hero-ring"></span>
@@ -78,10 +80,87 @@
             <li>继续下滑，读它的传说、形制与在地故事</li>
           </ol>
           <button class="btn-ask" id="btn-scan" type="button">开启摄像头扫描</button>
+          <a class="btn-ask" data-ar="phoenix" href="#ar-gallery">进入 AR 展陈馆</a>
         </div>
       </div>
     </div>
   </section>
+
+
+  <!-- ========== AR 展陈馆：三场景 ========== -->
+  <section id="ar-gallery" class="ar-sec">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>AR 展陈馆<small>Lightweight AR Gallery</small></h2>
+        <p>三段现场，全部用 Canvas 实时绘制：造像的五道工序、东固的四个历史瞬间、凤凰图腾的一次盘旋。不需要下载、不需要 3D 模型，扫码即看。</p>
+      </div>
+
+      <div class="ar-route reveal">
+        <div class="ar-route-item"><b>01</b><h3>扫码进入</h3><p>展板、文创、门票上的二维码指向本页</p></div>
+        <div class="ar-route-item"><b>02</b><h3>现实叠加</h3><p>摄像头取景为底，动画以半透明图层叠在真实造像与地标上</p></div>
+        <div class="ar-route-item"><b>03</b><h3>看完集章</h3><p>每段落一枚印章，三枚集齐解锁完整动线</p></div>
+      </div>
+
+      <div class="ar-cards reveal" id="ar-cards"></div>
+
+      <div class="ar-note reveal">
+        <p><b>为什么是轻量化 AR：</b>三段合计 2 分 32 秒，全部由代码实时绘制，零 3D 模型文件、零第三方库、零外部请求。摄像头不可用、权限被拒或非 https 时，自动切「展柜模式」，同一套动画照常播放 —— 现场不会白屏。</p>
+        <p class="ar-stats" id="ar-stats-line">停留计时与集章在本地完成，不上传任何数据。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== AR 全屏播放层 ========== -->
+  <div id="ar" class="ar" aria-hidden="true" role="dialog" aria-modal="true" aria-label="AR 展陈播放器">
+    <video id="ar-video" playsinline muted aria-hidden="true"></video>
+    <canvas id="ar-stage" aria-label="AR 场景动画"></canvas>
+    <div class="ar-frame" aria-hidden="true"></div>
+
+    <header class="ar-top">
+      <div class="ar-brand">
+        <span class="ar-dot" aria-hidden="true"></span>
+        <span id="ar-badge">展柜模式</span>
+        <span class="ar-sep" aria-hidden="true">/</span>
+        <span id="ar-kicker"></span>
+      </div>
+      <button class="ar-icon" id="ar-cam-toggle" type="button" aria-label="切换实景叠加 / 展柜模式" title="切换实景叠加 / 展柜模式">◎</button>
+      <button class="ar-icon" id="ar-close" type="button" aria-label="关闭 AR 展陈" title="关闭">✕</button>
+    </header>
+
+    <div class="ar-dots" id="ar-dots" role="tablist" aria-label="选择场景"></div>
+
+    <div class="ar-copy">
+      <h2 id="ar-title"></h2>
+      <p class="ar-en" id="ar-en"></p>
+      <div class="ar-chapter-wrap">
+        <h3 id="ar-chapter"></h3>
+        <p class="ar-chapter-en" id="ar-chapter-en"></p>
+        <p id="ar-body"></p>
+        <p class="ar-body-en" id="ar-body-en" lang="en"></p>
+      </div>
+    </div>
+
+    <p class="ar-hint" id="ar-hint" aria-live="polite"></p>
+
+    <footer class="ar-foot">
+      <div class="ar-progress">
+        <div class="ar-bar-wrap"><div class="ar-bar" id="ar-bar"></div></div>
+        <span id="ar-time">00:00 / 00:00</span>
+      </div>
+      <div class="ar-controls">
+        <button class="ar-btn" id="ar-prev" type="button" aria-label="上一段">上一段</button>
+        <button class="ar-btn primary" id="ar-play" type="button">暂停</button>
+        <button class="ar-btn" id="ar-next" type="button" aria-label="下一段">下一段</button>
+        <button class="ar-btn" id="ar-restart" type="button" aria-label="重播">重播</button>
+      </div>
+      <div class="ar-meta">
+        <div class="ar-stamps" id="ar-stamps" aria-label="集章进度"></div>
+        <span id="ar-stamp-line">集章 0/3</span>
+        <span class="ar-sep" aria-hidden="true">·</span>
+        <span>本页 AR 已停留 <b id="ar-dwell">00:00</b></span>
+      </div>
+    </footer>
+  </div>
 
   <!-- ========== 畲族文化 ========== -->
   <section id="culture">
@@ -160,7 +239,10 @@
 </div>
 
 <script src="assets/data/culture.js"></script>
+<script src="assets/data/ar-data.js"></script>
 <script src="assets/js/phoenix.js"></script>
+<script src="assets/js/ar-scenes.js"></script>
+<script src="assets/js/ar.js"></script>
 <script src="assets/js/main.js"></script>
 </body>
 </html>

@@ -119,6 +119,40 @@ for k, v in checks.items():
         fails.append("基础项缺失: " + k)
 print(f"[{'PASS' if all(checks.values()) else 'FAIL'}] 基础 SEO/无障碍 {sum(checks.values())}/{len(checks)}")
 
+# 9) AR 展陈馆：三场景数据与渲染器必须同时存在且自洽
+ar_data = rd(os.path.join(SITE, "assets/data/ar-data.js")).decode("utf-8")
+ar_scenes = rd(os.path.join(SITE, "assets/js/ar-scenes.js")).decode("utf-8")
+ar_ctrl = rd(os.path.join(SITE, "assets/js/ar.js")).decode("utf-8")
+for f in ("assets/data/ar-data.js", "assets/js/ar-scenes.js", "assets/js/ar.js"):
+    p = os.path.join(SITE, f)
+    if not os.path.exists(p) or os.path.getsize(p) < 800:
+        fails.append("AR 文件缺失或过小: " + f)
+ar_scene_ids = re.findall(r"\n\s*id: '(craft|red|phoenix)'", ar_data)
+if len(set(ar_scene_ids)) != 3:
+    fails.append("AR 场景不完整（需 craft/red/phoenix 三个）: " + ",".join(ar_scene_ids))
+for key in ("选木", "定像", "开坯", "修光", "开光"):
+    if key not in ar_data:
+        fails.append("AR 造像工序缺失: " + key)
+for key in ("东固会师", "龙冈", "白云山", "六渡坳"):
+    if key not in ar_data:
+        fails.append("AR 红色史实缺失: " + key)
+for fn in ("CraftScene", "RedScene", "PhoenixScene", "create"):
+    if fn not in ar_scenes:
+        fails.append("AR 渲染器缺少: " + fn)
+# 三段时长合计应等于文档口径 152 秒
+durs = [int(x) for x in re.findall(r"duration: (\d+)", ar_data)]
+if sum(durs) != 152:
+    fails.append("AR 三段时长合计应为 152s，实际 %d" % sum(durs))
+# 页面必须挂载 AR 层与入口
+for token in ('id="ar"', 'id="ar-stage"', 'id="ar-cards"', "ar-data.js", "ar-scenes.js", "ar.js"):
+    if token not in html:
+        fails.append("AR 未挂载: " + token)
+# 无外链（零外部请求是轻量化 AR 的硬约束）
+ext = re.findall(r'(?:src|href)="(https?://[^"]+)"', html)
+if ext:
+    fails.append("出现外部请求: " + ", ".join(ext[:3]))
+print(f"[{'PASS' if not any('AR' in f or '外部请求' in f for f in fails) else 'FAIL'}] AR 展陈：3 场景 / 13 章节 / 152s / 零外链")
+
 print()
 if fails:
     print("RESULT: FAIL")

@@ -360,3 +360,161 @@ section{position:relative;z-index:1;padding:var(--sp-7) 0}
   font-family:var(--font-sans);font-size:13px;letter-spacing:.16em;color:var(--fg)}
 #cam .close{position:absolute;top:22px;right:22px;width:44px;height:44px;border-radius:50%;
   border:1px solid var(--line);display:grid;place-items:center;color:var(--fg);font-size:20px}
+
+/* ================= AR 展陈馆 ================= */
+.ar-sec{padding-top:calc(var(--sp-6) + 30px)}
+
+/* 动线三步 */
+.ar-route{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;
+  background:var(--line-soft);border:1px solid var(--line-soft);margin-bottom:var(--sp-4)}
+.ar-route-item{background:var(--she-ink);padding:clamp(20px,2.4vw,30px);position:relative;overflow:hidden}
+.ar-route-item b{font-family:var(--font-sans);font-size:11px;letter-spacing:.32em;color:var(--she-gold)}
+.ar-route-item h3{margin:14px 0 8px;font-family:var(--font-kai);font-weight:400;font-size:20px;letter-spacing:.1em}
+.ar-route-item p{margin:0;font-size:13.5px;color:var(--fg-dim);line-height:1.9}
+.ar-route-item::after{content:"";position:absolute;left:0;top:0;width:1px;height:100%;
+  background:linear-gradient(to bottom,var(--she-gold),transparent);opacity:.35}
+
+/* 三张场景卡 */
+.ar-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;margin-bottom:var(--sp-4)}
+.ar-card{position:relative;border:1px solid var(--line-soft);padding:clamp(22px,2.6vw,32px);
+  background:linear-gradient(160deg,rgba(255,255,255,.03),transparent 62%);
+  display:flex;flex-direction:column;gap:12px;transition:border-color .45s var(--ease),transform .45s var(--ease)}
+.ar-card:hover{border-color:var(--line);transform:translateY(-3px)}
+.ar-card .no{font-family:var(--font-sans);font-size:11px;letter-spacing:.3em;color:var(--she-gold)}
+.ar-card h3{margin:4px 0 0;font-family:var(--font-kai);font-weight:400;font-size:23px;letter-spacing:.08em}
+.ar-card .en{font-family:var(--font-sans);font-size:11px;letter-spacing:.2em;color:var(--fg-faint);margin:0}
+.ar-card .kick{font-family:var(--font-sans);font-size:11px;letter-spacing:.12em;color:var(--she-vermilion)}
+.ar-card .tagline{margin:0;font-size:14px;color:var(--fg-dim);line-height:1.95}
+.ar-card ol{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px}
+.ar-card ol li{position:relative;padding-left:26px;font-size:13px;color:var(--fg-dim)}
+.ar-card ol li::before{content:"";position:absolute;left:6px;top:.75em;width:5px;height:5px;
+  border-radius:50%;background:var(--she-gold);opacity:.8}
+.ar-card .dur{font-family:var(--font-sans);font-size:11px;letter-spacing:.18em;color:var(--fg-faint)}
+.ar-card .go{margin-top:auto;align-self:flex-start;display:inline-flex;align-items:center;gap:10px;
+  padding:11px 24px;border-radius:999px;border:1px solid var(--line);background:rgba(212,162,76,.08);
+  font-family:var(--font-sans);font-size:12.5px;letter-spacing:.2em;color:var(--she-gold);
+  transition:all .4s var(--ease)}
+.ar-card .go:hover{background:rgba(212,162,76,.2);border-color:var(--she-gold);letter-spacing:.28em}
+.ar-card .go::after{content:"→";font-family:var(--font-sans)}
+
+.ar-note{border-top:1px solid var(--line-soft);padding-top:var(--sp-3)}
+.ar-note p{margin:0 0 8px;font-size:13.5px;color:var(--fg-dim);line-height:2}
+.ar-note b{color:var(--she-gold);font-weight:400}
+.ar-note .ar-stats{font-family:var(--font-sans);font-size:11.5px;letter-spacing:.1em;color:var(--fg-faint)}
+
+/* ---------- 全屏播放层 ---------- */
+.ar{position:fixed;inset:0;z-index:90;display:none;overflow:hidden;background:#08070A}
+.ar.on{display:block}
+#ar-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;
+  transition:opacity .8s var(--ease);background:#000}
+.ar.cam #ar-video{opacity:.42}
+#ar-stage{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+.ar-frame{position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 45%,transparent 34%,rgba(6,5,7,.42) 68%,rgba(6,5,7,.86) 100%),
+    linear-gradient(to bottom,rgba(6,5,7,.78),transparent 22%,transparent 62%,rgba(6,5,7,.92));}
+.ar.locked .ar-frame{background:
+    radial-gradient(circle at 50% 45%,transparent 40%,rgba(6,5,7,.34) 72%,rgba(6,5,7,.8) 100%),
+    linear-gradient(to bottom,rgba(6,5,7,.72),transparent 24%,transparent 62%,rgba(6,5,7,.9));}
+
+.ar-top{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;gap:14px;
+  padding:16px clamp(16px,3vw,30px)}
+.ar-brand{display:flex;align-items:center;gap:10px;flex:1;min-width:0;
+  font-family:var(--font-sans);font-size:11.5px;letter-spacing:.16em;color:var(--fg-dim)}
+.ar-brand .ar-dot{width:7px;height:7px;border-radius:50%;background:var(--she-vermilion);
+  box-shadow:0 0 10px var(--she-vermilion);flex:0 0 auto;animation:pulse 2.4s ease-in-out infinite}
+.ar.cam .ar-brand .ar-dot{background:var(--she-gold-light);box-shadow:0 0 10px var(--she-gold-light)}
+#ar-badge{color:var(--she-gold);white-space:nowrap}
+#ar-kicker{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg-faint)}
+.ar-sep{opacity:.4}
+.ar-icon{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);
+  display:grid;place-items:center;color:var(--fg);font-size:16px;flex:0 0 auto;
+  background:rgba(11,9,8,.5);transition:all .35s var(--ease)}
+.ar-icon:hover{border-color:var(--she-gold);color:var(--she-gold)}
+
+/* 场景切换 */
+.ar-dots{position:absolute;top:72px;left:0;right:0;z-index:5;display:flex;justify-content:center;
+  gap:10px;flex-wrap:wrap;padding:0 16px}
+.ar-dots button{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;
+  border:1px solid var(--line-soft);background:rgba(11,9,8,.55);backdrop-filter:blur(8px);
+  font-family:var(--font-sans);font-size:11.5px;letter-spacing:.14em;color:var(--fg-dim);
+  transition:all .35s var(--ease)}
+.ar-dots button b{font-weight:400;color:var(--she-gold);font-size:10px;letter-spacing:.2em}
+.ar-dots button[aria-selected="true"]{border-color:var(--she-gold);color:var(--fg);
+  background:rgba(212,162,76,.16)}
+
+/* 解说文案 */
+.ar-copy{position:absolute;left:0;bottom:150px;z-index:5;padding:0 clamp(18px,4vw,54px);
+  max-width:min(560px,92vw);pointer-events:none}
+.ar-copy h2{margin:0;font-family:var(--font-kai);font-weight:400;
+  font-size:clamp(24px,3.2vw,36px);letter-spacing:.1em;color:var(--fg)}
+.ar-copy .ar-en{margin:6px 0 18px;font-family:var(--font-sans);font-size:11px;
+  letter-spacing:.26em;color:var(--she-gold);text-transform:uppercase}
+.ar-chapter-wrap{border-left:2px solid var(--she-vermilion);padding-left:16px}
+.ar-copy h3{margin:0;font-family:var(--font-kai);font-weight:400;font-size:19px;letter-spacing:.08em}
+.ar-chapter-en{margin:4px 0 10px;font-family:var(--font-sans);font-size:10.5px;
+  letter-spacing:.2em;color:var(--fg-faint);text-transform:uppercase}
+.ar-copy p{margin:0 0 8px;font-size:14px;line-height:1.95;color:var(--fg-dim)}
+.ar-copy .ar-body-en{font-family:var(--font-sans);font-size:12px;line-height:1.8;color:var(--fg-faint)}
+.ar.beat .ar-chapter-wrap{animation:arBeat .9s var(--ease)}
+@keyframes arBeat{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.ar-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;
+  margin:0;font-family:var(--font-sans);font-size:13px;letter-spacing:.16em;color:var(--fg);
+  text-align:center;text-shadow:0 2px 18px rgba(0,0,0,.9);pointer-events:none;max-width:80vw}
+.ar-hint:empty{display:none}
+
+/* 底部控制 */
+.ar-foot{position:absolute;left:0;right:0;bottom:0;z-index:5;
+  padding:18px clamp(16px,3vw,30px) calc(18px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top,rgba(8,7,10,.94),rgba(8,7,10,.6) 60%,transparent)}
+.ar-progress{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.ar-bar-wrap{flex:1;height:2px;background:rgba(212,162,76,.2);border-radius:2px;overflow:hidden}
+.ar-bar{height:100%;width:0;background:linear-gradient(90deg,var(--she-gold),var(--she-vermilion));
+  box-shadow:0 0 12px rgba(232,183,97,.6);transition:width .18s linear}
+#ar-time{font-family:var(--font-sans);font-size:11px;letter-spacing:.1em;color:var(--fg-faint);
+  white-space:nowrap}
+.ar-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ar-btn{padding:10px 20px;border-radius:999px;border:1px solid var(--line-soft);
+  font-family:var(--font-sans);font-size:12px;letter-spacing:.16em;color:var(--fg-dim);
+  background:rgba(11,9,8,.5);transition:all .35s var(--ease)}
+.ar-btn:hover{border-color:var(--she-gold);color:var(--she-gold)}
+.ar-btn.primary{border-color:var(--line);color:var(--she-gold);background:rgba(212,162,76,.12)}
+.ar-meta{margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  font-family:var(--font-sans);font-size:11.5px;letter-spacing:.1em;color:var(--fg-faint)}
+.ar-meta b{color:var(--she-gold);font-weight:400}
+.ar-stamps{display:flex;gap:6px}
+.ar-stamps .stamp{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;
+  border:1px dashed rgba(212,162,76,.36);font-family:var(--font-kai);font-size:11px;
+  color:rgba(212,162,76,.42);transition:all .5s var(--ease)}
+.ar-stamps .stamp.got{border-style:solid;border-color:var(--she-vermilion);color:#F2E9DC;
+  background:rgba(179,32,44,.28);box-shadow:0 0 14px rgba(179,32,44,.35)}
+
+@media (max-width:760px){
+  .ar-copy{bottom:164px}
+  .ar-copy h2{font-size:clamp(20px,5.4vw,26px)}
+  .ar-copy p{font-size:13px}
+  .ar-dots{top:64px;gap:6px}
+  .ar-dots button{padding:7px 12px;font-size:10.5px}
+  .ar-btn{padding:9px 15px;font-size:11.5px}
+}
+@media (prefers-reduced-motion:reduce){
+  .ar .ar-dot,.ar.beat .ar-chapter-wrap{animation:none}
+  .ar-bar{transition:none}
+}
+
+/* AR 入口按钮（与 hero-cta / btn-ask 同形，避免二次定义） */
+a.hero-cta, a.btn-ask{text-decoration:none}
+a.hero-cta.ar-entry{
+  margin-left:12px;
+  border-color:rgba(232,183,97,.5);
+  background:linear-gradient(120deg,rgba(179,32,44,.28),rgba(212,162,76,.16));
+  opacity:0;
+  animation:rise 1.1s var(--ease) 1s forwards;
+}
+a.hero-cta.ar-entry:hover{letter-spacing:.26em;border-color:var(--she-gold)}
+a.btn-ask{margin-left:12px}
+@media (max-width:640px){
+  a.hero-cta.ar-entry{display:block;margin:14px auto 0;width:max-content}
+  a.btn-ask{margin-left:0;margin-top:12px}
+}
