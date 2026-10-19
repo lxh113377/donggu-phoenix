@@ -337,6 +337,11 @@
     opts = opts || {};
     q();
     if (!el.root) { return; }
+    // ar-data.js 缺失/损坏时不崩：直接提示，页面其余部分不受影响
+    if (!D.scenes || !D.scenes.length) {
+      toast("AR 内容未加载，请检查网络后刷新", 3200);
+      return;
+    }
     if (!state.open) { state.visits++; }
     state.open = true;
     el.root.classList.add("on");
@@ -458,9 +463,11 @@
       if (document.hidden && state.playing) { state.playing = false; }
     });
     // 直接以 #ar=xxx 进场（展板二维码可带参数直达某一段）
-    if (global.location.hash.indexOf("ar=") === 0) {
-      open(global.location.hash.slice(3), { camera: false });
-    }
+    try {
+      if (global.location.hash.indexOf("ar=") === 0) {
+        open(global.location.hash.slice(3), { camera: false });
+      }
+    } catch (e) { /* 哈希异常不影响页面 */ }
   }
 
   /* ---------- 对外 API（供自动化验收） ---------- */
