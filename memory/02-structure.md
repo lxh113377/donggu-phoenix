@@ -5,6 +5,8 @@ site/            部署根（纯静态，无构建）
   index.html
   assets/css/main.css
   assets/js/phoenix.js     粒子引擎
+  assets/js/wood-to-statue.js 一木成像雕刻引擎（单进度轴，落地页与 AR 场景一共用）
+  assets/js/wood-demo.js  落地页可拖动雕刻台（滑杆/画面拖拽/方向键）
   assets/js/ar-scenes.js   AR 三场景 Canvas 渲染器（零模型文件）
   assets/js/ar.js          AR 控制层（全屏层/取景/集章/计时）
   assets/js/main.js        页面装配 + 摄像头降级

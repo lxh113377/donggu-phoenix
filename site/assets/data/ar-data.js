@@ -8,7 +8,7 @@
 window.AR_DATA = {
   meta: {
     title: 'AR 展陈馆',
-    subtitle: '扫一扫，把静态的文化资源变成站起来、动起来的三段现场',
+    subtitle: '扫一扫，把静态的文化资源变成站起来、动起来的三段现场；造像一段可从头拖到尾',
     en: 'Lightweight AR Gallery',
     /* 轻量化口径：三个场景全部为 Canvas 2D 实时绘制，零模型文件、零第三方库、零外部请求 */
     weight: '三段合计 2 分 32 秒 · 全部实时绘制 · 无 3D 模型文件',
@@ -31,16 +31,16 @@ window.AR_DATA = {
       name: '东固传统造像',
       en: 'Donggu Traditional Statuary',
       kicker: '国家级非物质文化遗产 · 2014 年入选第四批名录',
-      tagline: '从一段木料，到一尊有「法力」的神像',
+      tagline: '一木成像：拖动进度，看这段樟木里的神像被让出来',
       duration: 72,
       poster: 50,
       stamp: '造像章',
       chapters: [
         {
           at: 0, key: 'wood', title: '一 · 选木', en: 'I. Choosing the Wood',
-          body: '造像先看木。整段木料要干透、无裂、少节，顺纹理立身，取直去斜。木性稳了，像才立得住。',
-          enBody: 'It starts with the wood: a single seasoned block, free of cracks and large knots, stood upright along the grain.',
-          note: '工序名目据《装饰》2015 年第 7 期田野调查'
+          body: '造像先看木。东固一带用樟木：整段要干透、无裂、少节，顺纹理立身，取直去斜。木性稳了，像才立得住。',
+          enBody: 'It starts with the wood — camphor, thoroughly seasoned, free of cracks and large knots, stood upright along the grain.',
+          note: '工序名目据《装饰》2015 年第 7 期田野调查；樟木用料据《井冈山报》2026-08-10'
         },
         {
           at: 12, key: 'design', title: '二 · 定像', en: 'II. Fixing the Iconography',
@@ -57,8 +57,8 @@ window.AR_DATA = {
         {
           at: 40, key: 'gild', title: '四 · 修光 · 彩绘 · 贴金', en: 'IV. Refining, Painting, Gilding',
           body: '修光打磨，把刀痕收干净；生漆打底，再上彩、贴金箔。眉眼的弧度、衣纹的走向，都在这时候定下神情。',
-          enBody: 'Sanding removes every chisel mark; lacquer, pigment and gold leaf follow. The curve of a brow and the flow of a robe fold decide the expression.',
-          note: '贴金为《装饰》所列工序；「木雕彩绘」见东固传统造像宣传物料'
+          enBody: 'Sanding removes every chisel mark, then the face is opened — awe without terror, kinship without vulgarity. Lacquer, pigment and gold leaf follow.',
+          note: '贴金为《装饰》所列工序；「开面」分寸见《井冈山报》2026-08-10《樟木深处听刀音》'
         },
         {
           at: 56, key: 'open', title: '五 · 开光', en: 'V. Consecration',
@@ -70,7 +70,8 @@ window.AR_DATA = {
       sources: [
         { label: '刘卷《东固传统造像的制作工艺与仪式过程及其文化功能阐释》，《装饰》2015 年第 7 期', url: 'https://wap.cnki.net/touch/web/Journal/Article/ZSHI201507026.html' },
         { label: '吉安市人民政府《东固传统造像》', url: 'https://m.jian.gov.cn/news-show-9917.html' },
-        { label: '刘节明先生独家专访实录（团队 2025-07-07 田野采访）', url: '' }
+        { label: '刘节明先生独家专访实录（团队 2025-07-07 田野采访）', url: '' },
+        { label: '《井冈山报》2026-08-10《樟木深处听刀音——记国家级非遗项目东固传统造像代表性传承人刘节明》', url: 'https://www.jgsdaily.com/19/19qysj/19tt/145190.shtml' }
       ]
     },
 

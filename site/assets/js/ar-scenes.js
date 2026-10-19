@@ -1,6 +1,6 @@
 /* ar-scenes.js — AR 展陈三场景渲染器（Canvas 2D，零依赖、零模型文件、零外部请求）
  * 所有图形由代码绘制（造像、红旗、山谷、凤凰均为参数化矢量）。
- * 场景一 craft：选木 → 定像 → 开坯 → 修光彩绘贴金 → 开光
+ * 场景一 craft：一木成像 —— 选木 → 定像 → 开坯 → 修光 → 彩绘贴金 → 开光（几何见 wood-to-statue.js）
  * 场景二 red：东固会师 → 龙冈大捷 → 白云山首战 → 六渡坳
  * 场景三 phoenix：图腾浮现 → 三公主羽衣 → 振翅盘旋 → 落羽归位
  * 版式：宽屏（>=900px）主体画面靠右、左侧留解说；窄屏主画面靠上、解说在下。
@@ -31,25 +31,6 @@
       top: top,
       bottom: bottom
     };
-  }
-
-  function woodGrain(ctx, x, y, w, h, seed) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, w, h);
-    ctx.clip();
-    for (var i = 0; i < 20; i++) {
-      var yy = y + h * ((i * 0.052 + seed * 0.17) % 1);
-      ctx.beginPath();
-      for (var xx = 0; xx <= w; xx += 7) {
-        var amp = 2.2 * SIN((xx + i * 13) * 0.019 + i);
-        if (xx === 0) { ctx.moveTo(x + xx, yy + amp); } else { ctx.lineTo(x + xx, yy + amp); }
-      }
-      ctx.strokeStyle = "rgba(120,78,44," + (0.06 + (i % 4) * 0.022) + ")";
-      ctx.lineWidth = 1 + (i % 3) * 0.6;
-      ctx.stroke();
-    }
-    ctx.restore();
   }
 
   function sealMark(ctx, cx, cy, r, text, color, rot) {
@@ -133,94 +114,10 @@
     ctx.restore();
   }
 
-  /* ---------- 造像几何（站姿 · 披帛 · 莲座 · 背光） ---------- */
-  function bodyPath(ctx, cx, cy, s) {
-    ctx.beginPath();
-    ctx.moveTo(cx - s * 0.055, cy - s * 0.40);          // 左颈
-    ctx.quadraticCurveTo(cx - s * 0.115, cy - s * 0.375, cx - s * 0.128, cy - s * 0.325); // 左肩
-    ctx.quadraticCurveTo(cx - s * 0.142, cy - s * 0.20, cx - s * 0.118, cy - s * 0.085);  // 左臂外沿
-    ctx.quadraticCurveTo(cx - s * 0.108, cy - s * 0.01, cx - s * 0.112, cy + s * 0.06);   // 腰
-    ctx.quadraticCurveTo(cx - s * 0.155, cy + s * 0.19, cx - s * 0.196, cy + s * 0.285);  // 下摆外扬
-    ctx.quadraticCurveTo(cx, cy + s * 0.315, cx + s * 0.196, cy + s * 0.285);
-    ctx.quadraticCurveTo(cx + s * 0.155, cy + s * 0.19, cx + s * 0.112, cy + s * 0.06);
-    ctx.quadraticCurveTo(cx + s * 0.108, cy - s * 0.01, cx + s * 0.118, cy - s * 0.085);
-    ctx.quadraticCurveTo(cx + s * 0.142, cy - s * 0.20, cx + s * 0.128, cy - s * 0.325);
-    ctx.quadraticCurveTo(cx + s * 0.115, cy - s * 0.375, cx + s * 0.055, cy - s * 0.40);
-    ctx.quadraticCurveTo(cx, cy - s * 0.415, cx - s * 0.055, cy - s * 0.40);
-    ctx.closePath();
-  }
-  function headPath(ctx, cx, cy, s) {
-    ctx.beginPath();
-    ctx.ellipse(cx, cy - s * 0.455, s * 0.05, s * 0.058, 0, 0, TAU);
-  }
-  function crownPath(ctx, cx, cy, s) {
-    ctx.beginPath();
-    ctx.moveTo(cx - s * 0.056, cy - s * 0.492);
-    ctx.quadraticCurveTo(cx - s * 0.038, cy - s * 0.552, cx - s * 0.012, cy - s * 0.545);
-    ctx.quadraticCurveTo(cx, cy - s * 0.575, cx + s * 0.012, cy - s * 0.545);
-    ctx.quadraticCurveTo(cx + s * 0.038, cy - s * 0.552, cx + s * 0.056, cy - s * 0.492);
-    ctx.quadraticCurveTo(cx, cy - s * 0.515, cx - s * 0.056, cy - s * 0.492);
-    ctx.closePath();
-  }
-  function haloPath(ctx, cx, cy, s) {
-    ctx.beginPath();
-    ctx.arc(cx, cy - s * 0.455, s * 0.115, 0, TAU);
-  }
-  function lotusPath(ctx, cx, cy, s) {
-    ctx.beginPath();
-    ctx.moveTo(cx - s * 0.235, cy + s * 0.285);
-    for (var k = 0; k < 6; k++) {
-      var x0 = cx - s * 0.235 + (s * 0.47 / 6) * k;
-      ctx.quadraticCurveTo(x0 + s * 0.039, cy + s * 0.355, x0 + s * 0.0783, cy + s * 0.285);
-    }
-    ctx.lineTo(cx + s * 0.245, cy + s * 0.36);
-    ctx.lineTo(cx - s * 0.245, cy + s * 0.36);
-    ctx.closePath();
-  }
-  function armsPath(ctx, cx, cy, s) {
-    // 双臂与手印（禅定印），仅描线
-    ctx.beginPath();
-    ctx.moveTo(cx - s * 0.118, cy - s * 0.30);
-    ctx.quadraticCurveTo(cx - s * 0.085, cy - s * 0.10, cx - s * 0.045, cy - s * 0.035);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx + s * 0.118, cy - s * 0.30);
-    ctx.quadraticCurveTo(cx + s * 0.085, cy - s * 0.10, cx + s * 0.045, cy - s * 0.035);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.ellipse(cx, cy - s * 0.032, s * 0.046, s * 0.026, 0, 0, TAU);
-    ctx.stroke();
-  }
-  function robeFolds(ctx, cx, cy, s, color) {
-    ctx.save();
-    bodyPath(ctx, cx, cy, s);
-    ctx.clip();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = Math.max(1, s * 0.0038);
-    for (var i = -3; i <= 3; i++) {
-      ctx.beginPath();
-      ctx.moveTo(cx + i * s * 0.032, cy + s * 0.04);
-      ctx.quadraticCurveTo(cx + i * s * 0.062, cy + s * 0.17, cx + i * s * 0.095, cy + s * 0.3);
-      ctx.stroke();
-    }
-    // 胸前衣襟
-    ctx.beginPath();
-    ctx.moveTo(cx - s * 0.055, cy - s * 0.40);
-    ctx.quadraticCurveTo(cx - s * 0.01, cy - s * 0.28, cx + s * 0.01, cy - s * 0.16);
-    ctx.stroke();
-    // 披帛
-    ctx.lineWidth = Math.max(1.2, s * 0.008);
-    ctx.beginPath();
-    ctx.moveTo(cx - s * 0.12, cy - s * 0.32);
-    ctx.quadraticCurveTo(cx - s * 0.26, cy - s * 0.06, cx - s * 0.19, cy + s * 0.26);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx + s * 0.12, cy - s * 0.32);
-    ctx.quadraticCurveTo(cx + s * 0.26, cy - s * 0.06, cx + s * 0.19, cy + s * 0.26);
-    ctx.stroke();
-    ctx.restore();
-  }
-  /* ================= 场景一：东固传统造像 ================= */
+  /* ================= 场景一：东固传统造像 —— 一木成像（连续雕刻） =================
+   * 画面几何统一由 assets/js/wood-to-statue.js 提供：一段樟木随解说进度被连续雕成神像，
+   * 五章映射到同一根进度轴（选木→定像→开坯→修光·彩绘·贴金→开光），与落地页「一木成像」同源。
+   */
   function CraftScene(data) {
     this.id = "craft";
     this.data = data;
@@ -229,315 +126,42 @@
     this.duration = data.duration;
     this.chapters = data.chapters;
     this.t = 0;
-    this.chips = [];
-    for (var i = 0; i < 40; i++) {
-      this.chips.push({ a: Math.random() * TAU, r: 0.3 + Math.random() * 0.7 });
-    }
   }
   CraftScene.prototype.seek = function (t) { this.t = clamp(t, 0, this.duration); };
 
   CraftScene.prototype.draw = function (ctx, w, h, now) {
     var S = Math.min(w, h), box = visualBox(w, h);
-    var t = this.t, n = this.chapters.length;
+    var n = this.chapters.length;
     var stageLen = this.duration / n;
-    var idx = clamp(Math.floor(t / stageLen), 0, n - 1);
-    var local = (t - idx * stageLen) / stageLen;
-    var cx = box.cx, cy = box.cy, s = box.s;
+    var idx = clamp(Math.floor(this.t / stageLen), 0, n - 1);
+    var local = (this.t - idx * stageLen) / stageLen;
 
-    var bg = ctx.createRadialGradient(cx, cy, S * 0.05, cx, cy, S * 0.95);
+    var bg = ctx.createRadialGradient(box.cx, box.cy, S * 0.05, box.cx, box.cy, S * 0.95);
     bg.addColorStop(0, "rgba(126,66,26,.36)");
     bg.addColorStop(0.5, "rgba(44,24,14,.2)");
     bg.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
 
-    ctx.save();
-    ctx.translate(cx, cy);
-
-    /* ---- 一 · 选木 ---- */
-    if (idx === 0) {
-      var bw = s * 0.2, bh = s * 0.86;
+    var E = global.WOOD_TO_STATUE;
+    if (E) {
+      // 本场景有背光，顶点比另两段高：略缩并下移，避开顶部场景胶囊与右侧章节轨
+      var cbox = w >= 900
+        ? { cx: box.cx, cy: box.cy + box.s * 0.05, s: box.s * 0.90 }
+        : { cx: box.cx, cy: box.cy + box.s * 0.02, s: box.s * 0.92 };
+      E.draw(ctx, w, h, E.progress(idx, local), now, { box: cbox, moteCount: 28 });
+    } else {
+      // 引擎缺失时的兜底：只画一条中轴与虚线轮廓，不留白屏
       ctx.save();
-      ctx.translate(0, s * 0.08);
-      ctx.rotate((1 - ease(local)) * -0.1);
-      ctx.fillStyle = "#3E2718";
-      ctx.fillRect(-bw / 2, -bh * 0.62, bw, bh);
-      woodGrain(ctx, -bw / 2, -bh * 0.62, bw, bh, 3);
+      ctx.strokeStyle = "rgba(232,183,97,.5)";
+      ctx.lineWidth = 1.4; ctx.setLineDash([9, 8]);
       ctx.beginPath();
-      ctx.ellipse(0, -bh * 0.62, bw * 0.5, bw * 0.16, 0, 0, TAU);
-      ctx.fillStyle = "#5C3921";
-      ctx.fill();
-      for (var q = 1; q <= 4; q++) {
-        ctx.beginPath();
-        ctx.ellipse(0, -bh * 0.62, bw * 0.5 * q / 4.7, bw * 0.16 * q / 4.7, 0, 0, TAU);
-        ctx.strokeStyle = "rgba(28,16,9,.6)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-      var cutY = -bh * 0.62 + bh * clamp(local * 1.12, 0, 1);
-      ctx.beginPath();
-      ctx.moveTo(-bw / 2 - 10, cutY);
-      ctx.lineTo(bw / 2 + 10, cutY);
-      ctx.strokeStyle = "rgba(232,183,97,.85)";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([7, 6]);
+      ctx.moveTo(box.cx, box.cy - box.s * 0.62);
+      ctx.lineTo(box.cx, box.cy + box.s * 0.40);
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.restore();
-      // 木料旁的一缕光
-      ctx.beginPath();
-      ctx.moveTo(-bw * 0.9, -bh * 0.62);
-      ctx.lineTo(-bw * 0.35, -bh * 0.3);
-      ctx.lineTo(-bw * 0.35, bh * 0.32);
-      ctx.lineTo(-bw * 0.9, bh * 0.38);
-      ctx.closePath();
-      ctx.fillStyle = "rgba(232,183,97,.05)";
-      ctx.fill();
     }
-
-    /* ---- 二 · 定像 ---- */
-    if (idx === 1) {
-      var a2 = ease(local);
-      ctx.strokeStyle = "rgba(232,183,97," + (0.3 + 0.5 * a2) + ")";
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.moveTo(0, -s * 0.62);
-      ctx.lineTo(0, -s * 0.62 + s * 0.86 * a2);
-      ctx.stroke();
-      for (var i2 = 0; i2 < 6; i2++) {
-        var yy = -s * 0.58 + i2 * s * 0.145;
-        ctx.beginPath();
-        ctx.moveTo(-s * 0.26 * a2, yy);
-        ctx.lineTo(s * 0.26 * a2, yy);
-        ctx.strokeStyle = "rgba(212,162,76," + (0.13 * a2) + ")";
-        ctx.stroke();
-      }
-      ctx.setLineDash([10, 8]);
-      ctx.strokeStyle = "rgba(246,241,231," + (0.2 + 0.45 * a2) + ")";
-      ctx.lineWidth = 1.7;
-      haloPath(ctx, 0, 0, s); ctx.stroke();
-      bodyPath(ctx, 0, 0, s); ctx.stroke();
-      headPath(ctx, 0, 0, s); ctx.stroke();
-      crownPath(ctx, 0, 0, s); ctx.stroke();
-      lotusPath(ctx, 0, 0, s); ctx.stroke();
-      ctx.lineWidth = 1.4;
-      armsPath(ctx, 0, 0, s);
-      ctx.lineWidth = 1.7;
-      ctx.setLineDash([]);
-    }
-
-    /* ---- 三 · 开坯：方料逐层让出造像轮廓 ---- */
-    if (idx === 2) {
-      var a3 = ease(clamp(local * 1.05, 0, 1));
-      var shrink = lerp(0.72, 1, a3);
-      // 外层方料（未凿去的木头）
-      var bw2 = s * 0.54, bh2 = s * 0.86;
-      var bx2 = -bw2 / 2, by2 = -bh2 * 0.62;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(bx2, by2, bw2, bh2);
-      ctx.fillStyle = "#33200F";
-      ctx.fill();
-      woodGrain(ctx, bx2, by2, bw2, bh2, 7);
-      ctx.restore();
-      // 已凿出的坯体（受光稍亮）
-      ctx.save();
-      ctx.beginPath();
-      bodyPath(ctx, 0, 0, s * shrink);
-      headPath(ctx, 0, 0, s * shrink);
-      lotusPath(ctx, 0, 0, s * shrink);
-      ctx.fillStyle = "#7A5230";
-      ctx.fill();
-      ctx.restore();
-      ctx.save();
-      ctx.beginPath();
-      bodyPath(ctx, 0, 0, s * shrink);
-      ctx.clip();
-      ctx.strokeStyle = "rgba(255,224,180,.10)";
-      ctx.lineWidth = 1.2;
-      for (var g2 = 0; g2 < 12; g2++) {
-        var gy2 = -s * 0.5 + g2 * s * 0.075;
-        ctx.beginPath();
-        ctx.moveTo(-s * 0.3, gy2);
-        ctx.lineTo(s * 0.3, gy2 + s * 0.01);
-        ctx.stroke();
-      }
-      ctx.restore();
-      // 坯体轮廓 + 凿子
-      ctx.strokeStyle = "rgba(232,183,97,.55)";
-      ctx.lineWidth = Math.max(1, s * 0.004);
-      bodyPath(ctx, 0, 0, s * shrink); ctx.stroke();
-      headPath(ctx, 0, 0, s * shrink); ctx.stroke();
-      lotusPath(ctx, 0, 0, s * shrink); ctx.stroke();
-      // 飞出的木屑
-      for (var b = 0; b < this.chips.length; b++) {
-        var ck = this.chips[b];
-        if (a3 > ck.r * 0.62) {
-          var px = COS(ck.a) * s * 0.42 * (0.5 + a3 * 0.9);
-          var py = SIN(ck.a) * s * 0.4 * (0.5 + a3 * 0.9);
-          ctx.globalAlpha = 0.55 * (1 - a3);
-          ctx.fillStyle = "#8A5F35";
-          ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(px + s * 0.028, py - s * 0.02);
-          ctx.lineTo(px + s * 0.012, py + s * 0.026);
-          ctx.closePath();
-          ctx.fill();
-        }
-      }
-      ctx.globalAlpha = 1;
-      // 凿子
-      ctx.save();
-      ctx.translate(s * 0.24, by2 + bh2 * 0.34 + SIN(now * 0.004) * s * 0.06);
-      ctx.rotate(-0.5);
-      ctx.fillStyle = "rgba(201,209,217,.8)";
-      ctx.fillRect(0, -s * 0.012, s * 0.13, s * 0.024);
-      ctx.fillStyle = "rgba(92,57,33,.95)";
-      ctx.fillRect(s * 0.13, -s * 0.016, s * 0.09, s * 0.032);
-      ctx.restore();
-    }
-
-    /* ---- 四 · 修光 · 彩绘 · 贴金 ---- */
-    if (idx === 3) {
-      var a4 = ease(local);
-      // 素坯
-      ctx.fillStyle = "#C9B296";
-      bodyPath(ctx, 0, 0, s); ctx.fill();
-      headPath(ctx, 0, 0, s); ctx.fill();
-      lotusPath(ctx, 0, 0, s); ctx.fill();
-      // 贴金：自上而下推进的金层
-      ctx.save();
-      bodyPath(ctx, 0, 0, s);
-      ctx.clip();
-      var gy0 = -s * 0.56, gy1 = s * 0.32;
-      var gEdge = lerp(gy0 - s * 0.02, gy1, a4);
-      var gg = ctx.createLinearGradient(0, gy0, 0, gy1);
-      gg.addColorStop(0, "rgba(255,226,160,.95)");
-      gg.addColorStop(0.42, "rgba(226,178,92,.92)");
-      gg.addColorStop(1, "rgba(150,96,44,.88)");
-      ctx.fillStyle = gg;
-      ctx.fillRect(-s * 0.4, gy0 - s * 0.02, s * 0.8, Math.max(0, gEdge - gy0 + s * 0.02));
-      ctx.restore();
-      // 彩绘：衣缘朱红、腰带、胸饰
-      ctx.save();
-      bodyPath(ctx, 0, 0, s);
-      ctx.clip();
-      var paint = clamp((a4 - 0.35) / 0.65, 0, 1);
-      ctx.globalAlpha = paint;
-      ctx.fillStyle = "rgba(150,28,36,.82)";
-      ctx.fillRect(-s * 0.3, s * 0.2, s * 0.6, s * 0.03);
-      ctx.fillStyle = "rgba(150,28,36,.6)";
-      ctx.fillRect(-s * 0.24, s * 0.235, s * 0.48, s * 0.012);
-      ctx.fillStyle = "rgba(232,183,97,.9)";
-      ctx.fillRect(-s * 0.13, cy * 0 + s * 0.055, s * 0.26, s * 0.014);
-      ctx.globalAlpha = 1;
-      ctx.restore();
-      // 金线衣纹
-      ctx.save();
-      bodyPath(ctx, 0, 0, s);
-      ctx.clip();
-      ctx.strokeStyle = "rgba(122,20,32,.35)";
-      ctx.lineWidth = Math.max(1, s * 0.0035);
-      for (var i4 = -3; i4 <= 3; i4++) {
-        ctx.beginPath();
-        ctx.moveTo(i4 * s * 0.03, s * 0.02);
-        ctx.quadraticCurveTo(i4 * s * 0.06, s * 0.18, i4 * s * 0.095, s * 0.3);
-        ctx.stroke();
-      }
-      ctx.restore();
-      // 描线
-      ctx.strokeStyle = "rgba(96,40,16,.6)";
-      ctx.lineWidth = 1.6;
-      bodyPath(ctx, 0, 0, s); ctx.stroke();
-      headPath(ctx, 0, 0, s); ctx.stroke();
-      crownPath(ctx, 0, 0, s);
-      ctx.fillStyle = "rgba(226,178,92,.95)";
-      ctx.fill();
-      lotusPath(ctx, 0, 0, s); ctx.stroke();
-      haloPath(ctx, 0, 0, s);
-      ctx.strokeStyle = "rgba(232,183,97,.7)";
-      ctx.lineWidth = 1.6;
-      ctx.stroke();
-      // 贴金箔飞屑
-      ctx.save();
-      ctx.globalAlpha = (1 - Math.abs(a4 - 0.5) * 2) * 0.7;
-      for (var gf = 0; gf < 18; gf++) {
-        var gx = (SIN(gf * 2.1) * 0.5 + 0.5) * s * 0.7 - s * 0.35;
-        var gyy = gEdge + SIN(now * 0.002 + gf) * s * 0.05;
-        ctx.fillStyle = "rgba(255,236,180,.8)";
-        ctx.fillRect(gx, gyy, s * 0.014, s * 0.006);
-      }
-      ctx.restore();
-    }
-
-    /* ---- 五 · 开光 ---- */
-    if (idx === 4) {
-      var a5 = clamp(local, 0, 1);
-      // 彩绘贴金完成的神像
-      ctx.fillStyle = "#E3C58A";
-      bodyPath(ctx, 0, 0, s); ctx.fill();
-      headPath(ctx, 0, 0, s); ctx.fill();
-      lotusPath(ctx, 0, 0, s); ctx.fill();
-      ctx.save();
-      bodyPath(ctx, 0, 0, s);
-      ctx.clip();
-      var bg5 = ctx.createLinearGradient(0, -s * 0.5, 0, s * 0.32);
-      bg5.addColorStop(0, "rgba(255,232,176,.9)");
-      bg5.addColorStop(0.55, "rgba(226,178,92,.7)");
-      bg5.addColorStop(1, "rgba(150,40,36,.45)");
-      ctx.fillStyle = bg5;
-      ctx.fillRect(-s * 0.4, -s * 0.55, s * 0.8, s * 0.9);
-      ctx.strokeStyle = "rgba(122,20,32,.32)";
-      ctx.lineWidth = Math.max(1, s * 0.0035);
-      for (var i5 = -3; i5 <= 3; i5++) {
-        ctx.beginPath();
-        ctx.moveTo(i5 * s * 0.03, s * 0.02);
-        ctx.quadraticCurveTo(i5 * s * 0.06, s * 0.18, i5 * s * 0.095, s * 0.3);
-        ctx.stroke();
-      }
-      ctx.fillStyle = "rgba(150,28,36,.72)";
-      ctx.fillRect(-s * 0.3, s * 0.2, s * 0.6, s * 0.028);
-      ctx.restore();
-      ctx.strokeStyle = "rgba(96,40,16,.7)";
-      ctx.lineWidth = 1.6;
-      bodyPath(ctx, 0, 0, s); ctx.stroke();
-      headPath(ctx, 0, 0, s); ctx.stroke();
-      crownPath(ctx, 0, 0, s);
-      ctx.fillStyle = "rgba(232,183,97,.98)";
-      ctx.fill();
-      lotusPath(ctx, 0, 0, s); ctx.stroke();
-      // 背光扩散
-      var rr = s * (0.2 + 0.35 * ease(a5));
-      var rg = ctx.createRadialGradient(0, -s * 0.47, 0, 0, -s * 0.47, Math.max(2, rr * 2.2));
-      rg.addColorStop(0, "rgba(255,247,224," + (0.42 * (1 - a5 * 0.25)) + ")");
-      rg.addColorStop(0.42, "rgba(232,183,97," + (0.26 * (1 - a5 * 0.5)) + ")");
-      rg.addColorStop(1, "rgba(212,162,76,0)");
-      ctx.fillStyle = rg;
-      ctx.beginPath();
-      ctx.arc(0, -s * 0.47, rr * 2.2, 0, TAU);
-      ctx.fill();
-      // 头光
-      ctx.strokeStyle = "rgba(255,236,180,.85)";
-      ctx.lineWidth = 2;
-      haloPath(ctx, 0, 0, s * (1 + 0.1 * ease(a5)));
-      ctx.stroke();
-      // 仪轨环
-      for (var k5 = 0; k5 < 3; k5++) {
-        var rot = now * 0.00022 * (k5 + 1) + k5;
-        ctx.beginPath();
-        ctx.ellipse(0, -s * 0.44, s * (0.3 + k5 * 0.09), s * (0.1 + k5 * 0.05), rot, 0, TAU);
-        ctx.strokeStyle = "rgba(232,183,97," + (0.4 - k5 * 0.1) + ")";
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-      }
-      // 落款朱印
-      if (a5 > 0.42) {
-        ctx.globalAlpha = clamp((a5 - 0.42) / 0.35, 0, 1);
-        sealMark(ctx, s * 0.36, s * 0.2, s * 0.068, "开", RED, -0.12);
-        ctx.globalAlpha = 1;
-      }
-    }
-    ctx.restore();
 
     dust(ctx, w, h, now, GOLD_L, 28);
     chapterRail(ctx, w, h, this.chapters, idx);

@@ -361,6 +361,109 @@ section{position:relative;z-index:1;padding:var(--sp-7) 0}
 #cam .close{position:absolute;top:22px;right:22px;width:44px;height:44px;border-radius:50%;
   border:1px solid var(--line);display:grid;place-items:center;color:var(--fg);font-size:20px}
 
+/* ===== 一木成像：可拖动的雕刻台 ===== */
+.carve-sec{padding-top:calc(var(--sp-6) + 34px)}
+.carve-shell{
+  position:relative;margin-top:var(--sp-4);border:1px solid var(--line-soft);
+  background:
+    radial-gradient(70% 60% at 62% 40%, rgba(126,66,26,.30), transparent 70%),
+    linear-gradient(180deg,#100C0A,#0B0908);
+  overflow:hidden;
+}
+.carve-shell::before,.carve-shell::after{
+  content:"";position:absolute;width:26px;height:26px;pointer-events:none;
+  border:1px solid var(--line);opacity:.7
+}
+.carve-shell::before{left:12px;top:12px;border-right:0;border-bottom:0}
+.carve-shell::after{right:12px;bottom:12px;border-left:0;border-top:0}
+#carve-stage{display:block;width:100%;height:clamp(340px,52svh,600px);touch-action:pan-y;cursor:ew-resize}
+#carve-stage:focus-visible{outline:2px solid var(--she-gold);outline-offset:-2px}
+.carve-hint{
+  position:absolute;left:50%;top:16px;transform:translateX(-50%);margin:0;
+  font-family:var(--font-sans);font-size:12px;letter-spacing:.18em;color:var(--fg-dim);
+  padding:9px 18px;border:1px solid var(--line-soft);border-radius:999px;
+  background:rgba(11,9,8,.55);backdrop-filter:blur(4px);
+  transition:opacity .6s var(--ease);pointer-events:none;
+}
+.carve-hint.gone{opacity:0}
+.carve-cap{
+  position:absolute;left:0;bottom:0;z-index:2;max-width:min(400px,62%);
+  padding:clamp(14px,2vw,22px) clamp(16px,2.4vw,26px);
+  background:linear-gradient(to top,rgba(8,7,6,.92),rgba(8,7,6,.55) 62%,transparent);
+}
+.carve-cap h3{margin:0 0 6px;font-family:var(--font-kai);font-weight:400;font-size:clamp(19px,2.2vw,25px);
+  letter-spacing:.1em;color:var(--she-gold-light)}
+.carve-cap p{margin:0;font-size:13.5px;line-height:1.95;color:var(--fg-dim)}
+@media (max-width:760px){
+  #carve-stage{height:clamp(300px,44svh,420px)}
+  .carve-cap{position:static;background:none;border-top:1px solid var(--line-soft);max-width:none}
+  .carve-hint{display:none}
+  .carve-control{gap:14px}
+  .carve-slider-wrap{min-width:100%;order:1}
+  .carve-slider-label{font-size:10px;letter-spacing:.16em}
+  .carve-slider-label::after{content:" · 按住画面左右拖也可";letter-spacing:.04em}
+  .carve-pct{order:2}
+  .carve-play{order:3}
+}
+
+.carve-control{display:flex;align-items:center;gap:clamp(14px,2.4vw,26px);margin-top:22px;flex-wrap:wrap}
+.carve-slider-wrap{flex:1;min-width:min(260px,100%);display:flex;align-items:center;gap:14px}
+.carve-slider-label{font-family:var(--font-sans);font-size:11px;letter-spacing:.24em;color:var(--fg-faint);white-space:nowrap}
+.carve-slider{
+  flex:1;appearance:none;-webkit-appearance:none;height:2px;border-radius:2px;margin:0;
+  background:linear-gradient(90deg,var(--she-gold),var(--she-vermilion));
+  outline-offset:8px;cursor:ew-resize
+}
+.carve-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;cursor:grab;
+  background:radial-gradient(circle at 35% 32%,#FFF0CE,var(--she-gold-light) 55%,var(--she-red-deep));
+  border:1px solid rgba(255,240,206,.7);box-shadow:0 0 16px rgba(212,162,76,.55)
+}
+.carve-slider::-moz-range-thumb{
+  width:20px;height:20px;border:1px solid rgba(255,240,206,.7);border-radius:50%;
+  background:radial-gradient(circle at 35% 32%,#FFF0CE,var(--she-gold-light) 55%,var(--she-red-deep));
+  box-shadow:0 0 16px rgba(212,162,76,.55);cursor:grab
+}
+.carve-slider::-moz-range-track{height:2px;background:rgba(212,162,76,.35);border-radius:2px}
+.carve-pct{font-family:var(--font-sans);font-size:11.5px;letter-spacing:.16em;color:var(--she-gold);min-width:5.6em}
+.carve-play{
+  font-family:var(--font-sans);font-size:12px;letter-spacing:.2em;color:var(--she-gold);
+  padding:10px 22px;border:1px solid var(--line);border-radius:999px;
+  background:rgba(212,162,76,.08);transition:all .35s var(--ease)
+}
+.carve-play:hover{background:rgba(212,162,76,.18);border-color:var(--she-gold)}
+
+.carve-rail{
+  list-style:none;margin:26px 0 0;padding:0;display:grid;gap:1px;
+  grid-template-columns:repeat(6,1fr);border:1px solid var(--line-soft);background:var(--line-soft)
+}
+.carve-rail button{
+  display:block;width:100%;text-align:left;padding:14px 12px 16px;background:var(--she-ink);
+  position:relative;transition:background .4s var(--ease)
+}
+.carve-rail button b{display:block;font-family:var(--font-sans);font-size:10px;letter-spacing:.3em;
+  color:var(--fg-faint);font-weight:400}
+.carve-rail button span{display:block;margin-top:7px;font-family:var(--font-kai);font-size:15px;
+  letter-spacing:.1em;color:var(--fg-dim)}
+.carve-rail button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
+  background:linear-gradient(90deg,var(--she-gold),var(--she-vermilion));transform:scaleX(0);
+  transform-origin:left;transition:transform .5s var(--ease)}
+.carve-rail button:hover{background:#161210}
+.carve-rail button.past span{color:var(--fg-dim)}
+.carve-rail button.on{background:#171210}
+.carve-rail button.on b{color:var(--she-vermilion)}
+.carve-rail button.on span{color:var(--she-gold-light)}
+.carve-rail button.on::after{transform:scaleX(1)}
+@media (max-width:880px){.carve-rail{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:460px){.carve-rail{grid-template-columns:repeat(2,1fr)}}
+.carve-lineage{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0;padding:0}
+.carve-lineage span{font-family:var(--font-sans);font-size:11px;letter-spacing:.14em;color:var(--she-gold);
+  border:1px solid var(--line-soft);border-radius:999px;padding:5px 13px;background:rgba(212,162,76,.06)}
+.carve-note{margin:18px 0 0;font-family:var(--font-sans);font-size:11.5px;line-height:1.9;color:var(--fg-faint)}
+
+.hero-cta.ghost{margin-top:16px;margin-left:12px;border-style:dashed;letter-spacing:.14em;font-size:12.5px}
+@media (max-width:900px){.hero-cta.ghost{margin-left:0}}
+
 /* ================= AR 展陈馆 ================= */
 .ar-sec{padding-top:calc(var(--sp-6) + 30px)}
 

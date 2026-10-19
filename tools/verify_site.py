@@ -160,6 +160,38 @@ if os.path.exists(meta_p):
         fails.append("qr/meta.json 解析失败: %s" % e)
 print(f"[{'PASS' if not any('场景直连码' in f or 'sceneDeepLinks' in f for f in fails) else 'FAIL'}] 场景直连码 3 枚 + meta.json 深链")
 
+# 9b) 一木成像：雕刻引擎 + 落地页雕刻台 + AR 场景一同源
+wp = os.path.join(SITE, "assets/js/wood-to-statue.js")
+dp = os.path.join(SITE, "assets/js/wood-demo.js")
+wood_engine = rd(wp).decode("utf-8") if os.path.exists(wp) else ""
+wood_demo = rd(dp).decode("utf-8") if os.path.exists(dp) else ""
+if len(wood_engine) < 3000:
+    fails.append("雕刻引擎缺失或过小: assets/js/wood-to-statue.js")
+if len(wood_demo) < 1500:
+    fails.append("雕刻台控制器缺失或过小: assets/js/wood-demo.js")
+for tok in ("WOOD_TO_STATUE", "halfWidth", "bodyPath", "mandorla", "STAGES", "progress"):
+    if tok not in wood_engine:
+        fails.append("雕刻引擎缺少: " + tok)
+for key in ("选木", "定像", "开坯", "修光", "彩绘贴金", "开光"):
+    if key not in wood_engine:
+        fails.append("雕刻引擎工序缺失: " + key)
+if "WOOD_TO_STATUE" not in ar_scenes:
+    fails.append("AR 场景一未复用雕刻引擎（两处画面会各画一套几何）")
+if "function woodGrain" in ar_scenes or "function lotusPath" in ar_scenes:
+    fails.append("AR 场景一仍留有旧造像几何（死代码）")
+for token in ('id="carve-sec"', 'id="carve-stage"', 'id="carve-slider"', 'id="carve-rail"',
+              'id="carve-cap-title"', "wood-to-statue.js", "wood-demo.js"):
+    if token not in html:
+        fails.append("一木成像未挂载: " + token)
+i_engine = html.find("wood-to-statue.js")
+i_scenes = html.find("ar-scenes.js")
+i_demo = html.find("wood-demo.js")
+if not (0 <= i_engine < i_scenes and i_engine < i_demo):
+    fails.append("脚本加载顺序错误：wood-to-statue.js 必须先于 ar-scenes.js / wood-demo.js")
+if "reduced" not in wood_demo:
+    fails.append("雕刻台未处理 prefers-reduced-motion")
+print(f"[{'PASS' if not any(x in f for x in ('雕刻', '一木成像', '脚本加载顺序')) else 'FAIL'}] 一木成像：引擎 / 雕刻台 / AR 同源 / 六工序 / 加载顺序")
+
 # 页面必须挂载 AR 层与入口
 for token in ('id="ar"', 'id="ar-stage"', 'id="ar-cards"', "ar-data.js", "ar-scenes.js", "ar.js"):
     if token not in html:

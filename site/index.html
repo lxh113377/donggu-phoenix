@@ -23,6 +23,7 @@
   <nav aria-label="主导航">
     <ul>
       <li><a href="#totem">图腾</a></li>
+      <li><a href="#carve-sec">一木成像</a></li>
       <li><a href="#ar-gallery">AR</a></li>
       <li><a href="#culture">文化</a></li>
       <li><a href="#craft">匠人</a></li>
@@ -44,6 +45,7 @@
         <p class="hero-lead" id="hero-lead"></p>
         <button class="hero-cta" id="cta-summon" type="button">轻触图腾 · 唤凤</button>
         <a class="hero-cta ar-entry" data-ar="craft" data-nocam="0" href="#ar-gallery">开演 AR 展陈 · 三段</a>
+        <a class="hero-cta ghost" href="#carve-sec">拖一根进度轴，看木头里那尊像出来</a>
       </div>
       <div class="hero-visual" aria-hidden="true">
         <span class="hero-ring"></span>
@@ -87,17 +89,49 @@
   </section>
 
 
+  <!-- ========== 一木成像：可拖动的雕刻过程 ========== -->
+  <section class="carve-sec" id="carve-sec">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>一木成像<small>From One Block of Wood · 木雕彩绘 佛韵流芳</small></h2>
+        <p>东固造像不是「做一尊像」，是把一段樟木里本来就有的那尊像让出来。下面这一根进度轴，从选木一直推到开光 —— 拖它，刀就跟着走。</p>
+        <p class="carve-lineage"><span>明初 · 南京工部匠籍「雕銮匠」</span><span>刘氏一脉廿余代、六百余年</span><span>2014 年入选第四批国家级非遗名录</span></p>
+      </div>
+
+      <div class="carve-shell reveal">
+        <canvas id="carve-stage" aria-label="一木成像雕刻过程动画"></canvas>
+        <p class="carve-hint" id="carve-hint">在画面上按住左右拖 · 或拖动下方进度条</p>
+        <div class="carve-cap">
+          <h3 id="carve-cap-title">一 · 选木</h3>
+          <p id="carve-cap-body">整段樟木要干透、无裂、少节，顺纹理立身。木性稳了，像才立得住。</p>
+        </div>
+      </div>
+
+      <div class="carve-control reveal">
+        <label class="carve-slider-wrap" for="carve-slider">
+          <span class="carve-slider-label">雕刻进度</span>
+          <input id="carve-slider" class="carve-slider" type="range" min="0" max="1000" value="0" step="1"
+                 aria-describedby="carve-pct">
+        </label>
+        <span class="carve-pct" id="carve-pct">已成 0%</span>
+        <button class="carve-play" id="carve-play" type="button" aria-pressed="true">暂停</button>
+      </div>
+      <ol class="carve-rail reveal" id="carve-rail" aria-label="造像工序"></ol>
+      <p class="carve-note reveal">工序名目依据刘卷《东固传统造像的制作工艺与仪式过程及其文化功能阐释》（《装饰》2015 年第 7 期）与吉安市人民政府《东固传统造像》；樟木用料与「开面」分寸见《井冈山报》2026-08-10《樟木深处听刀音》。画面为团队原创参数化矢量，非实拍。</p>
+    </div>
+  </section>
+
   <!-- ========== AR 展陈馆：三场景 ========== -->
   <section id="ar-gallery" class="ar-sec">
     <div class="wrap">
       <div class="sec-head reveal">
         <h2>AR 展陈馆<small>Lightweight AR Gallery</small></h2>
-        <p>三段现场，全部用 Canvas 实时绘制：造像的五道工序、东固的四个历史瞬间、凤凰图腾的一次盘旋。不需要下载、不需要 3D 模型，扫码即看。</p>
+        <p>三段现场，全部用 Canvas 实时绘制：造像的一段樟木被连续雕成神像、东固的四个历史瞬间、凤凰图腾的一次盘旋。不需要下载、不需要 3D 模型，扫码即看。</p>
       </div>
 
       <div class="ar-route reveal">
         <div class="ar-route-item"><b>01</b><h3>扫码进入</h3><p>展板、文创、门票上的二维码指向本页</p></div>
-        <div class="ar-route-item"><b>02</b><h3>现实叠加</h3><p>摄像头取景为底，动画以半透明图层叠在真实造像与地标上</p></div>
+        <div class="ar-route-item"><b>02</b><h3>现实叠加</h3><p>摄像头取景为底，雕刻过程与历史场景以半透明图层叠在真实造像与地标上</p></div>
         <div class="ar-route-item"><b>03</b><h3>看完集章</h3><p>每段落一枚印章，三枚集齐解锁完整动线</p></div>
       </div>
 
@@ -241,8 +275,10 @@
 <script src="assets/data/culture.js"></script>
 <script src="assets/data/ar-data.js"></script>
 <script src="assets/js/phoenix.js"></script>
+<script src="assets/js/wood-to-statue.js"></script>
 <script src="assets/js/ar-scenes.js"></script>
 <script src="assets/js/ar.js"></script>
+<script src="assets/js/wood-demo.js"></script>
 <script src="assets/js/main.js"></script>
 </body>
 </html>

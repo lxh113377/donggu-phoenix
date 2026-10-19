@@ -9,7 +9,17 @@ python tools\make_mockups.py    # 文创效果图
 python tools\make_ar_assets.py  # AR 分镜脚本重生成
 ```
 
-## 最近一次结果（2026-10-19 第二轮）
+## 最近一次结果（2026-10-19 第三轮 · 一木成像）
+- verify_site.py：RESULT PASS（新增「一木成像：引擎 / 雕刻台 / AR 同源 / 六工序 / 加载顺序」专项；总体积 795KB / 27 文件）
+- 雕刻台六工序逐档截图（1280×800）：选木 4% / 定像 16% / 开坯 34% / 修光 55% / 彩绘贴金 80% / 开光 100% 全部出画
+- 交互实测：滑杆 input、画布 pointer 拖拽、聚焦后 ArrowRight ×3（0.30→0.36）均生效；__carve.stats() 读数正确
+- AR 场景一：__ar.open('craft') 后 seek 30 / 64 截图，与雕刻台同一几何；fps 151–300
+- 无障碍：reduced-motion 下 playing=false 且停在成品像；画布 role=slider 可键盘操作
+- 窄屏 390×844：scrollWidth == innerWidth == 390，控制行无重叠（labelRight 186 < pctLeft 308）
+- 控制台：0 报错（window error 监听实测为空数组）
+- 反向验证：woodGrain/lotusPath 等旧造像几何已从 ar-scenes.js 删除，verify_site.py 会因「仍留有旧造像几何」而 FAIL
+
+## 上一轮结果（2026-10-19 第二轮）
 - verify_site.py：RESULT PASS（HTML 引用 0 缺失 / 编码 0 问题 / SEO 7-7 / AR 3 场景 13 章节 152s 零外链 / 总体积 767KB）
 - AR 桌面 1280×800：182–300 fps，三场景逐章截图全部出画
 - AR 手机 390×844：主画面占上半屏，无横向溢出
