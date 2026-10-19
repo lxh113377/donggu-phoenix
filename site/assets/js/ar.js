@@ -333,6 +333,23 @@
   }
 
   /* ---------- 开关 ---------- */
+  var lastFocus = null;
+
+  function focusables() {
+    if (!el.root) { return []; }
+    return $$("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])", el.root)
+      .filter(function (n) { return n.offsetParent !== null && !n.disabled; });
+  }
+
+  function trapTab(e) {
+    if (e.key !== "Tab") { return; }
+    var list = focusables();
+    if (!list.length) { return; }
+    var first = list[0], last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
   function open(id, opts) {
     opts = opts || {};
     q();
@@ -343,10 +360,15 @@
       return;
     }
     if (!state.open) { state.visits++; }
+    if (!state.open) { lastFocus = document.activeElement; }
     state.open = true;
     el.root.classList.add("on");
     el.root.setAttribute("aria-hidden", "false");
+    // 焦点移入播放层，避免读屏与键盘仍停在底下的页面
+    setTimeout(function () { if (el.close) { el.close.focus({ preventScroll: true }); } }, 0);
     document.documentElement.style.overflow = "hidden";
+    // 播放层是全屏对话框：Tab 只在层内循环
+    el.root.addEventListener("keydown", trapTab);
     resize();
     if (!raf) { lastNow = performance.now(); fpsT = lastNow; raf = requestAnimationFrame(frame); }
     paintStamps();
@@ -366,10 +388,14 @@
     if (raf) { cancelAnimationFrame(raf); raf = null; }
     stopCamera();
     document.documentElement.style.overflow = "";
+    if (el.root) { el.root.removeEventListener("keydown", trapTab); }
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* noop */ }
     saveStore();
-    var back = $("#ar-return");
-    if (back) { back.focus({ preventScroll: true }); }
+    // 焦点还给打开播放层的那个元素
+    if (lastFocus && lastFocus.focus) {
+      try { lastFocus.focus({ preventScroll: true }); } catch (e) { lastFocus.focus(); }
+    }
+    lastFocus = null;
   }
 
   function updateStats() {
