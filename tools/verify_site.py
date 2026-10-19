@@ -76,13 +76,27 @@ for r, _, fs_ in os.walk(SITE):
         files.append((s, os.path.relpath(p, SITE)))
 files.sort(reverse=True)
 print(f"[INFO] 站点总体积 {total/1024:.0f} KB / {len(files)} 文件")
-# 预算对齐「首屏 100KB 级、整站 1MB 内」的轻量化口径；4MB 等于没有约束
-BUDGET_KB = 1200
+# 预算口径（2026-10-20 轮5 修订）：整站 1.6MB + **首屏关键路径 <= 400KB**。
+# 上调原因：设计系统 v2 引入自托管中文字体（238KB 子集），而「零外部请求」是项目硬约束，
+# 不能用 Google Fonts CDN 把字体成本甩出去 —— 该成本必须记在本地预算里。
+# 收紧的补偿：新增下面这条更贴近真实体验的判据（首屏关键路径），它比整站体积更能防退化。
+BUDGET_KB = 1600
 if total > BUDGET_KB * 1024:
     fails.append(f"体积超预算 {BUDGET_KB}KB: {total/1024:.0f}KB")
 elif total > BUDGET_KB * 1024 * 0.8:
     warns.append(f"体积已用预算 80% 以上: {total/1024:.0f}KB / {BUDGET_KB}KB")
 print("  最大 5 个文件:", ", ".join(f"{n}({s//1024}KB)" for s, n in files[:5]))
+
+# 4b) 首屏关键路径：HTML + CSS + 首屏字体 + 首屏必执行脚本
+critical = ["index.html", "assets/css/main.css",
+            "assets/fonts/zcool-display.woff2", "assets/fonts/cinzel.woff2",
+            "assets/data/culture.js", "assets/data/ar-data.js",
+            "assets/js/phoenix.js", "assets/js/main.js"]
+crit_bytes = sum(os.path.getsize(os.path.join(SITE, c)) for c in critical if os.path.exists(os.path.join(SITE, c)))
+CRIT_KB = 400
+if crit_bytes / 1024 > CRIT_KB:
+    fails.append("首屏关键路径超预算 %dKB: %.0fKB" % (CRIT_KB, crit_bytes / 1024))
+print(f"[{'PASS' if crit_bytes / 1024 <= CRIT_KB else 'FAIL'}] 首屏关键路径 {crit_bytes/1024:.0f} KB / 预算 {CRIT_KB} KB（HTML+CSS+字体+首屏脚本）")
 
 # 5) 编码：所有文本文件 UTF-8 无 BOM
 enc_bad = []
@@ -329,6 +343,71 @@ if "application/ld+json" not in html:
     fails.append("结构化数据缺失：无 JSON-LD")
 print(f"[{'PASS' if not any(('无障碍' in f) or ('分享元数据' in f) or ('JSON-LD' in f) for f in fails) else 'FAIL'}] 无障碍与分享基线（rem 字阶 / skip-link / 绝对 og / JSON-LD）")
 
+
+# 12) 设计系统 v2（2026-10-20 轮5）：字体自托管 / 字号下限 / 字阶令牌 / 移动端菜单
+#    这几条都是「肉眼看着还行但会静默退化」的项：字体掉回系统栈只是变丑，
+#    字号掉到 10px 只是变小，汉堡菜单缺失只是窄屏用户少了入口 —— 都需要机器盯。
+font_dir = os.path.join(SITE, "assets/fonts")
+font_files = sorted(os.listdir(font_dir)) if os.path.isdir(font_dir) else []
+woff2 = [f for f in font_files if f.endswith(".woff2")]
+if len(woff2) < 2:
+    fails.append("字体自托管不足：assets/fonts 内 woff2 仅 %d 个" % len(woff2))
+for wf in woff2:
+    fp = os.path.join(font_dir, wf)
+    if os.path.getsize(fp) < 8000:
+        fails.append("字体子集过小（可能未生成完整字形）: " + wf)
+    if "site/assets/fonts/" + wf not in (tracked or set()):
+        fails.append("字体未入版本控制（部署后 404）: " + wf)
+face_rules = re.findall(r"@font-face\{([^}]+)\}", css_txt)
+faces_with_src = [f for f in face_rules if "../fonts/" in f]
+if len(faces_with_src) < 2:
+    fails.append("@font-face 未引用自托管字体（当前 %d 条）" % len(faces_with_src))
+if "font-display:swap" not in css_txt.replace(" ", ""):
+    fails.append("字体缺少 font-display:swap（首屏会被字体加载阻塞）")
+# 被字面引用的字体文件必须存在（否则 @font-face 静默失效、回落系统栈）
+for ref in set(re.findall(r"\.\./fonts/([\w\-]+\.woff2)", css_txt)):
+    if not os.path.exists(os.path.join(font_dir, ref)):
+        fails.append("CSS 引用的字体不存在: " + ref)
+# 零外链：字体也不能走 https://fonts.*
+if re.search(r"fonts\.(googleapis|gstatic)\.com", css_txt + html):
+    fails.append("站点仍引用 Google Fonts 外链（违反零外部请求）")
+print(f"[{'PASS' if not any('字体' in f or 'font-face' in f or '外链' in f for f in fails) else 'FAIL'}] 字体自托管：{len(woff2)} 个 woff2 / {len(faces_with_src)} 条 @font-face / 零外链")
+
+# 字号下限：正文级不得低于 11px（0.6875rem），标题不得低于 20px
+rem_px = 16.0
+too_small = []
+for m in re.finditer(r"font-size:([^;}]+)", css_txt):
+    v = m.group(1).strip()
+    mm = re.match(r"^([\d.]+)rem$", v)
+    if mm and float(mm.group(1)) * rem_px < 11:
+        too_small.append(v)
+    mc = re.match(r"^clamp\(([\d.]+)rem", v)
+    if mc and float(mc.group(1)) * rem_px < 11:
+        too_small.append(v)
+if too_small:
+    fails.append("字号低于 11px 下限：%s" % ", ".join(sorted(set(too_small))[:5]))
+# 字阶令牌必须成体系（11 档的设计系统，不是各处随手写 rem）
+if css_txt.count("--fs-") < 22:
+    fails.append("字阶令牌不成体系（--fs-* 定义/引用过少）")
+print(f"[{'PASS' if not any('字号低于' in f or '字阶令牌' in f for f in fails) else 'FAIL'}] 字阶：11px 下限 + --fs-* 令牌体系")
+
+# 移动端：窄屏必须有可触达的导航入口（此前 .nav ul{display:none} 却无替代）
+for token in ('id="nav-toggle"', 'id="menu"', 'aria-controls="menu"', 'aria-expanded'):
+    if token not in html:
+        fails.append("移动端导航缺失: " + token)
+css_flat = css_txt.replace(" ", "").replace("\n", "")
+if "@media(max-width:860px)" not in css_flat:
+    fails.append("缺少窄屏导航断点（.nav-toggle 不会出现）")
+print(f"[{'PASS' if not any('移动端导航' in f or '窄屏导航' in f for f in fails) else 'FAIL'}] 移动端导航：汉堡按钮 + 整屏目录 + aria 状态")
+
+# 设计令牌与结构：段落编号、手绘分隔线、场景动线
+for token in ('class="sec-idx"', 'class="ink-divider"', 'class="hero-meta"'):
+    if token not in html:
+        fails.append("设计结构缺失: " + token)
+for token in (".sec-idx{", ".ink-divider{", ".road::before{", ".merch-item.is-feature{"):
+    if token not in css_txt.replace(" ", "").replace("\n", ""):
+        fails.append("设计系统规则缺失: " + token)
+print(f"[{'PASS' if not any('设计结构' in f or '设计系统规则' in f for f in fails) else 'FAIL'}] 设计结构：段落编号 / 墨线分隔 / 场景动线 / 文创特写格")
 
 print()
 if warns:

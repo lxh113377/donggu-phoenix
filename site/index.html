@@ -30,6 +30,8 @@
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/img/icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
+<!-- 字体自托管：与 CSS 同源、零外部请求；preload 只押首屏真正会用到的那一份 -->
+<link rel="preload" href="assets/fonts/zcool-display.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/main.css">
 <script type="application/ld+json">
 {
@@ -59,7 +61,7 @@
 <div id="boot"><div class="seal"><span>畲</span></div></div>
 
 <header class="nav" id="nav">
-  <a class="brand" href="#main"><img src="assets/img/phoenix-mark.svg" alt="">畲 · 凤鸣东固</a>
+  <a class="brand" href="#main"><img src="assets/img/phoenix-mark.svg" alt="" width="26" height="26">畲 · 凤鸣东固</a>
   <nav aria-label="主导航">
     <ul>
       <li><a href="#totem">图腾</a></li>
@@ -71,7 +73,25 @@
       <li><a href="#scan">扫码</a></li>
     </ul>
   </nav>
+  <button class="nav-toggle" id="nav-toggle" type="button"
+          aria-expanded="false" aria-controls="menu" aria-label="打开目录">
+    <i></i><i></i><i></i>
+  </button>
 </header>
+
+<!-- 移动端全屏目录：窄屏导航项不再被隐藏掉，而是换成可触达的整屏菜单 -->
+<div class="menu" id="menu" aria-hidden="true">
+  <ol>
+    <li style="--i:0"><a href="#totem">凤凰图腾</a></li>
+    <li style="--i:1"><a href="#carve-sec">一木成像</a></li>
+    <li style="--i:2"><a href="#ar-gallery">AR 展陈馆</a></li>
+    <li style="--i:3"><a href="#culture">畲族文化</a></li>
+    <li style="--i:4"><a href="#craft">匠人与土地</a></li>
+    <li style="--i:5"><a href="#merch">凤凰落地</a></li>
+    <li style="--i:6"><a href="#scan">扫码入口</a></li>
+  </ol>
+  <p class="menu-foot">江西科技学院 · 薪火寰行实践团<br>东固畲族乡 · 2026</p>
+</div>
 
 <main id="main">
 
@@ -83,9 +103,17 @@
         <p class="hero-tag">She Ethnic Phoenix · Donggu</p>
         <h1 id="hero-title">凤鸣东固<em>畲 · SHE PHOENIX</em></h1>
         <p class="hero-lead" id="hero-lead"></p>
-        <button class="hero-cta" id="cta-summon" type="button">轻触图腾 · 唤凤</button>
-        <a class="hero-cta ar-entry" data-ar="craft" data-nocam="0" href="#ar-gallery">开演 AR 展陈 · 三段</a>
-        <a class="hero-cta ghost" href="#carve-sec">拖一根进度轴，看木头里那尊像出来</a>
+        <div class="hero-acts">
+          <button class="hero-cta primary" id="cta-summon" type="button">轻触图腾 · 唤凤</button>
+          <a class="hero-cta ar-entry" data-ar="craft" data-nocam="0" href="#ar-gallery">开演 AR 展陈 · 三段</a>
+          <a class="hero-cta ghost" href="#carve-sec">拖一根进度轴，看木头里那尊像出来</a>
+        </div>
+        <dl class="hero-meta">
+          <div><dt>AR 展陈</dt><dd>3 段 / 13 章</dd></div>
+          <div><dt>总时长</dt><dd>2′32″</dd></div>
+          <div><dt>第三方库</dt><dd>0</dd></div>
+          <div><dt>外部请求</dt><dd>0</dd></div>
+        </dl>
       </div>
       <div class="hero-visual" aria-hidden="true">
         <span class="hero-ring"></span>
@@ -96,20 +124,23 @@
     <div class="scroll-hint" aria-hidden="true">SCROLL</div>
   </section>
 
+  <div class="ink-divider" aria-hidden="true"><svg viewBox="0 0 1200 14" preserveAspectRatio="none"><path d="M0 7 C 120 7, 180 2, 300 6 S 480 12, 600 7 S 780 2, 900 6 S 1080 12, 1200 7"/></svg></div>
+
   <!-- ========== 图腾 + 扫描入口 ========== -->
   <section class="totem-sec" id="totem">
     <div class="wrap">
       <div class="sec-head reveal">
+        <span class="sec-idx" aria-hidden="true">01</span>
         <h2>凤凰图腾<small>Scan the Totem</small></h2>
         <p>畲族没有本民族的文字，纹样便是他们的经卷。这枚图腾以凤凰装为骨：凤髻为冠、花边为翼、金腰带作尾羽、银器化星点。</p>
       </div>
 
       <div class="totem-grid">
-        <div class="totem-frame reveal">
+        <div class="totem-frame reveal" data-reveal="fade">
           <span class="totem-ring" aria-hidden="true"></span>
           <span class="totem-ring b" aria-hidden="true"></span>
           <button class="totem-hit" id="totem-hit" type="button" aria-label="轻触图腾，唤出凤凰">
-            <img src="assets/img/phoenix-totem.svg" alt="畲族凤凰图腾：凤凰展翅于圆光之中，外环为织带纹" width="520" height="520">
+            <img src="assets/img/phoenix-totem.svg" alt="畲族凤凰图腾：凤凰展翅于圆光之中，外环为织带纹" width="520" height="520" fetchpriority="high">
           </button>
         </div>
 
@@ -128,23 +159,27 @@
     </div>
   </section>
 
+  <div class="ink-divider" aria-hidden="true"><svg viewBox="0 0 1200 14" preserveAspectRatio="none"><path d="M0 7 C 120 7, 180 2, 300 6 S 480 12, 600 7 S 780 2, 900 6 S 1080 12, 1200 7"/></svg></div>
 
   <!-- ========== 一木成像：可拖动的雕刻过程 ========== -->
   <section class="carve-sec" id="carve-sec">
     <div class="wrap">
       <div class="sec-head reveal">
-        <h2>一木成像<small>From One Block of Wood · 木雕彩绘 佛韵流芳</small></h2>
+        <span class="sec-idx" aria-hidden="true">02</span>
+        <h2>一木成像<small>From One Block of Wood</small></h2>
         <p>东固造像不是「做一尊像」，是把一段樟木里本来就有的那尊像让出来。下面这一根进度轴，从选木一直推到开光 —— 拖它，刀就跟着走。</p>
-        <p class="carve-lineage"><span>明初 · 南京工部匠籍「雕銮匠」</span><span>刘氏一脉廿余代、六百余年</span><span>2014 年入选第四批国家级非遗名录</span></p>
       </div>
+      <p class="carve-lineage reveal"><span>明初 · 南京工部匠籍「雕銮匠」</span><span>刘氏一脉廿余代、六百余年</span><span>2014 年入选第四批国家级非遗名录</span></p>
 
-      <div class="carve-shell reveal">
+      <div class="clip-reveal reveal">
+      <div class="carve-shell">
         <canvas id="carve-stage" aria-label="一木成像雕刻过程动画"></canvas>
         <p class="carve-hint" id="carve-hint">在画面上按住左右拖 · 或拖动下方进度条</p>
         <div class="carve-cap">
           <h3 id="carve-cap-title">一 · 选木</h3>
           <p id="carve-cap-body">整段樟木要干透、无裂、少节，顺纹理立身。木性稳了，像才立得住。</p>
         </div>
+      </div>
       </div>
 
       <div class="carve-control reveal">
@@ -161,10 +196,13 @@
     </div>
   </section>
 
+  <div class="ink-divider" aria-hidden="true"><svg viewBox="0 0 1200 14" preserveAspectRatio="none"><path d="M0 7 C 120 7, 180 2, 300 6 S 480 12, 600 7 S 780 2, 900 6 S 1080 12, 1200 7"/></svg></div>
+
   <!-- ========== AR 展陈馆：三场景 ========== -->
   <section id="ar-gallery" class="ar-sec">
     <div class="wrap">
       <div class="sec-head reveal">
+        <span class="sec-idx" aria-hidden="true">03</span>
         <h2>AR 展陈馆<small>Lightweight AR Gallery</small></h2>
         <p>三段现场，全部用 Canvas 实时绘制：造像的一段樟木被连续雕成神像、东固的四个历史瞬间、凤凰图腾的一次盘旋。不需要下载、不需要 3D 模型，扫码即看。</p>
       </div>
@@ -236,10 +274,13 @@
     </footer>
   </div>
 
+  <div class="ink-divider" aria-hidden="true"><svg viewBox="0 0 1200 14" preserveAspectRatio="none"><path d="M0 7 C 120 7, 180 2, 300 6 S 480 12, 600 7 S 780 2, 900 6 S 1080 12, 1200 7"/></svg></div>
+
   <!-- ========== 畲族文化 ========== -->
   <section id="culture">
     <div class="wrap">
       <div class="sec-head reveal">
+        <span class="sec-idx" aria-hidden="true">04</span>
         <h2>畲族文化<small>Culture</small></h2>
         <p>凤凰不是装饰，是身份与祝福。以下四段，从盘瓠的传说讲到东固的乌饭节。</p>
       </div>
@@ -247,10 +288,13 @@
     </div>
   </section>
 
+  <div class="ink-divider" aria-hidden="true"><svg viewBox="0 0 1200 14" preserveAspectRatio="none"><path d="M0 7 C 120 7, 180 2, 300 6 S 480 12, 600 7 S 780 2, 900 6 S 1080 12, 1200 7"/></svg></div>
+
   <!-- ========== 匠人 ========== -->
   <section id="craft">
     <div class="wrap">
       <div class="sec-head reveal">
+        <span class="sec-idx" aria-hidden="true">05</span>
         <h2>匠人与土地<small>People</small></h2>
         <p>两段田野录音的整理稿：一位雕銮匠的后人，一位 38 年党龄的畲族党员。</p>
       </div>
@@ -258,10 +302,13 @@
     </div>
   </section>
 
+  <div class="ink-divider" aria-hidden="true"><svg viewBox="0 0 1200 14" preserveAspectRatio="none"><path d="M0 7 C 120 7, 180 2, 300 6 S 480 12, 600 7 S 780 2, 900 6 S 1080 12, 1200 7"/></svg></div>
+
   <!-- ========== 文创 ========== -->
   <section id="merch">
     <div class="wrap">
       <div class="sec-head reveal">
+        <span class="sec-idx" aria-hidden="true">06</span>
         <h2>凤凰落地<small>Merchandise</small></h2>
         <p>从 58mm 徽章到 900mm 丝巾，同一枚图腾按工艺拆成三版：单色线稿、双色丝印、全彩渐变。</p>
       </div>
@@ -270,10 +317,13 @@
     </div>
   </section>
 
+  <div class="ink-divider" aria-hidden="true"><svg viewBox="0 0 1200 14" preserveAspectRatio="none"><path d="M0 7 C 120 7, 180 2, 300 6 S 480 12, 600 7 S 780 2, 900 6 S 1080 12, 1200 7"/></svg></div>
+
   <!-- ========== 场景路线 ========== -->
   <section id="road">
     <div class="wrap">
       <div class="sec-head reveal">
+        <span class="sec-idx" aria-hidden="true">07</span>
         <h2>三大场景<small>Roadmap</small></h2>
         <p>对应「东固 · 匠灵幻境」AR 小程序的规划：三条场景本版全部可看，点下方卡片或场景直连码即可开演。</p>
       </div>
@@ -283,6 +333,7 @@
 
   <!-- ========== 扫码 ========== -->
   <section class="foot" id="scan">
+    <span class="seal-mark" aria-hidden="true">凤鸣</span>
     <div class="wrap">
       <div class="foot-grid reveal">
         <div class="qr-box"><img id="qr-img" src="assets/img/qr.png" alt="本站二维码" width="512" height="512"></div>
@@ -290,6 +341,10 @@
           <h2>扫它，凤凰就飞起来</h2>
           <p>用手机相机或微信扫一扫对准二维码，即可打开本页；在页首轻触图腾，看凤凰自圆心振翅。</p>
           <p class="url" id="site-url">…</p>
+          <div class="foot-acts">
+            <a class="btn btn--primary" data-ar="craft" href="#ar-gallery">立即开演 · 三段 AR</a>
+            <a class="btn btn--outline" href="#carve-sec">先看一木成像</a>
+          </div>
         </div>
       </div>
       <div class="foot-meta">

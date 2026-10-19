@@ -1,0 +1,22 @@
+SIL OPEN FONT LICENSE — 本站自托管字体的授权说明
+
+本目录内的 woff2 文件是以下上游字体的**子集**（仅包含本站页面实际用到的字形），
+由 tools/build_fonts.py 用 fontTools 生成，未做任何字形改写。
+
+  1. ZCOOL XiaoWei（站酷小薇）
+     上游：https://github.com/google/fonts/tree/main/ofl/zcoolxiaowei
+     版权：Copyright 2018 The ZCOOL XiaoWei Project Authors
+     许可：SIL Open Font License 1.1
+
+  2. Cinzel
+     上游：https://github.com/google/fonts/tree/main/ofl/cinzel
+     版权：Copyright 2012 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel)
+     许可：SIL Open Font License 1.1
+
+SIL OFL 1.1 允许在保留版权声明的前提下打包、子集化与再分发（含商用）。
+子集化属于「修改」，故此处保留完整版权行，并把本说明随站点一并发布。
+
+完整许可全文：https://scripts.sil.org/OFL
+
+注意：正文（宋体系）走用户系统字体栈，未打包 —— 中文字体整包体积过大，
+与「首屏 400KB 关键路径」预算冲突；只有展示层（标题/导航/数字）使用上述子集字体。

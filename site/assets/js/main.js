@@ -86,11 +86,14 @@
 
     function paint(tier) {
       grid.innerHTML = C.merch.filter(function (m) { return tier === '全部' || m.tier === tier; })
-        .map(function (m) {
+        .map(function (m, idx) {
+          // 「全部」视图给第一件做特写大格；按类别筛选时退回归一网格，
+          // 否则单类筛选只剩一件时会出现一整块空置的大格。
+          var feature = (tier === '全部' && idx === 0) ? ' is-feature' : '';
           var img = m.image
             ? '<figure class="merch-shot"><img src="' + m.image + '" alt="' + (m.name || '') + ' 效果图" loading="lazy" width="380" height="380" onerror="this.style.opacity=0"></figure>'
             : '<figure class="merch-shot placeholder"><img src="assets/img/phoenix-mark.svg" alt="" aria-hidden="true"></figure>';
-          return '<article class="merch-item">' +
+          return '<article class="merch-item' + feature + '">' +
             img +
             '<div class="tier">' + (m.tier || '') + '</div>' +
             '<h3>' + (m.name || '') + '</h3>' +
@@ -112,12 +115,18 @@
   (function renderRoad() {
     var box = $('#road-grid');
     if (!box || !C.roadmap || !C.roadmap.length) { if (box) box.parentNode.removeChild(box); return; }
+    // 场景卡此前是「只读文字」：页面写着「点下方卡片…即可开演」，但卡片没有可点层，
+    // 与 AR 场景卡、页脚按钮形成两套行为。这里把整卡做成指向对应 AR 场景的链接，
+    // 用 <a> 铺满卡片（.road-item a{inset:0}），保留语义可聚焦，不额外套 JS 点击。
     box.innerHTML = C.roadmap.map(function (r) {
       var now = r.status === '当前版本';
+      var id = r.id || 'craft';
       return '<article class="road-item' + (now ? ' now' : '') + '">' +
-        '<div class="st">' + (r.status || '') + '</div>' +
+        '<div class="st"><b>' + (r.no || '') + '</b>' + (r.scene || '') + '</div>' +
         '<h3>' + (r.title || '') + '</h3>' +
         '<p>' + (r.desc || '') + '</p>' +
+        '<span class="go-mark" aria-hidden="true">开演 →</span>' +
+        '<a data-ar="' + id + '" href="#ar-gallery" aria-label="开演 ' + (r.title || '') + '"></a>' +
         '</article>';
     }).join('');
   })();
@@ -190,15 +199,88 @@
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
+  /* 进场：.reveal 与 .ink-divider 共用同一个观察器。
+   * 网格子项按 DOM 顺序给 --d，让「同一屏内的一组卡」依次浮起，
+   * 而不是整块同时淡入（后者是最容易被看出「模板感」的动效）。 */
+  $$('.culture-grid, .ar-cards, .craft, .merch-grid, .road').forEach(function (grid) {
+    Array.prototype.forEach.call(grid.children, function (child, i) {
+      if (child.classList.contains('reveal')) { return; }
+      child.style.setProperty('--d', String(Math.min(i, 8)));
+    });
+  });
+
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-    $$('.reveal').forEach(function (el) { io.observe(el); });
+    $$('.reveal, .ink-divider, .sec-head').forEach(function (el) { io.observe(el); });
   } else {
-    $$('.reveal').forEach(function (el) { el.classList.add('in'); });
+    $$('.reveal, .ink-divider, .sec-head').forEach(function (el) { el.classList.add('in'); });
+  }
+
+  /* ---------- 移动端全屏目录 ---------- */
+  var menu = $('#menu'), navToggle = $('#nav-toggle');
+  function setMenu(open) {
+    if (!menu || !navToggle) return;
+    menu.classList.toggle('on', open);
+    menu.setAttribute('aria-hidden', String(!open));
+    navToggle.setAttribute('aria-expanded', String(open));
+    navToggle.setAttribute('aria-label', open ? '关闭目录' : '打开目录');
+    document.documentElement.style.overflow = open ? 'hidden' : '';
+  }
+  if (navToggle) {
+    navToggle.addEventListener('click', function () { setMenu(!menu.classList.contains('on')); });
+  }
+  if (menu) {
+    menu.addEventListener('click', function (e) {
+      if (e.target.closest('a')) { setMenu(false); }
+    });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && menu && menu.classList.contains('on')) { setMenu(false); }
+  });
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 760 && menu && menu.classList.contains('on')) { setMenu(false); }
+  }, { passive: true });
+
+  /* ---------- 滚动：导航高亮当前段落 + 首屏视差 ---------- */
+  var navLinks = $$('.nav a[href^="#"]');
+  var sectionEls = navLinks.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  var spyTick = false;
+  function spy() {
+    spyTick = false;
+    var y = window.scrollY + window.innerHeight * 0.35;
+    var active = -1;
+    sectionEls.forEach(function (el, i) {
+      if (el && el.offsetTop <= y) { active = i; }
+    });
+    navLinks.forEach(function (a, i) { a.classList.toggle('on', i === active); });
+  }
+  window.addEventListener('scroll', function () {
+    if (spyTick) return;
+    spyTick = true;
+    requestAnimationFrame(spy);
+  }, { passive: true });
+  spy();
+
+  var heroVisual = document.querySelector('.hero-visual');
+  if (heroVisual && !reduced) {
+    window.addEventListener('scroll', function () {
+      heroVisual.style.setProperty('--scrollY', String(Math.min(window.scrollY, 900)));
+    }, { passive: true });
+  }
+
+  /* ---------- 指针光斑：卡片 hover 时跟随指针，替代千篇一律的「上浮」 ---------- */
+  if (!reduced && window.matchMedia && window.matchMedia('(hover:hover)').matches) {
+    document.addEventListener('pointermove', function (e) {
+      var card = e.target.closest('.ar-card, .culture-card');
+      if (!card) return;
+      var r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
+      card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%');
+    }, { passive: true });
   }
 
   /* ---------- 摄像头扫描（三级降级） ---------- */

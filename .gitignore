@@ -1,6 +1,8 @@
 # 开发中间产物（不发布）
 _dev/
 _work/
+# 本地取证：截图与探针脚本（不发布、不入库）
+_qa/
 tools/__pycache__/
 __pycache__/
 *.pyc
