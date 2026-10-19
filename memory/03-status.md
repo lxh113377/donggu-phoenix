@@ -1,7 +1,7 @@
 # 当前状态（2026-10-19 · 第三轮）
 
 **已上线**：AR 展陈馆三场景已部署到 GitHub Pages 主链（提交 4b5d293，实测三段全部可看）。
-**本轮（第三轮）改动仅在本地**：一木成像雕刻台 + AR 场景一改造，尚未部署。
+**第三轮已上线**：一木成像雕刻台 + AR 场景一改造，提交 95f7575 已推 GitHub Pages 主链，并用 wrangler 同步 Cloudflare 备用链（两条链路实测 200 且含新引擎）。
 Cloudflare Pages 备用链路仍是首版，需要时再 `wrangler pages deploy site`。
 
 已完成：
@@ -19,7 +19,6 @@ Cloudflare Pages 备用链路仍是首版，需要时再 `wrangler pages deploy 
 - GitHub Actions 自动部署
 
 未做：
-- Cloudflare 备用链路尚未同步本轮 AR 版本
 - 真机摄像头实测（iPhone Safari / 微信内置）
 - 文创实物打样
 - 摄像头识别升级为模板匹配
