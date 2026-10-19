@@ -23,7 +23,7 @@
       return { cx: w * 0.68, cy: h * 0.47, s: Math.min(h * 0.72, w * 0.33), top: 0, bottom: h };
     }
     var top = Math.min(104, h * 0.13);
-    var bottom = h * 0.45;
+    var bottom = h * 0.385;
     return {
       cx: w * 0.5,
       cy: top + (bottom - top) * 0.5,
@@ -679,23 +679,27 @@
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
 
+    var skyTop = w >= 900 ? 0 : box.top;
+    var skyH = w >= 900 ? h : (box.bottom - box.top);
     for (var s0 = 0; s0 < this.stars.length; s0++) {
       var st = this.stars[s0];
       var tw = 0.35 + 0.65 * Math.abs(SIN(now * 0.0012 + s0));
       ctx.fillStyle = "rgba(246,241,231," + (0.1 + 0.2 * tw) + ")";
       ctx.beginPath();
-      ctx.arc(st[0] * w, st[1] * h, st[2], 0, TAU);
+      ctx.arc(st[0] * w, skyTop + st[1] * skyH, st[2], 0, TAU);
       ctx.fill();
     }
 
     ridges(ctx, w, h, baseY - S * 0.18, "rgba(28,32,42,.85)", S * 0.05, 0.6);
-    ridges(ctx, w, h, baseY - S * 0.07, "rgba(20,24,30,.92)", S * 0.075, 2.1);
-    ridges(ctx, w, h, baseY + S * 0.02, "rgba(12,14,18,.98)", S * 0.045, 4.3);
+    ridges(ctx, w, h, baseY - S * 0.085, "rgba(20,24,30,.92)", S * 0.075, 2.1);
+    ridges(ctx, w, h, baseY + S * 0.012, "rgba(12,14,18,.98)", S * 0.045, 4.3);
 
     ctx.fillStyle = "rgba(8,10,12,.95)";
     for (var tt = 0; tt < this.trees.length; tt++) {
       var tr = this.trees[tt];
-      var tx = tr[0] * w, ty = tr[1] * h + S * 0.03, ts = tr[2] * S * 0.05;
+      var tx = tr[0] * w;
+      var ty = w >= 900 ? tr[1] * h + S * 0.03 : baseY - (1 - tr[1]) * (box.bottom - box.top) * 0.9 + S * 0.05;
+      var ts = tr[2] * (w >= 900 ? S * 0.05 : S * 0.045);
       ctx.beginPath();
       ctx.moveTo(tx - ts * 0.4, ty);
       ctx.lineTo(tx, ty - ts * 2.2);
@@ -716,40 +720,45 @@
     if (idx === 0) {
       var meet = ease(clamp(local * 1.25, 0, 1));
       var y0 = baseY - S * 0.02;
-      var leftX = lerp(w * 0.16, w * 0.36, meet);
-      var rightX = lerp(w * 0.84, w * 0.64, meet);
+      var leftX = w >= 900 ? lerp(w * 0.46, w * 0.56, meet) : lerp(w * 0.16, w * 0.36, meet);
+      var rightX = w >= 900 ? lerp(w * 0.92, w * 0.78, meet) : lerp(w * 0.84, w * 0.64, meet);
       soldier(ctx, leftX - S * 0.16, y0, S * 0.062, 1);
       soldier(ctx, leftX - S * 0.08, y0, S * 0.07, 1);
       soldier(ctx, leftX, y0, S * 0.078, 1);
       soldier(ctx, rightX + S * 0.16, y0, S * 0.062, -1);
       soldier(ctx, rightX + S * 0.08, y0, S * 0.07, -1);
       soldier(ctx, rightX, y0, S * 0.078, -1);
-      redFlag(ctx, cx - S * 0.01, y0 + S * 0.005, S * 0.05 * (0.5 + meet * 0.9), now * 0.004);
-      redFlag(ctx, cx + S * 0.1, y0 + S * 0.005, S * 0.038 * (0.4 + meet * 0.9), now * 0.005);
-      var gl = ctx.createRadialGradient(cx, y0 - S * 0.16, 0, cx, y0 - S * 0.16, Math.max(2, S * 0.36 * (0.4 + meet)));
+      var flagX = w >= 900 ? w * 0.60 : cx - S * 0.01;
+      redFlag(ctx, flagX, y0 + S * 0.005, S * 0.05 * (0.5 + meet * 0.9), now * 0.004);
+      redFlag(ctx, flagX + (w >= 900 ? w * 0.1 : S * 0.1), y0 + S * 0.005, S * 0.038 * (0.4 + meet * 0.9), now * 0.005);
+      var gx = w >= 900 ? w * 0.66 : cx;
+      var gl = ctx.createRadialGradient(gx, y0 - S * 0.16, 0, gx, y0 - S * 0.16, Math.max(2, S * 0.36 * (0.4 + meet)));
       gl.addColorStop(0, "rgba(232,183,97," + (0.3 * meet) + ")");
       gl.addColorStop(1, "rgba(232,183,97,0)");
       ctx.fillStyle = gl;
       ctx.fillRect(0, 0, w, h);
     }
 
-    /* 二 · 龙冈大捷 */
+    /* 二 · 龙冈大捷：山谷「布袋」合围 */
     if (idx === 1) {
       var close = ease(clamp(local * 1.1, 0, 1));
       var y1 = baseY - S * 0.03;
+      var xL = w >= 900 ? w * 0.44 : w * 0.16;
+      var xR = w >= 900 ? w * 0.90 : w * 0.86;
+      var xC = (xL + xR) / 2;
       ctx.beginPath();
-      ctx.moveTo(w * 0.16, y1);
-      ctx.quadraticCurveTo(w * 0.5, y1 - S * 0.34, w * 0.84, y1);
+      ctx.moveTo(xL, y1);
+      ctx.quadraticCurveTo(xC, y1 - S * 0.3, xR, y1);
       ctx.strokeStyle = "rgba(212,162,76," + (0.24 + 0.3 * close) + ")";
       ctx.lineWidth = 2;
       ctx.setLineDash([10, 8]);
       ctx.stroke();
       ctx.setLineDash([]);
       for (var arm = 0; arm < 2; arm++) {
-        var sx = arm === 0 ? w * 0.14 : w * 0.86;
+        var sx = arm === 0 ? xL : xR;
         var dir = arm === 0 ? 1 : -1;
-        var ex = sx + dir * w * 0.2 * close;
-        var ey = y1 - S * (0.02 + 0.12 * close);
+        var ex = sx + dir * (xR - xL) * 0.16 * close;
+        var ey = y1 - S * (0.015 + 0.07 * close);
         ctx.strokeStyle = "rgba(217,79,43,.92)";
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -764,19 +773,19 @@
         ctx.fillStyle = "rgba(217,79,43,.92)";
         ctx.fill();
         soldier(ctx, sx, y1, S * 0.07, dir);
-        soldier(ctx, sx - dir * S * 0.1, y1, S * 0.062, dir);
+        soldier(ctx, sx - dir * S * 0.09, y1, S * 0.062, dir);
       }
-      ctx.fillStyle = "rgba(160,160,172,.6)";
+      ctx.fillStyle = "rgba(160,160,172,.62)";
       for (var en = 0; en < 10; en++) {
         var ang = en * 0.7 + now * 0.0004;
         var rr2 = S * 0.05 + (en % 3) * S * 0.02;
         ctx.beginPath();
-        ctx.arc(cx + COS(ang) * rr2 * 1.7, y1 - S * 0.07 + SIN(ang) * rr2 * 0.7, 2.4, 0, TAU);
+        ctx.arc(xC + COS(ang) * rr2 * 1.7, y1 - S * 0.07 + SIN(ang) * rr2 * 0.7, 2.4, 0, TAU);
         ctx.fill();
       }
       for (var fl = 0; fl < 5; fl++) {
         var fa = 0.12 + 0.16 * Math.abs(SIN(now * 0.004 + fl * 1.7));
-        var fx = cx + (fl - 2) * S * 0.09;
+        var fx = xC + (fl - 2) * S * 0.09;
         var fy = y1 - S * 0.1 - (fl % 2) * S * 0.03;
         var fgr = ctx.createRadialGradient(fx, fy, 0, fx, fy, S * 0.06);
         fgr.addColorStop(0, "rgba(255,176,84," + fa + ")");
@@ -815,7 +824,7 @@
         var t0 = clamp(sweep * 1.4 - a3 * 0.08, 0, 1);
         if (t0 <= 0) { continue; }
         var sx3 = w * (0.7 + a3 * 0.045), sy3 = hillY + S * 0.05 + a3 * S * 0.012;
-        var ex3 = lerp(sx3, w * 0.32, ease(t0)), ey3 = lerp(sy3, baseY + S * 0.02, ease(t0));
+        var ex3 = lerp(sx3, w * 0.46, ease(t0)), ey3 = lerp(sy3, baseY + S * 0.02, ease(t0));
         ctx.strokeStyle = "rgba(217,79,43," + (0.55 * (1 - t0 * 0.3)) + ")";
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -823,7 +832,7 @@
         ctx.lineTo(ex3, ey3);
         ctx.stroke();
       }
-      redFlag(ctx, w * 0.36, baseY - S * 0.01, S * 0.038, now * 0.004);
+      redFlag(ctx, w * 0.54, baseY - S * 0.01, S * 0.038, now * 0.004);
       // 白云
       ctx.fillStyle = "rgba(226,232,238,.1)";
       for (var cl = 0; cl < 4; cl++) {
@@ -856,7 +865,7 @@
       ctx.strokeStyle = "rgba(255,196,120,.55)";
       ctx.lineWidth = 1.2;
       for (var bu = 0; bu < 3; bu++) {
-        var bx = w * (0.4 + bu * 0.06), by = h * 0.22 + bu * S * 0.03;
+        var bx = w * (0.52 + bu * 0.05), by = h * 0.22 + bu * S * 0.03;
         ctx.beginPath();
         ctx.moveTo(bx, by);
         ctx.lineTo(bx + S * 0.02, by + S * 0.17);
@@ -889,11 +898,12 @@
 
     if (w < 900) {
       // 渐隐到黑，接住下方解说区
-      var fade = ctx.createLinearGradient(0, box.bottom - S * 0.18, 0, box.bottom + S * 0.12);
+      var fade = ctx.createLinearGradient(0, box.bottom - S * 0.26, 0, box.bottom + S * 0.1);
       fade.addColorStop(0, "rgba(8,7,10,0)");
+      fade.addColorStop(0.62, "rgba(8,7,10,.72)");
       fade.addColorStop(1, "rgba(8,7,10,1)");
       ctx.fillStyle = fade;
-      ctx.fillRect(0, box.bottom - S * 0.18, w, S * 0.3);
+      ctx.fillRect(0, box.bottom - S * 0.26, w, S * 0.36);
     }
     ctx.restore();
 
