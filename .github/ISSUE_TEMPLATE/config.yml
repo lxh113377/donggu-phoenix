@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 内容授权与使用咨询
+    url: https://github.com/lxh113377/donggu-phoenix/blob/main/LICENSE
+    about: 想复用页面文字、采访稿或照片，请先读 LICENSE 的分层授权说明（代码 MIT，内容不随附）。

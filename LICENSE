@@ -1,0 +1,72 @@
+MIT License + 内容授权分层说明
+（本文件采用「代码 MIT / 内容分层」双轨授权，SPDX 主标识为 MIT，便于工具识别。）
+
+Copyright (c) 2026 江西科技学院 薪火寰行实践团（lxh113377）
+
+=====================================================================
+第一部分 · 代码与原创矢量图形：MIT License
+=====================================================================
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+适用于（可自由使用、修改、再分发，含商用）：
+- site/index.html、site/assets/css/、site/assets/js/（全部程序代码）
+- site/manifest.webmanifest、site/sw.js
+- tools/ 下的生成与验证脚本
+- 由 tools/make_totem.py 代码生成的原创凤凰图腾矢量图
+  （site/assets/img/phoenix-*.svg、merch/print/*.svg）——本团队原创绘制，无第三方素材
+- site/assets/img/icons/（由 tools/make_icons.py 代码生成）
+
+=====================================================================
+第二部分 · 文字内容：不适用 MIT，按来源分层
+=====================================================================
+
+本项目页面文字**不是**可自由再分发的原创内容，MIT 授权不覆盖它们：
+
+1) 田野采访整理稿（素材/东固传统造像传承人采访稿.docx、素材/畲族党员采访稿.docx）
+   内容为受访者口述，由本团队现场采录整理。
+   - 著作权归属：受访者本人及其整理者（本团队）。
+   - 允许：为非遗记录与传播目的引用、转载，须署名「东固畲族乡田野采访 · 薪火寰行实践团」
+     并注明受访者身份。
+   - 禁止：断章改写成与受访者原意不符的表述；用于商业代言或虚构为「专家结论」。
+
+2) 学术与官方来源段落
+   - 造像五道工序、开光仪式、「丹青先生」称谓：
+     刘卷《东固传统造像的制作工艺与仪式过程及其文化功能阐释》，《装饰》2015 年第 7 期；
+     吉安市人民政府《东固传统造像》专题页（2014 年第四批国家级非遗代表性项目）。
+   - 东固会师 / 龙冈大捷 / 白云山首战 / 六渡坳史实：
+     《江西日报》2021-08-06《赣水那边红一角》（人民网党史频道转载）。
+   - 畲族凤凰装、三公主传说、大中小老凤凰装：
+     福建省文物局《文物里的福丨畲族"凤凰装"》。
+   以上**版权归原作者与原载媒体所有**。本项目仅作事实性引用并在页面「内容来源」区标注，
+   不授予任何再分发权利。二次使用请自行联系原出处取得授权。
+
+3) 实拍照片（site/assets/img/photos/）
+   本团队在东固畲族乡现场拍摄，含受访者肖像。
+   - 允许：以非商业目的引用，须署名拍摄方与受访者。
+   - 禁止：用于任何商业广告；禁止在未经许可的情况下二次公开受访者肖像。
+
+=====================================================================
+第三部分 · 使用本项目时的义务
+=====================================================================
+
+- 保留本授权文件与页面中的「内容来源」标注。
+- 若部署到公开地址，请在页脚或「关于」处保留
+  「江西科技学院 · 薪火寰行实践团 × 东固畲族乡」的署名。
+- 本项目展示的是他乡他族的文化遗产，引用与改编请保持对传承人的尊重。
