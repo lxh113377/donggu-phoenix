@@ -1,10 +1,24 @@
 # -*- coding: utf-8 -*-
 """站点交付前自检：引用完整性、体积预算、编码、关键内容、降级路径。"""
-import os, re, sys, json
+import os, re, sys, json, subprocess
 
-BASE = r"C:\Users\37533\Desktop\workspace\项目\新建文件夹"
+# 仓库根由脚本自身位置推导（交付门禁必须在 CI 的 Linux runner 上同样可跑，
+# 硬编码本机绝对路径会让门禁「本地绿、CI 必红」，等于没有门禁）
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = os.path.join(BASE, "site")
 fails, warns = [], []
+
+
+def git_tracked():
+    """返回 git 跟踪中的文件集合；无 git / 非仓库时返回 None（跳过而非判绿）。"""
+    try:
+        out = subprocess.run(["git", "-C", BASE, "ls-files", "-z"],
+                             capture_output=True, timeout=30)
+        if out.returncode != 0:
+            return None
+        return set(x.decode("utf-8", "replace") for x in out.stdout.split(b"\0") if x)
+    except Exception:
+        return None
 
 def rd(p):
     with open(p, "rb") as f:
@@ -62,8 +76,12 @@ for r, _, fs_ in os.walk(SITE):
         files.append((s, os.path.relpath(p, SITE)))
 files.sort(reverse=True)
 print(f"[INFO] 站点总体积 {total/1024:.0f} KB / {len(files)} 文件")
-if total > 4 * 1024 * 1024:
-    fails.append(f"体积超预算 4MB: {total/1024/1024:.1f}MB")
+# 预算对齐「首屏 100KB 级、整站 1MB 内」的轻量化口径；4MB 等于没有约束
+BUDGET_KB = 1200
+if total > BUDGET_KB * 1024:
+    fails.append(f"体积超预算 {BUDGET_KB}KB: {total/1024:.0f}KB")
+elif total > BUDGET_KB * 1024 * 0.8:
+    warns.append(f"体积已用预算 80% 以上: {total/1024:.0f}KB / {BUDGET_KB}KB")
 print("  最大 5 个文件:", ", ".join(f"{n}({s//1024}KB)" for s, n in files[:5]))
 
 # 5) 编码：所有文本文件 UTF-8 无 BOM
@@ -160,6 +178,50 @@ if os.path.exists(meta_p):
         fails.append("qr/meta.json 解析失败: %s" % e)
 print(f"[{'PASS' if not any('场景直连码' in f or 'sceneDeepLinks' in f for f in fails) else 'FAIL'}] 场景直连码 3 枚 + meta.json 深链")
 
+# 9a2) 引用完整性必须对「git 跟踪面」成立，而非只对本地磁盘成立。
+# 一手教训（2026-10-19 实测）：index.html 引用 wood-demo.js / wood-to-statue.js 时
+# 两者均为 untracked，本地 verify 照样 PASS —— 一旦 push，Pages 部署产物里没有这两个
+# 文件，线上直接 404、雕刻台整块功能不可用。只查 os.path.exists 的门禁查不出这类事故。
+tracked = git_tracked()
+if tracked is None:
+    warns.append("git 跟踪面对账未执行（无 git 环境）——此项未取证，不等于通过")
+    print("[SKIP] git 跟踪面对账（无 git 环境；已计入 WARNING）")
+else:
+    untracked_refs = []
+    for u in sorted(refs):
+        _u = u.split("?")[0]
+        while _u.startswith("./"):          # 显式剥前缀；lstrip("./") 会按字符集误删
+            _u = _u[2:]
+        rel = "site/" + _u.lstrip("/")
+        if not rel.startswith("site/") or rel in tracked:
+            continue
+        if os.path.exists(os.path.join(SITE, u.split("?")[0])):
+            untracked_refs.append(rel + "（本地存在但未被 git 跟踪 ⇒ 部署后 404）")
+        else:
+            untracked_refs.append(rel + "（既未跟踪也不存在）")
+    for jf in js_files:
+        rel_jf = os.path.relpath(jf, BASE).replace(os.sep, "/")
+        if rel_jf not in tracked:
+            untracked_refs.append(rel_jf + "（JS 本体未被跟踪 ⇒ 不会被部署）")
+    # sw.js 由内联 JS 注册，不在 HTML 的 src/href 里 ⇒ 上面的 refs 扫不到它。
+    # 若 sw.js 漏提交，离线兜底会静默失效而门禁仍全绿，故单独入账；
+    # 并核验 SW 的 PRECACHE 清单与实际文件一致（清单漂移=新版本拉不到或缓存打不开）。
+    swp = os.path.join(SITE, "sw.js")
+    if os.path.exists(swp):
+        if "site/sw.js" not in tracked:
+            untracked_refs.append("site/sw.js（SW 本体未跟踪 ⇒ 不部署，离线兜底静默失效）")
+        sw_txt = rd(swp).decode("utf-8")
+        prec = re.findall(r"^\s+'([^']+\.(?:html|css|js|svg|webmanifest))',?$", sw_txt, re.M)
+        for f in prec:
+            if not os.path.exists(os.path.join(SITE, f)):
+                fails.append("SW PRECACHE 指向不存在的文件: " + f)
+            elif "site/" + f not in tracked:
+                untracked_refs.append("site/" + f + "（SW 预缓存清单内但未跟踪）")
+        print(f"[{'PASS' if not any('PRECACHE' in f for f in fails) else 'FAIL'}] SW PRECACHE 清单 {len(prec)} 项与磁盘对账")
+    if untracked_refs:
+        fails.append("未跟踪但被引用: " + "; ".join(untracked_refs))
+    print(f"[{'PASS' if not untracked_refs else 'FAIL'}] git 跟踪面对账：HTML/JS 引用 {len(refs) + len(js_files)} 项均在版本控制内")
+
 # 9b) 一木成像：雕刻引擎 + 落地页雕刻台 + AR 场景一同源
 wp = os.path.join(SITE, "assets/js/wood-to-statue.js")
 dp = os.path.join(SITE, "assets/js/wood-demo.js")
@@ -196,13 +258,79 @@ print(f"[{'PASS' if not any(x in f for x in ('雕刻', '一木成像', '脚本�
 for token in ('id="ar"', 'id="ar-stage"', 'id="ar-cards"', "ar-data.js", "ar-scenes.js", "ar.js"):
     if token not in html:
         fails.append("AR 未挂载: " + token)
-# 无外链（零外部请求是轻量化 AR 的硬约束）
-ext = re.findall(r'(?:src|href)="(https?://[^"]+)"', html)
+# 无外链（零外部请求是轻量化 AR 的硬约束）。
+# 判据必须精确：og:url / canonical / hreflang / JSON-LD 里的 URL 只是元数据字符串，
+# 浏览器不会为其发起请求；把它们算成「外部请求」会让任何写了绝对 canonical 的站点必红。
+# 真正会发请求的是：src 属性、以及 rel 为 stylesheet/preload/modulepreload 的 link。
+ext = re.findall(r'(?:src)="(https?://[^"]+)"', html)
+ext += re.findall(r'<link[^>]+rel="(stylesheet|preload|modulepreload)"[^>]+href="(https?://[^"]+)"', html)
+ext = [x if isinstance(x, str) else x[1] for x in ext]
+# JSON-LD 内的 URL 同样不产生请求，但顺手核验它与 canonical 一致，避免分享指向漂移
+m = re.search(r'<link rel="canonical" href="([^"]+)"', html)
+if m:
+    if m.group(1).rstrip('/') not in html.replace('\n', ''):
+        fails.append("canonical 与页面其他绝对 URL 不一致")
 if ext:
     fails.append("出现外部请求: " + ", ".join(ext[:3]))
 print(f"[{'PASS' if not any('AR' in f or '外部请求' in f for f in fails) else 'FAIL'}] AR 展陈：3 场景 / 13 章节 / 152s / 零外链")
 
+# 11) 交付治理件 + PWA/离线能力（对标 peer 后补齐的基线，防回归）
+DOC_FILES = ["LICENSE", "CONTRIBUTING.md", "CHANGELOG.md", "SECURITY.md",
+             "CODE_OF_CONDUCT.md", ".github/ISSUE_TEMPLATE/config.yml",
+             ".github/PULL_REQUEST_TEMPLATE.md"]
+doc_missing = [d for d in DOC_FILES if not os.path.exists(os.path.join(BASE, d))]
+if doc_missing:
+    fails.append("交付治理件缺失: " + ", ".join(doc_missing))
+print(f"[{'PASS' if not doc_missing else 'FAIL'}] 交付治理件 {len(DOC_FILES) - len(doc_missing)}/{len(DOC_FILES)}")
+
+# PWA：manifest + service worker 必须既在磁盘、又在站点发布目录内被 HTML 引用
+PWA = {"manifest.webmanifest": 'rel="manifest"', "sw.js": "serviceWorker.register"}
+pwa_bad = []
+for fname, token in PWA.items():
+    fp = os.path.join(SITE, fname)
+    if not os.path.exists(fp) or os.path.getsize(fp) < 200:
+        pwa_bad.append(fname + " 缺失或过小")
+    elif token not in (html if fname.endswith("webmanifest") else html + "".join(rd(os.path.join(SITE, "assets/js", x)).decode("utf-8", "replace") for x in os.listdir(os.path.join(SITE, "assets/js")))):
+        pwa_bad.append(fname + " 存在但未被页面引用/注册")
+if pwa_bad:
+    fails.append("PWA/离线能力: " + "; ".join(pwa_bad))
+print(f"[{'PASS' if not pwa_bad else 'FAIL'}] PWA 离线兜底（manifest + sw 注册）")
+
+# 无障碍与分享基线：字阶须走 rem/clamp，且分享元数据必须是绝对 URL
+css_txt = rd(os.path.join(SITE, "assets/css/main.css")).decode("utf-8")
+# 无障碍字阶不变量（反向验证驱动写出来的，见下）：
+# 第一版只断言「存在 rem」，反向验证立刻假绿 —— 全站 86 处 font-size 已全量 rem 化，
+# 退回 1 处 px 仍「存在 rem」，门禁不响。故改为断言不变量：font-size 里 px 必须为 0。
+rem_units = re.findall(r"(?:[\d.]+|var\([^)]*\))\s*rem\b", css_txt)
+px_font_sizes = re.findall(r"font-size:[^;}\n]*\d+(?:\.\d+)?px", css_txt)
+if not rem_units:
+    fails.append("无障碍：main.css 内无 rem 单位（系统/长者放大字号不生效）")
+if px_font_sizes:
+    fails.append("无障碍：%d 处 font-size 仍用 px（应走 rem，否则用户放大字号无效）：%s"
+                 % (len(px_font_sizes), "; ".join(x.strip() for x in px_font_sizes[:3])))
+# 根字号必须是百分比，写死 px 会屏蔽用户在系统里设定的字号
+if not re.search(r"html\{[^}]*font-size:\s*(?:100%|[\d.]+em)\s*[;}]", css_txt):
+    fails.append("无障碍：html 根字号未跟随用户设置（应为 font-size:100%）")
+if "prefers-contrast" not in css_txt:
+    fails.append("无障碍：无 prefers-contrast 支持")
+if 'class="skip-link"' not in html or 'href="#main"' not in html:
+    fails.append("无障碍：无 skip-link（键盘用户需逐一遍历导航）")
+for must_abs in ['property="og:url"', 'property="og:image"', 'rel="canonical"']:
+    m = re.search(must_abs + r'[^>]*content="([^"]+)"' if "property" in must_abs else must_abs + r'[^>]*href="([^"]+)"', html)
+    if not m:
+        fails.append("分享元数据缺失: " + must_abs)
+    elif not m.group(1).startswith("https://"):
+        fails.append("分享元数据非绝对 URL: " + must_abs + " -> " + m.group(1))
+if "application/ld+json" not in html:
+    fails.append("结构化数据缺失：无 JSON-LD")
+print(f"[{'PASS' if not any(('无障碍' in f) or ('分享元数据' in f) or ('JSON-LD' in f) for f in fails) else 'FAIL'}] 无障碍与分享基线（rem 字阶 / skip-link / 绝对 og / JSON-LD）")
+
+
 print()
+if warns:
+    print("WARNINGS:")
+    for w in warns:
+        print("  !", w)
 if fails:
     print("RESULT: FAIL")
     for f in fails:
