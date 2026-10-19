@@ -5,7 +5,10 @@
 - 发布源：`site/` 目录，由 `.github/workflows/deploy-pages.yml` 自动发布
 - Pages 配置：`build_type=workflow`
 - 触发：push main 或手动 workflow_dispatch
-- 注意：push 前若 Clash 未开需直连 `git -c http.proxy= -c https.proxy= push`
+- 网络实测（2026-10-19 深夜，两种方向都出现过）：
+  - 早先：直连可推、走代理失败 → 用 `git -c http.proxy= -c https.proxy= push`
+  - 本轮：直连 `Failed to connect to github.com port 443`（重试 3 次全败），改走本机 Clash `127.0.0.1:7897` 一次成功
+  - 结论：先试直连，失败即换 `-c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897`，两条都留，别只记一条
 
 ## 备用：Cloudflare Pages
 ```powershell
