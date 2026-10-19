@@ -70,3 +70,25 @@ python tools\make_ar_assets.py  # AR 分镜脚本重生成
   「体积超预算 1200KB」。**不调阈值**，留给字体方案收口
 - 教训入库：门禁必须在**干净克隆**里验一次 —— 我用 LF 写文件测出 PRECACHE 14 项，
   checkout 转 CRLF 后正则一条不匹配却仍打 PASS（由并发进程 3daad0f 修复）
+
+## 轮5 结果（2026-10-20 · 设计系统 v2）
+- `python tools/verify_site.py`：**RESULT PASS**，20 项 PASS / 0 FAIL；站点 1125KB / 38 文件；
+  **首屏关键路径 373KB / 预算 400KB**（HTML+CSS+字体+首屏脚本）
+- 字体自托管：zcool-display.woff2 244336B（1125 字子集）+ cinzel.woff2 14012B；零 Google Fonts 外链
+- 多视口实测（agent-browser，探针 tools 内 `_qa/probe_viewport.js` 口径已修正为「未被祖先裁切才算溢出」）：
+  360/390/768/1024/1440/1920 六档 **realOverflow=false**，最小可点 **44px**，
+  H1 全部命中 ZCOOL XiaoWei（48 / 48 / 58.4 / 77.8 / 104 / 104px），汉堡按钮仅在 <860px 出现
+- 交互实测：召唤 burst→flight（2634 粒子 / 225fps）；雕刻台滑杆 60%→「四·修光」、80%→「五·彩绘贴金」；
+  工序轨点击→「三·开坯」；文创「高客单」筛出 3 件且特写格正确退场（「全部」12 件含 1 个 is-feature）；
+  场景动线开演 AR（title/chapter/dots 齐全），「下一段」切章，关闭复位
+- AR 三段逐场景：craft「三·开坯 00:33」/ red「白云山首战 00:31」/ phoenix「落羽归位 00:31」；
+  窄屏 AR（390×844）copyRight 359 < 390，无横向溢出
+- `prefers-reduced-motion` 实测（agent-browser set media reduced-motion）：hero 动画/入场动画/旋转全部
+  `animation:none`、transition 0s、opacity 全部 1（内容仍可见，不是「停成空壳」）
+- 版本对账守卫实测：注入 `--build:2` → 触发 → 重载后 `--build=3`、guardKey 复位、
+  `navigation.type=reload` 一次即止；复原后不再重载
+- 门禁反向验证（每条故意破坏均判红，复原 PASS）：字体引用失效 / 字号 0.625rem / 删 nav-toggle /
+  改坏 .merch-item.is-feature{ / 关键路径垫到 793KB / --build 改成 9 / 删防循环闸
+- 线上（GitHub Pages）：index.html 22210B、main.css 54406B、两份字体 200、sw.js v4；
+  浏览器实开 --build=3、realOverflow=false、minTap=44、H1=ZCOOL XiaoWei 104px
+- CI：Deploy to GitHub Pages run `39343397913`（设计系统 v2）、`39344491268`（版本对账守卫）均 success
