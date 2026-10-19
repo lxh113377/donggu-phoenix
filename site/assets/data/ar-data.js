@@ -106,7 +106,7 @@ window.AR_DATA = {
         },
         {
           at: 33, key: 'huang', title: '一九三一 · 六渡坳', en: '1931 · Liudu’ao',
-          body: '1931 年 9 月 15 日，红三军军长黄公略在六渡坳遭敌机扫射牺牲，年仅 33 岁。临终他说：就把我埋在東固，我喜欢这里的人民，喜欢这里的山和水。',
+          body: '1931 年 9 月 15 日，红三军军长黄公略在六渡坳遭敌机扫射牺牲，年仅 33 岁。临终他说：就把我埋在东固，我喜欢这里的人民，喜欢这里的山和水。',
           enBody: 'On 15 September 1931, Huang Gonglue, commander of the Third Red Army, was killed by strafing aircraft at Liudu’ao. He asked to be buried in Donggu.',
           note: '《江西日报》2021-08-06'
         }

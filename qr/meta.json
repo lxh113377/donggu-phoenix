@@ -6,6 +6,14 @@
     "qr\\qr-512.png",
     "qr\\qr-256.png",
     "site\\assets\\img\\qr.png",
-    "qr/qr-poster.png"
-  ]
+    "qr/qr-poster.png",
+    "qr\\qr-ar-craft.png",
+    "qr\\qr-ar-red.png",
+    "qr\\qr-ar-phoenix.png"
+  ],
+  "sceneDeepLinks": {
+    "craft": "https://lxh113377.github.io/donggu-phoenix/#ar=craft",
+    "red": "https://lxh113377.github.io/donggu-phoenix/#ar=red",
+    "phoenix": "https://lxh113377.github.io/donggu-phoenix/#ar=phoenix"
+  }
 }

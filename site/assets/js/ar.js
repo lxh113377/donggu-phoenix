@@ -463,11 +463,25 @@
       if (document.hidden && state.playing) { state.playing = false; }
     });
     // 直接以 #ar=xxx 进场（展板二维码可带参数直达某一段）
+    function readHash() {
+      var m = /^#ar=([a-z]+)$/.exec(global.location.hash || "");
+      return m ? m[1] : null;
+    }
+    // 首次加载：展签/文创上的场景直连二维码 .../#ar=craft | #ar=red | #ar=phoenix
     try {
-      if (global.location.hash.indexOf("ar=") === 0) {
-        open(global.location.hash.slice(3), { camera: false });
-      }
+      var first = readHash();
+      // 展签扫码 = 现场手机，直接尝试实景叠加；失败会自动落回展柜模式
+      if (first) { open(first, { camera: true }); }
     } catch (e) { /* 哈希异常不影响页面 */ }
+    // 同页内改哈希（例如从一张展签扫到另一张、或站内链接）：跟随切换
+    global.addEventListener("hashchange", function () {
+      try {
+        var id = readHash();
+        if (!id) { return; }
+        if (!state.open) { open(id, { camera: false }); }
+        else if (!state.scene || state.scene.id !== id) { loadScene(id, true); }
+      } catch (e) { /* noop */ }
+    });
   }
 
   /* ---------- 对外 API（供自动化验收） ---------- */

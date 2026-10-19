@@ -18,7 +18,8 @@ python -m http.server 8791
 
 # 自检
 python tools\verify_site.py
-python tools\make_qr.py
+python tools\make_qr.py      # 含 3 枚场景直连码生成与回读
+python tools\make_ar_assets.py
 ```
 
 ## 目录
@@ -33,7 +34,7 @@ python tools\make_qr.py
 | `docs/体验设计与AR方案.md` | 命题应答：轻量化定义、沉浸感手法、停留机制、边界清单 |
 | `merch/print/` | 三版印刷图腾 SVG（单色/全彩/金线） |
 | `merch/mock/` | 6 张文创效果图 |
-| `qr/` | 5 规格二维码 |
+| `qr/` | 5 规格通用二维码 + 3 枚场景直连码（`qr-ar-craft/red/phoenix.png`） |
 | `tools/` | 生成与验证脚本 |
 | `docs/` | 交付说明 |
 
@@ -64,3 +65,11 @@ AR 展陈：摄像头不可用同理会切「展柜模式」，三段动画照�
 | 团队署名 | 媒体报道清单 |
 
 **页面无编造内容**；AR 场景每段 `sources` 字段逐条标注，页面上只作文本展示、不发起外部请求。
+
+## AR 场景直连
+
+| 场景 | 直连 |
+|---|---|
+| 造像技艺流程 | `/#ar=craft` |
+| 红色地标复原 | `/#ar=red` |
+| 凤凰图腾演绎 | `/#ar=phoenix` |

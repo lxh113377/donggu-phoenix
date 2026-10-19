@@ -57,8 +57,21 @@ def main():
     print(f"[{'PASS' if ok else 'FAIL'}] qr/qr-poster.png  decoded={decoded!r}")
     ok_all = ok_all and ok
 
+    # 场景直连二维码：现场展签/文创上贴「直接开演第 N 段」，省一次点击，减少中途退出
+    scene_variants = []
+    for sid, label in (("craft", "造像"), ("red", "红色地标"), ("phoenix", "凤凰图腾")):
+        p = os.path.join(BASE, "qr", "qr-ar-%s.png" % sid)
+        target = url.rstrip("/") + "/#ar=" + sid
+        make(target, p, box=12)
+        ok, decoded = verify(p, target)
+        print(f"[{'PASS' if ok else 'FAIL'}] qr/qr-ar-{sid}.png（{label}直连） decoded={decoded!r}")
+        ok_all = ok_all and ok
+        scene_variants.append(os.path.relpath(p, BASE))
+
     # 元数据落盘，供站点/文档引用
-    meta = {"url": url, "generated": targets[0][0], "variants": [os.path.relpath(t[0], BASE) for t in targets] + ["qr/qr-poster.png"]}
+    meta = {"url": url, "generated": targets[0][0],
+            "variants": [os.path.relpath(t[0], BASE) for t in targets] + ["qr/qr-poster.png"] + scene_variants,
+            "sceneDeepLinks": {sid: url.rstrip("/") + "/#ar=" + sid for sid in ("craft", "red", "phoenix")}}
     with open(os.path.join(BASE, "qr", "meta.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
     print("URL:", url)
