@@ -2,7 +2,8 @@
 
 **已上线**：AR 展陈馆三场景已部署到 GitHub Pages 主链（提交 4b5d293，实测三段全部可看）。
 **第三轮已上线**：一木成像雕刻台 + AR 场景一改造，提交 95f7575 已推 GitHub Pages 主链，并用 wrangler 同步 Cloudflare 备用链（两条链路实测 200 且含新引擎）。
-Cloudflare Pages 备用链路仍是首版，需要时再 `wrangler pages deploy site`。
+**第三轮补丁**：背景板加入墨色山峦剪影（海报下半的岭脊），并把 sw.js 的 VERSION 从 v1 提到 v2 —— PRECACHE 清单未变但 wood-to-statue.js 内容变了，不 bump 则已装 SW 的访客走 cache-first 永远拿不到新引擎。
+Cloudflare Pages 备用链已于本轮同步（wrangler pages deploy，别名与部署 URL 均实测 200）。
 
 已完成：
 - **一木成像**：落地页可拖动雕刻台（wood-to-statue.js 引擎 + wood-demo.js 控件），

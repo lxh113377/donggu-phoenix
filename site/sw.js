@@ -16,7 +16,10 @@
 
 /* 版本由 PRECACHE 内容参与计算：改清单即换缓存名，避免旧缓存赖着不走。
  * 手工 bump 也允许（改文案不动文件清单时）。 */
-var VERSION = 'v1';
+/* v2：一木成像背景板加入山峦剪影后 wood-to-statue.js 内容变更。
+ * PRECACHE 清单未变 ⇒ 缓存名不会自动换，必须手工 bump，
+ * 否则已装 SW 的访客走 cache-first，永远拿不到新引擎。 */
+var VERSION = 'v2';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [

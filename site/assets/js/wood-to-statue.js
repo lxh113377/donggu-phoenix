@@ -519,6 +519,36 @@
       ctx.ellipse(kx, ky, kr * 0.20, kr * 0.34, 0.32 + k * 0.4, 0, TAU);
       ctx.fillStyle = "rgba(22,11,5,.5)"; ctx.fill();
     }
+    // 山峦剪影：把造像供在山里的观感带进来（海报下半的墨色岭脊）
+    var ridgeBase = h * 0.995;
+    var ridges = [
+      { amp: h * 0.115, y: ridgeBase - h * 0.155, c: "rgba(38,22,12,.42)", f: 0.0055, p: 0.7 },
+      { amp: h * 0.085, y: ridgeBase - h * 0.085, c: "rgba(24,14,8,.55)", f: 0.0082, p: 2.4 },
+      { amp: h * 0.055, y: ridgeBase - h * 0.030, c: "rgba(12,7,4,.62)", f: 0.0125, p: 4.1 }
+    ];
+    for (var rg = 0; rg < ridges.length; rg++) {
+      var R = ridges[rg];
+      ctx.beginPath();
+      ctx.moveTo(-10, h + 10);
+      for (var mx = -10; mx <= w + 10; mx += 9) {
+        var my = R.y - SIN(mx * R.f + R.p) * R.amp - SIN(mx * R.f * 2.7 + R.p * 1.6) * R.amp * 0.34;
+        ctx.lineTo(mx, my);
+      }
+      ctx.lineTo(w + 10, h + 10);
+      ctx.closePath();
+      ctx.fillStyle = R.c;
+      ctx.fill();
+    }
+    // 岭脊亮边：木纹被光勾出的那道棱
+    ctx.beginPath();
+    for (var m2 = -10; m2 <= w + 10; m2 += 9) {
+      var y2b = ridges[1].y - SIN(m2 * ridges[1].f + ridges[1].p) * ridges[1].amp - SIN(m2 * ridges[1].f * 2.7 + ridges[1].p * 1.6) * ridges[1].amp * 0.34;
+      if (m2 === -10) { ctx.moveTo(m2, y2b); } else { ctx.lineTo(m2, y2b); }
+    }
+    ctx.strokeStyle = "rgba(255,214,158,.10)";
+    ctx.lineWidth = Math.max(1, h * 0.0022);
+    ctx.stroke();
+
     // 暗角：把视线压回像身
     var vg = ctx.createRadialGradient(w * 0.62, h * 0.48, Math.min(w, h) * 0.16, w * 0.62, h * 0.48, Math.max(w, h) * 0.82);
     vg.addColorStop(0, "rgba(0,0,0,0)");
