@@ -985,3 +985,44 @@ CI 日志确认执行：「使用 4 种留白级别」「RESULT: PASS 留白节�
 - 线上 build=22，CI：39378417765 success
 - 对比度复验 119 处 0 不达标（留白改动无副作用）
 - 静态门禁 19 条
+
+## 轮28 结果（2026-10-20 · 入场时序分层）
+
+### 发现
+实测 22 个 .reveal 元素：
+  · 21 个网格子项已有 --d 错落（culture-card 0/1/2/3、craft-card 0/1…）
+  · **22 个 transition-delay 全是 0s —— 包括所有段落标题 .sec-head**
+即每段标题与同屏内容完全同时淡入，缺「标题定调 → 内容跟进」的层次。
+这是最容易被看出「模板感」的动效。
+
+### 做法（不改 JS，纯 CSS 相邻兄弟选择器）
+  .sec-head{transition-delay:0ms}                    ← 标题最先
+  .sec-head + .reveal:not(.sec-head){delay:120ms}    ← 其后首个内容块
+  .sec-head + .reveal.reveal-grid{delay:120ms}
+  .sec-head + .totem-grid > .reveal{delay:120ms}     ← 这两段下一项不是 .reveal
+  .sec-head + .craft > .reveal{delay:120ms}
+
+静态核对 HTML 结构，7 个 sec-head 的下一项全部覆盖：
+  .totem-grid / .carve-lineage.reveal / .ar-route.reveal / .culture-grid.reveal
+  / .craft / .merch-tabs.reveal / .road.reveal
+
+### 新增 tools/stagger_test.py（7 项判据，接入 CI）
+反向验证抓出我自己的 bug：第一版用 `if max(vals) < 60`，
+两种破坏都判不出 ——
+  A 把 .reveal 延迟改 0ms → 仍 PASS（totem-grid 那条还是 120，max=120）
+  B 把 totem-grid 改 20ms → 仍 PASS（同上）
+这是「聚合把个别失败洗绿」，**我第四次踩同类错误**
+（前三次都是「零样本判 PASS」：轮9 perf_anim / 轮15 reveal / 轮22 dead_data）。
+改为逐条校验后全部判红。
+
+→ 教训升级：凡是「一组值是否都满足某条件」，
+  必须逐条判断后聚合失败数，**不能用 max/min/all/any 代替**。
+
+### 未完成
+浏览器 daemon 被并发进程反复占用（`Daemon version mismatch / started concurrently`），
+线上视觉复验没跑成。提交本身已通过 CI（39379404708）。
+
+### 读数
+- 线上 build=23，CI：39379404708 success
+- 干净克隆复验：verify_site / ci_design_static / stagger_test 全 PASS
+- 静态门禁 21 条
