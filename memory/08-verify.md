@@ -110,3 +110,17 @@ python tools\make_ar_assets.py  # AR 分镜脚本重生成
 - CI run 39345640497（sha 3141982）：Verify site success → Deploy success；
   日志显示 PRECACHE 17 项（修复生效）、关键路径 375/400KB、跟踪面 22 项。
 - 提交：c0a5dab（报告 §10）→ 3141982（门禁修复 + CHANGELOG 修正），origin/main 同步 0/0
+
+## 轮5 追加（2026-10-20 08:1x）自测截图发现的缺陷 + 移动端逐屏目检
+- **品牌链接误加下划线**：滚动高亮选择器 `.nav a[href^="#"]` 把 `.brand` 一并纳入，
+  logo 下方常驻一条金色下划线（首屏截图可见）。改 `.nav ul a[href^="#"]`，实测 brand 不再带 `on`、
+  伪元素 `transform=scaleX(0)`。提交 e7474e0。
+- **移动端逐屏目检（390×844，8 屏）**：hero / 图腾 / 一木成像 / AR / 文化 / 匠人 / 文创 / 场景动线 / 扫码
+  全部无横向溢出、无文字裁切；文创 2×2 特写格在窄屏正确退化为单列；三大场景动线在窄屏收成单列且
+  「开演 →」隐藏（整行仍可点）。
+- **移动端菜单实测**：点汉堡 → `aria-expanded=true`、菜单 `visibility:visible`；点第 4 项 →
+  菜单自动收起、`aria-expanded=false`、滚动到文化段（cultureTop=95，正好落在 `scroll-padding-top:88px` 下方）。
+- **清克隆门禁复核**：本地工作区被并发进程未提交改动污染（index.html 已引用其未跟踪的 statue-profile.js），
+  故「本地 FAIL」不代表本轮交付；`git clone` 到 HEAD 后跑 verify_site.py → **RESULT PASS**（判据面干净）。
+- **线上最终读数**：build=4、realOverflow=false、minTap=44、H1=ZCOOL XiaoWei 104px；
+  CI run 39346453741 → success。
