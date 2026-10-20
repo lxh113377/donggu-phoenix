@@ -101,4 +101,9 @@
 |---|---|---|---|---|---|
 | U-37 | 23 | 「零样本判 PASS」结构错误连续三轮复发（轮9/15/22），单靠提醒无效 | 建 tools/gate_guard.py：checked==0 且未显式允许 → SKIP（绝不 PASS）；SKIP 退出码 0 但必须可见 | **已完成** | tools/gate_guard.py |
 | U-38 | 23 | 守卫自身也会坏 | gate_guard 自检（5 用例）+ dead_data_test 接入 CI 的 Guard self-test 步骤，CI 日志确认执行 | **已完成** | .github/workflows/deploy-pages.yml |
-| U-39 | 23 | 其余工具（perf_anim / reveal_after_jump / image_quality 等）尚未接入统一守卫 | 逐个评估后接入；它们当前各自有零样本处理，但未统一 | 待排期 | — |
+| U-39 | 23 | 其余工具尚未接入统一守卫 | 逐个评估 31 个脚本：门禁类 6 个中 3 个已自带处理，perf_anim 与 prove_no_visual_change 有真实风险 → 已接入；prove 并入 CI | **已完成**（轮24） | tools/gate_guard.py |
+## 轮24 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-40 | 24 | 一次性反向验证脚本（reverse_*.py）未接入守卫 | 它们本就是「构造破坏→看判红」，零样本不构成假绿风险；仅在 R50 记录，不改 | **已否决**（有理据） | — |

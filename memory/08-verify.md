@@ -805,3 +805,47 @@ CI 日志确认执行：5 个守卫用例全过、56 个数据字段全部通过
 - 线上 build=21（本轮未改页面）
 - CI：39374513623 success；Guard self-test 步骤已执行
 - 静态门禁 18 条（新增守卫自检）
+
+
+## 轮24 结果（2026-10-20 · 守卫扩展到剩余门禁工具）
+
+### 盘点
+逐个分析 31 个工具脚本，区分「门禁类」与「一次性反向验证脚本」。
+门禁类 6 个中：
+  · 3 个已自带零样本处理：bilingual_parity / image_quality / reveal_after_jump（不必改）
+  · 2 个有真实风险：perf_anim / prove_no_visual_change（本轮接入）
+  · hero_height_test 的零样本已判 FAIL（找不到规则即失败），安全
+
+### perf_anim 的真实风险
+· d is None / 'error' in d → 直接 return 0（静默跳过，连 RESULT 都不打印）
+· 若探针返回但 particles == 0（凤凰未初始化），所有检查都不触发 → PASS
+  「0 个粒子」不是性能达标，是没测到。
+改法：零样本 → SKIP；环境跳过也打印明确 SKIP 行；checked 用粒子数。
+
+### prove_no_visual_change 的真实风险
+若 CSS 里没有任何 backdrop-filter（比如全站重构掉了），
+oks 与 warns 都为空 → 打印 PASS「所有用法自洽」，但一个都没检查。
+改法：checked = len(oks)+len(warns) 交守卫；warns 仍返回退出码 0（保持原语义）。
+
+### 验证（沙箱内，真实文件零改动）
+· prove：删光所有 backdrop-filter → SKIP「未检查到任何 backdrop-filter 用法」
+· perf_anim：三种情形 — 正常 PASS / 零样本 SKIP / 零样本+fails 仍 SKIP
+· 正常场景：perf_anim「2634 个动画性能样本全部通过」、prove「5 个用法全部通过」
+
+### CI
+Guard self-test 步骤加入 prove_no_visual_change。
+CI 日志确认执行：5 个 backdrop-filter 用法逐条列出并判定。
+
+### 顺带修的两个小问题
+· perf_anim 的 import 首次插入失败（文件头是 import json, subprocess... 而非 import os），
+  按行号定位后重新插入。
+· prove 的输出有重复「RESULT: PASS  PASS」前缀，已清理。
+
+### 关于 reverse_*.py 不接入的理由（U-40 已否决）
+它们本身就是「构造破坏 → 看判据是否判红」的脚本，零样本对它们不构成假绿风险；
+它们并不产出 PASS/FAIL 结论供 CI 使用。逐个加守卫是过度工程。
+
+### 读数
+- 线上 build=21（本轮未改页面）
+- CI：39375003371 success；Guard self-test 已包含 prove
+- 静态门禁 18 条
