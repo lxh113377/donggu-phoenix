@@ -47,6 +47,13 @@ jobs:
       - name: Design static audit
         run: python tools/ci_design_static.py
 
+      # 守卫自身的自检：保证「零样本必 SKIP」不会被悄悄改坏。
+      # 数据字段消费者检查也放这里（纯静态、无浏览器依赖）。
+      - name: Guard self-test
+        run: |
+          python tools/gate_guard.py
+          python tools/dead_data_test.py
+
   deploy:
     name: Deploy
     needs: verify
