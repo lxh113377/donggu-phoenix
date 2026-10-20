@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:41;
+  --build:42;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -914,7 +914,11 @@ section.foot{padding-top:var(--sec-y-loose)}
   box-shadow:0 24px 64px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.06)}
 .qr-box img{width:100%;height:auto;border-radius:4px}
 .foot-copy h2{margin:0 0 16px;font-family:var(--font-display);font-weight:400;
-  font-size:clamp(1.5rem,3.4vw,2.5rem);letter-spacing:.12em;text-wrap:balance}
+  font-size:clamp(1.5rem,3.4vw,2.5rem);letter-spacing:.12em;text-wrap:balance;
+  /* 居中补偿（轮62）：<=720px 时 .foot-grid{text-align:center} 让它居中，
+     letter-spacing 给末字也加空间，墨迹视觉中心左偏 ls/2 = 2.40px。
+     收回一个字距使盒子宽度=墨迹宽度；桌面左对齐时不影响。 */
+  margin-right:-.12em}
 .foot-copy p{margin:0 0 10px;color:var(--fg-dim);font-size:var(--fs-base);max-width:30em}
 .foot-copy .url{font-family:var(--font-latin);font-size:var(--fs-xs);letter-spacing:.04em;color:var(--she-gold);
   word-break:break-all}
