@@ -2120,3 +2120,48 @@ runtime_health_test 自身流程是对的（先清 SW 再 open 新 URL）。
 - 线上 build=38，CI：39429964465 success
 - 运行时健康 4 项 PASS；已接入 run_browser_suite（full 组）
 - 静态门禁 33 条 + 浏览器判据 18 项
+
+## 轮53 结果（2026-10-20 · 查出判据盲区 + 一次自我事故与恢复）
+
+### 一、真实缺口：engine_polish_test 是「名字存在性」判据（U-132）
+外部工作为 I-7 加的判据用 `if tok not in phoenix` 检查粒子密度自适应函数。
+反向验证实证其盲区：把调用点 `this._densFor(` 改成 `this._densOFF(`（定义仍在），
+**engine_polish_test 23 项仍全 PASS** —— 密度自适应被完全断开，门禁看不见。
+
+同类坑本项目已踩三次：轮17 revealTall() 定义未调用、轮52「函数存在 != 行为发生」、
+轮53 engine_polish_test 重犯。
+
+### 二、新增 tools/dead_definition_test.py（4 项，接入 CI）
+必须「定义存在 + 至少一个调用点」。
+按形态区分：prototype 方法匹配接收者点调用，普通函数匹配裸调用（先摘定义行）。
+剥注释后再扫（U-22/U-24/U-126 三次教训）。
+
+反向验证 4 用例全部判红：
+  A 断开 _densFor 全部 2 处 -> FAIL
+  B 断开 _resampleDensity 唯一调用 -> FAIL
+  C 断开 _sampleArea 全部 3 处 -> FAIL
+  D 断开 revealStatue 调用保留定义 -> FAIL
+CI 日志确认执行：「RESULT: PASS 4 个引擎方法均有定义且确有调用点」。
+
+### 三、一次自我事故与恢复（U-134，必须记住）
+v2 反向脚本在 finally 里写 `open(p,'w').write(open(p).read())` ——
+**写模式先截断文件，再读时已空**，把 phoenix.js 清成 0 字节。
+靠 `git checkout HEAD` 恢复，node --check 语法通过 + 6 项门禁全 PASS 复验无损。
+
+教训：绝不用 open(p,'w') 原地自我改写；破坏操作只在沙箱副本做。
+v3 已改为全程在 mutate_sandbox 副本上操作，真实工作区只读。
+
+### 四、另一个误判（U-133）
+v1 用例 A 没判红，我以为判据失效。实际是 safe_mutation.patch 内部
+`replace(old,new,1)` 只替换第一处 —— _densFor 有 2 处调用，断 1 处后另一处仍生效，
+**判据 PASS 是正确的**，是我用例设计错。
+
+### 五、未完成（U-135，工具不稳定）
+M11「粒子数随面积变化」/ M12「HUD <=10 写/秒」是运行时行为，
+全站无判据在运行时覆盖。本轮 agent-browser 卡死 4 次（含一次需 job_kill），
+未能完成四视口粒子数测量。已列待排期。
+
+### 读数
+- 线上 build=38，CI：39433986184 success
+- 静态门禁 34 条（新增 dead_definition_test）
+- site/ 工作区干净，phoenix.js 恢复无损

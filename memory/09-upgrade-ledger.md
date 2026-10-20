@@ -326,3 +326,11 @@
 | U-129 | 52 | 判据若用「终值-初值」会把首轮常驻 DOM 创建误判成泄漏；内存绝对值会因 GC 时机误报 | 节点只看 `max(nodes[2:]) - nodes[1] > 2`（首轮之后）；内存判「非单调上升」而非绝对值 | **已完成**（方法论） | tools/runtime_health_test.py |
 | U-130 | 52 | **`location.reload()` 会让 SW 重新注册并用 cache-first 返回旧 JS**；带 `?cb=` 的 fetch 能取到新文件但页面里函数仍是旧版 | 只有「清 SW 后 open 全新 URL」才真正回源；反向验证 JS 行为应改用**运行时打补丁**直击判据公式 | **已完成**（方法论） | tools/reverse_runtime_health.py |
 | U-131 | 52 | rAF 帧率探针在后台标签页被浏览器节流，等 60 帧永不返回，挂死一次任务 | 不测帧率：测出来的是环境噪声不是产品问题 | **已否决**（有理据） | — |
+## 轮53 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-132 | 53 | **engine_polish_test 是名字存在性判据**：把调用点 `this._densFor(` 改名后，定义仍在 → 23 项仍全 PASS。密度自适应被完全断开而门禁看不见 | 新增 dead_definition_test.py：必须「定义存在 + 至少一个调用点」；按形态区分 prototype 点调用与裸函数调用；接入 CI | **已完成** | tools/dead_definition_test.py |
+| U-133 | 53 | `safe_mutation.patch` 内部是 `replace(old,new,1)` 只替换第一处，用它做「断开全部调用点」的反向验证会漏，误判成判据失效 | 反向验证要构造「完全断开」必须全局替换；先数清调用点处数再设计用例 | **已完成**（方法论） | tools/reverse_dead_definition.py |
+| U-134 | 53 | **我的脚本把 phoenix.js 清成 0 字节**：finally 里 `open(p,'w').write(open(p).read())`，写模式先截断再读 | 绝不用 `open(p,'w')` 原地自我改写；破坏操作只在沙箱副本做（v3 已改）；已 git checkout 恢复并 node --check + 6 项门禁复验无损 | **已恢复**（教训） | — |
+| U-135 | 53 | M11「粒子数随面积变化」/ M12「HUD ≤10 写/秒」是运行时行为，全站无任何判据在运行时验证（静态判据只查名字与调用点） | 待办：浏览器稳定后跑四视口粒子数单调性 + hud.writes 每秒计数；本轮 agent-browser 卡死 4 次未完成 | **待排期**（工具不稳定） | — |
