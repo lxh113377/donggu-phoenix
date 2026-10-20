@@ -554,3 +554,39 @@ main.js 里头像 alt 直接取 p.name，而紧接的 h3 也是 p.name：
 与仓库代码无关。gh run rerun 后 32 秒成功。
 判别依据：失败点在「Set up job」且报 action download 超时，说明作业根本没进到
 checkout/verify 步骤，不可能是代码引起。
+
+
+## 轮18 结果（2026-10-20 · 统一源码扫描层，根治系统性误报）
+
+### 先处理系统性风险，而不是修单个门禁
+轮17 连续两次同源误报（HTML 注释被当渲染文本、JS 注释里的引号切出假字符串），
+但当时只修了字体判据那一处。本轮排查发现：
+  · design_audit.py       读源码后**完全不剥注释**
+  · originality_audit.py  同上
+  · ci_design_static.py   只局部剥过
+风险：只要我的注释里出现「Inter」「#667eea」「tailwind」这类字样就会误报。
+而我的注释越写越详细 —— 这是必然会被触发的。
+
+### tools/source_scan.py（统一扫描层）
+  visible_text(html)    剥 <!-- -->、script/style、解实体，保留 data-decorative 单字
+  strip_js_comments(s)  状态机逐字符扫描，跟踪字符串状态
+                        → 注释里的引号不干扰；字符串里的 // 不被误删
+  js_strings(s)         只取真正的字符串字面量
+  stripped(css)         剥 CSS 注释
+  selftest()            四个反向用例自带（含 "https://" 不被当注释）
+三个判据全部接入。自检 PASS。
+
+### 双向验证（沙箱内，真实文件零改动）
+① 注释注入违禁词 tailwind/bootstrap/#667eea/fonts.googleapis.com
+   → 判据退出码 0，**不误报**
+② 真实代码注入 #667eea
+   → 判据退出码 1，**仍被抓到**
+② 是关键：证明剥注释没把真问题一起剥掉。
+
+### 用修好的判据复扫
+原创性 8/8 通过；backdrop-filter 实际 5 处规则（第 6 次计数是 .nav.solid 的 none）。
+
+### 读数
+- 线上 build=17（本轮未改页面代码）
+- CI：39371277595 success
+- 干净克隆复验：verify_site / ci_design_static / source_scan 全 PASS

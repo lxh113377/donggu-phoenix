@@ -64,3 +64,9 @@
 | U-23 | 17 | 工匠头像 alt 取 p.name，与紧跟的 h3 重复 → 读屏念两遍人名 | 改 alt="" + aria-hidden（装饰性）；新增 gate | **已完成** | tools/ci_design_static.py |
 | U-24 | 17 | 字体门禁两处误报：HTML/JS 注释被当成渲染文本 | 扫描前先剥注释；重建子集 193→173KB，首屏 284→268KB | **已完成** | tools/verify_site.py |
 | U-25 | 17 | 图片质量检查方法错误：滚回顶部后图片 naturalWidth=0 被误判未加载 | 改为停在目标区域检查；新增 tools/image_quality_test.py（49 图 0 问题） | **已完成** | tools/image_quality_test.py |
+## 轮18 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-26 | 18 | 判据把注释当内容是**系统性风险**（轮17 连续两次）：design_audit / originality_audit 仍是裸 read() | 新建 tools/source_scan.py 统一扫描层，三个判据全部接入；双向验证（注释注入不误报 / 真代码注入仍判红） | **已完成** | tools/source_scan.py |
+| U-27 | 18 | 我写的中文注释越详细，越容易触发「把注释当内容」的误报 | 判据一律通过 source_scan 读取；新增判据时先想「注释里会不会出现关键字」 | **已完成** | memory/08-verify.md |
