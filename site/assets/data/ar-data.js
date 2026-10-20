@@ -20,7 +20,7 @@ window.AR_DATA = {
   route: [
     { step: '01', title: '扫码进入', en: 'Scan', desc: '展板、文创、门票上的二维码指向本页；也可在页内直接唤起' },
     { step: '02', title: '现实叠加', en: 'Overlay', desc: '摄像头取景为底，技艺流程与历史场景以半透明图层叠加在真实造像、地标之上' },
-    { step: '03', title: '看完集章', en: 'Stamp', desc: '每段结束落一枚印章，三枚集齐生成一条完整的「东固 · 匠灵幻境」动线' }
+    { step: '03', title: '看完集章', en: 'Stamp', desc: '每段结束落一枚印章，三枚集齐即解锁完整动线' }
   ],
 
   scenes: [

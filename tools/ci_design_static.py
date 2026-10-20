@@ -195,6 +195,28 @@ def main():
         fails.append('头像 alt 与标题重复：' + '; '.join(AVATAR_ALT))
     print('[%s] 装饰性头像 alt 不与标题重复' % ('PASS' if not AVATAR_ALT else 'FAIL'))
 
+    # 不得写死会随时间失效的相对时间（轮19）
+    # 一手问题：页面写「38 年党龄」，源自 2025 年采访（2025-1987=38），
+    # 但站点长期在线，2026 年就该是 39。已改为锚定「1987 年入党」。
+    RELATIVE_TIME = []
+    _sources = [html, css]
+    _js_dir = os.path.join(SITE, 'assets', 'js')
+    if os.path.isdir(_js_dir):
+        for _f in os.listdir(_js_dir):
+            if _f.endswith('.js'):
+                _sources.append(open(os.path.join(_js_dir, _f), encoding='utf-8').read())
+    _data_dir = os.path.join(SITE, 'assets', 'data')
+    if os.path.isdir(_data_dir):
+        for _f in os.listdir(_data_dir):
+            if _f.endswith('.js'):
+                _sources.append(open(os.path.join(_data_dir, _f), encoding='utf-8').read())
+    for _src in _sources:
+        for _m in re.finditer(r'\d+\s*年(?:党龄|工龄|教龄|军龄)', _src):
+            RELATIVE_TIME.append(_m.group(0))
+    if RELATIVE_TIME:
+        fails.append('文案写死了会随时间失效的相对时间：' + ', '.join(sorted(set(RELATIVE_TIME))[:3]))
+    print('[%s] 无写死的相对时间表述（N 年党龄等）' % ('PASS' if not RELATIVE_TIME else 'FAIL'))
+
     purple = [c for c in ('#667eea', '#764ba2', '#8b5cf6', '#a855f7') if c in css.lower()]
     if purple:
         fails.append('出现 AI 标配紫渐变：' + ', '.join(purple))

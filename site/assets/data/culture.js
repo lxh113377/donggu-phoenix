@@ -70,7 +70,7 @@ window.CULTURE = {
     {
       id: 'lei',
       name: '雷爷爷',
-      role: '东固畲族乡 · 畲族党员 · 38 年党龄',
+      role: '东固畲族乡 · 畲族党员 · 1987 年入党',
       avatar: 'assets/img/photos/craft-lei.webp',
       quote: '没有共产党，就没有我们现在的好生活。',
       blocks: [
