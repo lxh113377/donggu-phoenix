@@ -124,3 +124,17 @@ python tools\make_ar_assets.py  # AR 分镜脚本重生成
   故「本地 FAIL」不代表本轮交付；`git clone` 到 HEAD 后跑 verify_site.py → **RESULT PASS**（判据面干净）。
 - **线上最终读数**：build=4、realOverflow=false、minTap=44、H1=ZCOOL XiaoWei 104px；
   CI run 39346453741 → success。
+
+## 轮6 结果（2026-10-20 · 文创实物图 + 进场动画缺陷）
+- `verify_site.py`：**RESULT PASS**（22 项 PASS / 0 FAIL）；整站 1550KB / 1600KB；首屏关键路径 **377KB / 400KB**
+- 文创 12 件：**12/12 件件有图**（此前 6 件只有占位图腾），0 占位符；图片单张 ≤120KB、长边 ≤760、透明底
+- 六档视口（360/390/768/1024/1440/1920）：realOverflow 全 false，最小可点 **44px**，build=6 一致
+- 文创筛选实测：全部 12 / 现有延续 5 / 高频低成本 2 / 数字衍生 2 / 高客单 3，各档图片加载数与条目数一致
+- 进场动画回归：8 个段落锚点逐个跳转，段内 reveal 隐藏数全 0；桌面 29 个 reveal 元素隐藏数 0
+- 手机端 390×844：文创网格 opacity 1（修复前为 0，整块空白）
+- 线上复核：12/12 张文创图 HTTP 200（合计 230KB）；build=6；H1 命中 ZCOOL XiaoWei
+- CI：`39350567606` success（期间 `39350473761` 曾因并发进程「锁/资产未同提交」红过一次，已由后续提交 873ae48 修好）
+
+### 门禁新增（均做反向验证）
+- 进场动画：threshold ≤0.02 + `revealTall()` 必须被调用 → 改回 0.12 / 删调用 → 均判红
+- 文创实物图：12 件必须件件有 image 且文件存在、≤120KB → 抽掉一件 → 判红
