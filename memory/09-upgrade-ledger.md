@@ -242,3 +242,10 @@
 | U-97 | 43 | 禁用 JS 时主体内容（文创/文化/AR/场景）全部空白，且无任何提示 | 加 `<noscript>` 提示（说明需 JS + 微信内可「在浏览器中打开」）；不做静态化（成本高收益低） | **已完成** | site/index.html |
 | U-98 | 43 | noscript 新文案引入 5 个汉字（择渲置若角）不在字体子集 | 重建子集（858 字符/730 汉字，172.7KB）；这次是字体门禁主动抓到的 | **已完成** | site/assets/fonts/zcool-display.woff2 |
 | U-99 | 43 | 打印样式与一屏解锁副作用此前未验证 | 打印：已存在 7 条 @media print 规则（背景转白/隐藏装饰/H1 改纯黑/强制 reveal 可见）；解锁副作用：桌面与主流手机仍锁一屏，未误伤 | **已核实无问题** | — |
+## 轮44 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-100 | 44 | 浏览器返回键清空 hash 后 AR 仍保持打开（hash 与状态不同步） | hashchange 处理器补「hash 为空且 AR 打开 → close()」，用 `_closingByHash` 防循环 | **已完成** | site/assets/js/ar.js |
+| U-101 | 44 | 反向验证时用非法破坏方式（`if (!id) { return;` 造成语法错误）→ 浏览器加载失败 → 判据假绿 | 破坏性测试必须保证破坏后代码仍可运行；改用 `if (false) {` 后准确判红 | **已完成**（方法论） | tools/reverse_deeplink2.py |
+| U-102 | 44 | `history.back()` 会中断 CDP async 探针（Inspected target navigated or closed） | 拆成「读状态 → 触发返回 → 重连后再读」三步 | **已完成** | tools/ar_e2e_test.py |

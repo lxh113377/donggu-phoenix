@@ -1714,3 +1714,50 @@ CI 现跑 15 个工具。
 - 字体 172.7KB / 260KB
 - 干净克隆：verify_site / ci_design_static 全 PASS
 - 静态门禁 30 条
+
+## 轮44 结果（2026-10-20 · 深链接/浏览器历史验证，修状态不同步）
+
+### 一、检查深链接与浏览器历史（此前从未验证）
+静态分析发现 ar.js 支持得不错：
+  · location.hash = 'ar=' + id（打开时写入）
+  · 正则 ^#ar=([a-z]+)$（解析直达链接）
+  · hashchange 监听（手动改 hash 也能响应）
+  · replaceState（关闭时清理）
+
+但实测发现缺陷。
+
+### 二、缺陷：返回键清空 hash 后 AR 未关闭
+实测：
+  打开 AR  -> hash: #ar=craft, AR: 打开
+  按返回   -> hash: ""（浏览器回退清空），**AR: 仍打开** ← 缺陷
+
+用户会停在「AR 开着但 URL 已回首页」的矛盾状态。
+
+根因：hashchange 处理器 `if (!id) { return; }` —— 只处理「切场景」，
+没处理「hash 被清空 = 用户回退了」。
+
+修法：hash 为空且 AR 打开时调 close()，用 `_closingByHash` 防 replaceState 循环。
+验证：[PASS] 深链接+返回键：打开 hash=#ar=craft，返回后 hash=，AR关闭=True
+
+### 三、补判据（ar_e2e_test.py 现 7 项）
+DEEPLINK：深链接能直达场景 + 返回键能关闭 AR。
+
+### 四、反向验证踩的两个坑
+**坑 1：history.back() 中断 CDP 探针**
+  单个 async 探针里调 history.back() → 页面导航 →
+  CDP 报 'Inspected target navigated or closed'，探针永远返回不了。
+  → 拆成「读状态 → 触发返回 → 重连后再读」三步。
+  这也是为什么第一版判据一直 SKIP。
+
+**坑 2：破坏方式不合法导致假绿**
+  第一次反向验证把 `if (!id) {` 替换成 `if (!id) { return;` —— 语法错误，
+  浏览器加载失败 → 用旧 JS → 判据 PASS，误以为判据无效。
+  → 改成 `if (false) {`（合法但禁用功能），准确判红：
+    [FAIL] 深链接+返回键：...AR关闭=False
+  教训：**破坏性测试必须保证破坏后代码仍可运行**。
+
+### 读数
+- 线上 build=33，CI：39407759421 success
+- AR e2e 7 项全部 PASS
+- 干净克隆：verify_site / ci_design_static 全 PASS
+- 静态门禁 30 条
