@@ -39,6 +39,7 @@ SUITE = [
     ('tools/zoom_test.py', True, '缩放下布局不崩'),
     ('tools/image_quality_test.py', True, '图片尺寸/格式'),
     ('tools/reveal_after_jump_test.py', True, '跳转后进场不失效'),
+    ('tools/touch_target_test.py', False, '双视口触摸目标 >= 24px'),
     ('tools/defer_regression_test.py', False, 'defer 后运行时不回归'),
     ('tools/ar_e2e_test.py', False, 'AR 端到端 7 项'),
     ('tools/ar_playback_test.py', False, 'AR 播放时序'),

@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:36;
+  --build:38;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -687,7 +687,8 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   background:rgba(212,162,76,.86);color:#17110c;border-color:var(--she-gold);font-weight:600;
 }
 .ar-btn.narrate[disabled]{opacity:.45;cursor:not-allowed;}
-/* 念读中的脉动点。reduced-motion 由文末的全局动画开关统一停掉，此处不重复判据 */
+/* 念读中的脉动点：infinite 动画，必须在文末 prefers-reduced-motion 块登记（
+   reduced_motion_test 会逐条比对选择器，漏一条即判红） */
 .ar-btn.narrate.on::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
   background:#17110c;margin-right:8px;vertical-align:middle;animation:narrPulse 1.4s var(--ease) infinite;}
 @keyframes narrPulse{0%,100%{opacity:.25}50%{opacity:.9}}
@@ -1136,7 +1137,10 @@ section.foot{padding-top:var(--sec-y-loose)}
   #boot .seal::after,
   .btn--primary::after,
   .ar-brand .ar-dot,
-  #cam .guide::after{animation:none}
+  #cam .guide::after,
+  /* I-5 旁白开关的念读脉动点（轮50 新增）：本轮 CI 判据抓到漏登记后补上。
+     开「减少动效」的用户不该被持续闪的点打扰，静态高亮保留即可 */
+  .ar-btn.narrate.on::before{animation:none}
 }
 /* === SLIDER-NARROW（轮41） ===
  * 320px 视口下 .carve-slider 右边界 336 > 320（溢出 16px）。

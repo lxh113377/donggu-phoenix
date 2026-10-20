@@ -29,7 +29,7 @@
  * PRECACHE 清单未变但 index.html / main.css / ar.js 内容变了 —— 不 bump 则已装 SW 的访客
  * 对 JS/CSS 走 cache-first，永远拿不到旁白开关（本项目第 4 次踩同一坑，写进注释）。
  * 跨版本对账锚点仍是 CSS --build(36) ⇄ HTML BUILD(36)。 */
-var VERSION = 'v37';
+var VERSION = 'v39';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [
