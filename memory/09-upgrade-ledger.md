@@ -219,3 +219,11 @@
 | U-86 | 40 | 静态扫 `exit(1)` 会误报判据的失败出口（gate_guard 用 `sys.exit(0 if ... else 1)`） | 改用「注入破坏 → 看退出码」实测法：critical_path/reduced_motion/microinteraction 破坏后均返回 1 | **已完成**（验证基础设施可靠）| — |
 | U-87 | 40 | 「构图是否平衡」只能主观判断 | 建 visual_balance_test.py：视觉重量 = 相对背景亮度对比 × (1+饱和度)；实测首屏左52.8%/右47.2%，差异5.6% 判平衡 | **已完成** | tools/visual_balance_test.py |
 | U-88 | 40 | 独立评审（codex 看图）给的 4 条建议，逐条核实后 **0 条构成真实缺陷** | 评审也会过严/不准；必须用像素数据核实再决定是否采纳 | **已完成**（含量化核实） | — |
+## 轮41 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-89 | 41 | 响应式此前只测 1440/390 两个宽度，320px 下有两处越界未发现 | 建 multi_viewport_test.py 覆盖 9 视口（320-2560）；实测修复后全部 PASS | **已完成** | tools/multi_viewport_test.py |
+| U-90 | 41 | `.craft` 的 grid `minmax(320px,1fr)` 下限大于 320px 视口下的容器宽 284px → 卡片被强制撑宽 36px | 改为 `minmax(min(320px,100%),1fr)` | **已完成** | site/assets/css/main.css |
+| U-91 | 41 | `.carve-slider-label::after` 补充文案「·按住画面左右拖也可」把 label 撑到 175px，320px 下挤压 slider 越界 16px | 窄屏（≤420px）隐藏该 ::after（触屏用户不需要此提示） | **已完成** | site/assets/css/main.css |
+| U-92 | 41 | 第 3 次被 SW cache-first 骗（改完 CSS 测试仍失败，误以为修复无效） | 把「先清 SW」写进 multi_viewport_test.py 开头，不再依赖记忆 | **已完成** | tools/multi_viewport_test.py |

@@ -1583,3 +1583,41 @@ CI 现跑 15 个工具。
 - 线上 build=28，CI：39401155047 success
 - 干净克隆：verify_site PASS
 - 静态门禁 29 条（新增 visual_balance_test，需截图不进 CI）
+
+## 轮41 结果（2026-10-20 · 多视口验证，发现并修 320px 两处越界）
+
+### 一、为什么此前没发现
+前面所有响应式验证只测过**两个宽度**：1440 与 390。
+本轮扩展到 9 个视口（320/360/375/414/768/1024/1280/1920/2560）后立刻暴露：
+**320×844（iPhone SE 1 代）有两处越界**。
+
+### 二、缺陷 1：craft-card 比父容器宽 36px
+根因：`.craft{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}`
+320px 视口下父容器只有 284px，但 minmax 下限是 320px → 卡片被强制撑到 320px。
+修法：`minmax(min(320px,100%),1fr)`
+验证：craftGrid 从 320px → 284px。
+
+### 三、缺陷 2：carve-slider 右边界 336 > 320
+根因：`.carve-slider-label::after{content:" · 按住画面左右拖也可"}`
+11 个补充字 + `white-space:nowrap` 把 label 撑到 175px，
+在 284px 容器里挤压 slider（175 + gap 14 + slider 129 = 318 > 284）。
+修法：`@media (max-width:420px){.carve-slider-label::after{content:none}}`
+理由：触屏用户不会「按住画面左右拖」，这条提示在窄屏是噪音。
+验证：label 宽度 175px → 55px，afterContent 变为 none。
+
+### 四、第 3 次被 SW 缓存骗
+改完 CSS 后测试仍失败，一度以为修复无效。实际是 cache-first 返回旧 CSS。
+同轮内就踩了两次（craft 修完看不到效果）。
+→ 已把「先清 SW」写进工具开头，不再依赖记忆。
+
+### 五、新增 tools/multi_viewport_test.py
+覆盖 9 视口，三个关键设计：
+  1. 强制清 SW 缓存
+  2. 无数据判 SKIP 不判 PASS
+  3. 输出越界元素的具体 class 与坐标
+
+###  Readings
+- 线上 build=29，CI：39402754320 success
+- 9 个视口全部 PASS（无横向溢出、无越界）
+- 干净克隆：verify_site / ci_design_static 全 PASS
+- 静态门禁 30 条（新增 multi_viewport_test，需浏览器不进 CI）
