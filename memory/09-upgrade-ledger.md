@@ -353,3 +353,6 @@
 | U-156 | 58 | **扫描面 ≠ 执行面**：safe_script_test 在本地拦 _qa/（gitignore 内）的脚本判 FAIL，但 CI 干净克隆无这些文件永远绿 —— 同一判据两环境结论相反，会训练人忽略红灯 | 按 git 跟踪状态分流：已跟踪→FAIL、未跟踪→WARN、无 git→保守视为已跟踪照判 FAIL；判据自身不改他人文件（U-127） | **已完成** | tools/safe_script_test.py |
 | U-157 | 58 | **mutate_sandbox 无法验证依赖 git 的判据**：它建的 .git 是空目录不是真仓库，沙箱内 git ls-files 必失败 → 走保守兜底分支，误判成「分流失效」 | 验证依赖 git 状态的判据必须造真 git 仓库（临时目录 git init）；「无 git 就 FAIL」不是 bug 而是该有的保守行为 | **已完成**（方法论） | tools/reverse_safe_script2.py |
 | U-158 | 58 | 反向验证脚本**自触发**：违规样本内容直接写成字面量 open(site/...,'w')，结果本脚本自己被扫描命中判红，误判成被测判据失效 | 违规样本用字符串拼接生成，源码里不出现完整字面量 | **已完成**（方法论） | tools/reverse_safe_script2.py |
+| U-159 | 59 | 首查「同上下文完全相同的重复 CSS 声明」（与 U-132 同族，发生在样式层）：抓到 6 组，含轮41 我自己造成的 .hero-grid/.hero-inner/.hero h1 em 三条规则被完整写两遍 | 清理 11 条冗余并**机器证明等价**（1906 个 (selector,media,prop) 键的最终生效值前后完全一致）；新增 dead_css_decl_test.py 接入 CI；值不同组只 WARN 不判红（渐进增强/有意覆盖是合法用法） | **已完成** | tools/dead_css_decl_test.py |
+| U-160 | 59 | **等价性证明脚本自己没剥注释**，把我新加的注释文本当成 selector 的一部分，key 漂移成垃圾，报出 8 处假差异 | 扫 CSS/JS 必须先剥注释（第 5 次：U-22/U-24/U-126/U-133/U-160）；且「证明工具」也要自检 —— 等价性证明犯错比判据犯错更隐蔽 | **已完成**（方法论） | _qa/prove_css_equiv.py |
+| U-161 | 59 | CRLF 坑重犯：一处清理锚点用 \n 拼接，文件是 CRLF 所以未匹配（U-129 已记过一次） | 改 CSS/JS 优先用不依赖行尾的正则或 tools/edit；批量脚本的锚点必须验证命中数==预期 | **已完成**（方法论） | _qa/clean_objectfit.py |
