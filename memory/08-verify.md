@@ -753,3 +753,55 @@ H1 正确、AR 卡片 3、出处块 3、文创 12、文化 4 段、console 错�
 - 线上 build=21，CI：39374071763 success
 - 干净克隆复验：verify_site / ci_design_static / dead_data 全 PASS
 - 静态门禁 17 条
+
+
+## 轮23 结果（2026-10-20 · 零样本守卫做成机制）
+
+### 为什么这轮做机制而不做功能
+「零样本判 PASS」这个结构错误连续三轮复发：
+
+| 轮次 | 工具 | 症状 |
+|---|---|---|
+| 9  | perf_anim          | 探针抛错 → 解析失败 → None → 当环境跳过 → PASS |
+| 15 | reveal_after_jump  | 8 个锚点全 SKIP → fails 空 → PASS |
+| 22 | dead_data_test     | 正则写错 → 匹配 0 字段 → PASS |
+
+共同结构：
+    results = collect()        # 可能为空
+    for r in results:          # 空集合 → 循环不执行
+        if bad(r): fails.append(...)
+    if fails: FAIL else: PASS  # fails 空 → PASS
+「检查了 0 个对象」与「检查了 N 个且都正常」被当成同一件事。
+单靠「下次注意」显然无效 —— 第三次了。
+
+### tools/gate_guard.py
+verdict(checked, fails, allow_zero=False, what='对象') → (code, msg)
+  1. checked==0 且未显式允许 → **SKIP**（不是 PASS）
+     SKIP 退出码 0（不阻塞 CI，可能是环境问题），但绝不打印 PASS
+  2. checked==0 且 allow_zero=True → PASS（显式声明空集合合法）
+  3. fails 非空 → FAIL
+  4. 其他 → PASS
+SKIP 不用 FAIL 的理由：环境问题与被测对象有问题必须分开，
+否则 CI 因环境抖动变红，人们就学会忽略红灯。但 SKIP 必须可见且不计入 PASS。
+
+### 已接入 + CI 强制执行
+dead_data_test / ring_containment_test 接入守卫；
+CI 新增 Guard self-test 步骤（跑 gate_guard 自检 + dead_data_test）。
+CI 日志确认执行：5 个守卫用例全过、56 个数据字段全部通过。
+
+### 验证
+· gate_guard 自检 5 用例全过（含「零样本 + fails 有值」仍判 SKIP）
+· 复现轮22 真实假绿：同一个坏正则，旧逻辑 PASS，新逻辑 SKIP
+· 零样本实测（两个数据文件都清空）→ SKIP「未检查到任何数据字段」
+· 正常场景：56 字段 / 4 装饰环规则全部通过
+· 输出现在带「检查了 N 个」——可复核，不再只有结论
+
+### 一个测试设计错误（记录）
+第一次测零样本时只清空了 culture.js，结果仍报 31 个字段 PASS ——
+因为 dead_data_test 同时读 culture.js 与 ar-data.js。
+不是守卫失效，是测试没把两个文件都清空。修正后 SKIP 正确。
+
+### 读数
+- 线上 build=21（本轮未改页面）
+- CI：39374513623 success；Guard self-test 步骤已执行
+- 静态门禁 18 条（新增守卫自检）

@@ -95,3 +95,10 @@
 |---|---|---|---|---|---|
 | U-35 | 22 | 8 个数据字段从未被前端引用，其中 meta.year 与页面年份语义不同、ar-data.js meta.subtitle/weight 是旧版文案 | year 改名 fieldworkYear 并注明；删除过时字段（-105B）；新增 dead_data_test.py | **已完成** | tools/dead_data_test.py |
 | U-36 | 22 | dead_data_test 第一版正则写成双反斜杠 → 匹配 0 个字段却判 PASS（假绿） | 修正正则；教训：检查到 0 个对象时必须判 SKIP/FAIL，不能 PASS | **已完成** | tools/dead_data_test.py |
+## 轮23 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-37 | 23 | 「零样本判 PASS」结构错误连续三轮复发（轮9/15/22），单靠提醒无效 | 建 tools/gate_guard.py：checked==0 且未显式允许 → SKIP（绝不 PASS）；SKIP 退出码 0 但必须可见 | **已完成** | tools/gate_guard.py |
+| U-38 | 23 | 守卫自身也会坏 | gate_guard 自检（5 用例）+ dead_data_test 接入 CI 的 Guard self-test 步骤，CI 日志确认执行 | **已完成** | .github/workflows/deploy-pages.yml |
+| U-39 | 23 | 其余工具（perf_anim / reveal_after_jump / image_quality 等）尚未接入统一守卫 | 逐个评估后接入；它们当前各自有零样本处理，但未统一 | 待排期 | — |
