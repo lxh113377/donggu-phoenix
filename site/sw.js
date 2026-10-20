@@ -20,7 +20,7 @@
  * 不等则清 SW 与 caches 后重载一次，解决「新 HTML + 旧缓存 CSS」渲染成无样式文本的问题。
  * 本次 index.html / main.css 都变了，缓存名随之换。
  * 注意：SW 的 VERSION 只管缓存名；跨版本对账的唯一锚点是 CSS --build ⇄ HTML BUILD。 */
-var VERSION = 'v4';
+var VERSION = 'v5';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [

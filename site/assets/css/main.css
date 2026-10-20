@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:3;
+  --build:4;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -744,14 +744,20 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .merch-item.is-feature .merch-shot::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(90% 70% at 50% 46%, transparent 40%, rgba(8,7,6,.55) 100%)}
 .merch-item.is-feature .merch-shot img{
-  object-fit:cover;position:relative;z-index:1;
-  filter:brightness(.86) saturate(1.02) sepia(.08);
-  width:min(78%,420px);height:min(78%,420px);object-fit:cover;border-radius:2px;
-  -webkit-mask-image:radial-gradient(86% 86% at 50% 50%, #000 62%, transparent 100%);
-  mask-image:radial-gradient(86% 86% at 50% 50%, #000 62%, transparent 100%);
-  transition:transform .8s var(--ease),filter .8s var(--ease);
+  position:relative;z-index:1;object-fit:cover;
+  filter:brightness(.9) saturate(1.02) sepia(.06);
+  width:min(70%,380px);height:min(76%,380px);border-radius:1px;
+  box-shadow:0 0 0 1px rgba(212,162,76,.34), 0 22px 48px -26px rgba(0,0,0,.9);
+  transition:transform .8s var(--ease),filter .8s var(--ease),box-shadow .8s var(--ease);
 }
-.merch-item.is-feature:hover .merch-shot img{transform:scale(1.02);filter:brightness(.98) saturate(1.06) sepia(.02)}
+/* 展签：特写格右下角一行小字，把「一张图」变成「陈列中的一件实物」 */
+.merch-item.is-feature .merch-shot::before{
+  content:"01 / 12 · 凤凰徽章 · Ø58mm";
+  position:absolute;right:clamp(14px,2vw,26px);bottom:clamp(12px,1.6vw,20px);z-index:2;
+  font-family:var(--font-latin);font-size:var(--fs-2xs);letter-spacing:.18em;
+  color:rgba(212,162,76,.62);text-transform:uppercase;
+}
+.merch-item.is-feature:hover .merch-shot img{transform:scale(1.015);filter:brightness(1) saturate(1.06) sepia(.01);box-shadow:0 0 0 1px rgba(212,162,76,.55), 0 26px 56px -26px rgba(0,0,0,.95)}
 .merch-item.is-feature h3{font-size:clamp(1.5rem,2.6vw,2.1rem);margin-top:18px}
 .merch-item.is-feature .tier{color:var(--she-vermilion)}
 .merch-item.is-feature > p{max-width:34em;padding-bottom:26px}
