@@ -83,3 +83,9 @@
 |---|---|---|---|---|---|
 | U-31 | 20 | 5 处中英信息不对等：英文丢失诗句/人名/数字/核心论点/遗言 | 全部补齐英译；新增 bilingual_parity_test.py（比例/年份/引诗/Markdown 四判据） | **已完成** | tools/bilingual_parity_test.py |
 | U-32 | 20 | 我补英文时引入 Markdown 斜体 *Pride of Fisherman*，页面纯文本渲染会显示星号 | 改为引号；门禁加「英文不得含 Markdown 标记」判据 | **已完成** | tools/bilingual_parity_test.py |
+## 轮21 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-33 | 21 | 出处数据齐全但读者看不到：ar.js 只渲染「素材出处 N 条」，从不展示 label/url | 改原生 `<details>` 可展开列表，默认收起；加 .ar-src 样式；新增门禁「出处必须渲染 label」 | **已完成** | site/assets/js/ar.js |
+| U-34 | 21 | 出处审计（13 章全有 note、8 个独立来源、4 个链接实测 HTTP 200 可访问） | 确认无编造；改为可展开后读者可自行追溯 | **已完成** | memory/08-verify.md |
