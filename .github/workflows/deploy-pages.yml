@@ -57,6 +57,7 @@ jobs:
           python tools/rhythm_test.py
           python tools/stagger_test.py
           python tools/reduced_motion_test.py
+          python tools/microinteraction_test.py
 
   deploy:
     name: Deploy

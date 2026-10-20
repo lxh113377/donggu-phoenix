@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:24;
+  --build:25;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -984,6 +984,18 @@ section.foot{padding-top:var(--sec-y-loose)}
   font-family:var(--font-sans);font-size:var(--fs-sm);letter-spacing:.16em;color:var(--fg)}
 #cam .close{position:absolute;top:22px;right:22px;width:44px;height:44px;border-radius:50%;
   border:1px solid var(--line);display:grid;place-items:center;color:var(--fg);font-size:var(--fs-lg)}
+
+/* === MICRO-FEEDBACK（轮31） ===
+ * 静态审查 13 类可交互元素的 hover/active 覆盖时发现两处缺口：
+ *   #cam .close  摄像头关闭按钮（44×44 常驻）—— hover 与 active 都没有
+ *   .nav-toggle  移动端菜单按钮 —— 有 active 缺 hover
+ * 补上，强度对齐 .btn 现有反馈量级。 */
+#cam .close{transition:border-color .3s var(--ease),color .3s var(--ease),transform .2s var(--ease)}
+#cam .close:hover{border-color:var(--she-gold);color:var(--she-gold)}
+#cam .close:active{transform:scale(.94)}
+.nav-toggle{transition:border-color .3s var(--ease),transform .2s var(--ease)}
+.nav-toggle:hover{border-color:var(--she-gold)}
+.nav-toggle:active{transform:scale(.94)}
 
 /* ---------- ⑰ 动效 ---------- */
 .reveal{opacity:0;transform:translateY(26px);
