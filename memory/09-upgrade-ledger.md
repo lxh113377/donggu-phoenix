@@ -256,3 +256,10 @@
 | U-103 | 45 | 错误边界/HTTP缓存/SW更新三维度此前从未验证 | 逐项实测：图片 onerror 3/3、canvas 失败页面仍可读、版本对账守卫兜底缓存、SW skipWaiting+claim 齐全 → **均无缺陷** | **已完成**（非缺陷） | tools/resilience_test.py |
 | U-104 | 45 | 容错能力无防回归判据 | 建 resilience_test.py 5 条（图片 onerror/noscript/版本对账/SW更新/try 块数），接入 CI；反向验证两种破坏均判红 | **已完成** | tools/resilience_test.py |
 | U-105 | 45 | 未加全局 `window.onerror` | 判断后**不加**：本站 17 个 try 块已覆盖关键路径，无后台上报，全局捕获收益低 | **已否决**（有理据） | — |
+## 轮46 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-106 | 46 | 进场元素若永不触发会「静默消失」（不报错不白屏，只是某块内容永久不可见） | 建 reveal_coverage_test.py：滚遍全站后所有 `.reveal` 必须带 `.in`；反向验证注入永不进视口的元素能判红 | **已完成** | tools/reveal_coverage_test.py |
+| U-107 | 46 | 探针步进 `y+=600` 最后一步不一定落在 maxY，导致页脚误报「不显示」 | 循环后必须显式 `scrollTo(0, scrollHeight)` 一次；已写进判据注释 | **已完成**（方法论） | tools/reveal_coverage_test.py |
+| U-108 | 46 | 15 个浏览器判据只在本地跑，CI 覆盖不到，长期不跑会悄悄失效 | 建 run_browser_suite.py 统一入口（15 项，--fast 9 项 143s）；聚合判定「一项 FAIL 即 FAIL」 | **已完成** | tools/run_browser_suite.py |

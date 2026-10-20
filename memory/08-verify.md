@@ -1806,3 +1806,53 @@ CI 日志确认执行：「RESULT: PASS 容错与降级基线 5 项全部成立�
 - 线上 build=33，CI：39408553979 success
 - 干净克隆：verify_site / resilience_test 全 PASS
 - 静态门禁 31 条
+
+## 轮46 结果（2026-10-20 · 首访路径 + 进场覆盖率 + 浏览器判据统一入口）
+
+### 一、首访完整路径验证（7 步全通）
+1) 打开：body.ready=true，boot 已移除
+2) 唤凤：Phoenix 就绪，stage canvas 存在
+3) 滚动进场：22/22
+4) 拖动进度轴：500→「四·修光」50%，900→「六·开光」90%（映射准确）
+5) 开 AR：open=true, scene=red
+6) 关 AR：arOpen=false, hash=''
+7) 滚到底：scrollY 10099 / max 10146
+
+### 二、进场覆盖率（发现真问题：静默消失）
+`.reveal` 初始 opacity:0，靠 IntersectionObserver 加 .in 才显示。
+任何一个未触发 = 页面上永久一片空白（不报错、不白屏，最难发现）。
+
+**本轮踩的坑**：第一版探针用 `for (y=0; y<=maxY; y+=600)` 步进，
+最后一步不一定落在 maxY，页脚 `.foot-grid` 没进视口，误报「21/22」。
+实测复验 .foot-grid：opacity 0.9997、hasIn=true —— 本来就是正常的。
+改成循环后再显式 scrollTo(0, scrollHeight) 后，**22/22 全触发**。
+
+→ 又一次印证：**测不出不等于不存在，测出了也不一定是真的**。
+
+### 三、新增 tools/reveal_coverage_test.py
+滚遍全站后检查所有 .reveal 是否都带 .in；零元素或无数据判 SKIP。
+反向验证：注入永不进视口的 reveal → 准确判红。
+
+### 四、发现工程风险：15 个浏览器判据无统一入口
+| 类别 | 数量 | 说明 |
+|---|---|---|
+| CI 内（纯静态） | 16 | 每次提交自动跑 |
+| 仅本地（需浏览器） | 15 | 覆盖静态检查看不见的东西 |
+
+浏览器判据长期不跑会悄悄失效，且覆盖的恰是布局溢出、进场触发、
+AR 播放、视觉重量这些「不看就不知道」的维度。
+
+→ 建 tools/run_browser_suite.py：
+  python tools/run_browser_suite.py          全部 15 项
+  python tools/run_browser_suite.py --fast   9 项快的（约 143s）
+
+### 五、聚合判定验证（关键）
+fast 组 9 项全 PASS，用时 143s。
+反向验证：注入永不触发的 reveal 后 →
+  通过 8 / 失败 1 → RESULT: FAIL  1 项浏览器判据未通过
+→ **1 项失败正确覆盖 8 项通过，没有洗绿**。文件 SHA256 校验已还原。
+
+### 读数
+- 线上 build=33，本轮无产品代码改动（纯测试基建）
+- fast 组 9/9 PASS（143s）
+- 静态门禁 31 条 + 浏览器判据 15 项
