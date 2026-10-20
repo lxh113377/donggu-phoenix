@@ -1,0 +1,12 @@
+{
+ "Q": 1.0,
+ "parts": {
+  "success": 1.0,
+  "first_try": 1.0,
+  "efficiency": 1.0
+ },
+ "n": 9,
+ "baseline_Q": 0.8,
+ "lift_pct": 25.0,
+ "gate_30pct": false
+}

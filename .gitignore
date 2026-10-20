@@ -13,3 +13,8 @@ __pycache__/
 素材/*.png
 素材/*.jpg
 相关内容/
+
+# skill治理：上游解包物与临时件不入库
+_skill_audit/gstack_up/
+*.tar.gz
+

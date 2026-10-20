@@ -1,0 +1,34 @@
+{
+ "version": "1.0",
+ "date": "2026-10-20",
+ "dimensions": {
+  "functionality": {
+   "weight": 0.3,
+   "label": "功能完整性",
+   "anchors": "10=覆盖全部职能边界且有实测增益; 7=主路径覆盖; 5=需人工补脚本; 3=频繁绕路; 1=核心缺陷未缓解"
+  },
+  "efficiency": {
+   "weight": 0.2,
+   "label": "运行效率",
+   "anchors": "上下文token税+命令往返+安装体积; 10=<400B主文件且链式高效; 5=12-30KB; 1=>30KB常驻+高失败重试"
+  },
+  "compatibility": {
+   "weight": 0.2,
+   "label": "兼容性",
+   "anchors": "对九端 junction 体系/中文 Windows/现有 memory 台账的适配成本; 10=零改造; 5=需 fork 适配; 1=架构冲突"
+  },
+  "documentation": {
+   "weight": 0.15,
+   "label": "文档完善度",
+   "anchors": "README/docs site/examples/CHANGELOG; 10=docs站+范例+变更史; 5=README 尚可; 1=无文档"
+  },
+  "community": {
+   "weight": 0.15,
+   "label": "社区支持度",
+   "anchors": "stars 增速/last commit/issue 响应/发布节奏; 10=周活跃+高响应; 5=月级; 2=>6月停更; 0=弃档"
+  }
+ },
+ "composite": "weighted sum, 0-10, one decimal",
+ "replace_threshold": "candidate_score - current_score >= 1.5 AND compatibility >= 6",
+ "evidence_rule": "each score row must cite at least one primary evidence item (repo URL fetch / local file:line / measured command)"
+}

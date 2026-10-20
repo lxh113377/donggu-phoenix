@@ -1,0 +1,137 @@
+{
+ "generated": "2026-10-20T08:27:50",
+ "total_skills": 8,
+ "attention": 4,
+ "rows": [
+  {
+   "skill": "agent-browser",
+   "version": "2.0.0",
+   "last_updated": "2026-10-20",
+   "skill_bytes": 38626,
+   "upstream": [
+    {
+     "repo": "vercel-labs/agent-browser",
+     "stars": "44k",
+     "last_commit": "yesterday",
+     "latest_release": "v0.39.1"
+    }
+   ],
+   "flags": [
+    "OVERSIZE_SOFT12K(38626B)"
+   ]
+  },
+  {
+   "skill": "browser-cdp",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 6474,
+   "upstream": [
+    {
+     "repo": "microsoft/playwright-mcp",
+     "stars": "38k",
+     "last_commit": "yesterday",
+     "latest_release": "v0.0.83"
+    }
+   ]
+  },
+  {
+   "skill": "defuddle",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 1034,
+   "upstream": [
+    {
+     "repo": "kepano/defuddle",
+     "stars": "9.7k",
+     "last_commit": "october",
+     "latest_release": "v0.19.5"
+    }
+   ]
+  },
+  {
+   "skill": "docx",
+   "version": "2.0.0",
+   "last_updated": null,
+   "skill_bytes": 28922,
+   "upstream": [
+    {
+     "repo": "anthropics/skills",
+     "stars": "182k",
+     "last_commit": "october",
+     "latest_release": "no releases or repo not found"
+    }
+   ],
+   "flags": [
+    "OVERSIZE_SOFT12K(28922B)"
+   ]
+  },
+  {
+   "skill": "gstack",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 27329,
+   "upstream": [
+    {
+     "repo": "garrytan/gstack",
+     "stars": "137k",
+     "last_commit": "today",
+     "latest_release": "no releases or repo not found"
+    }
+   ],
+   "flags": [
+    "OVERSIZE_SOFT12K(27329B)"
+   ]
+  },
+  {
+   "skill": "pdf",
+   "version": "1.0.2",
+   "last_updated": null,
+   "skill_bytes": 11374,
+   "upstream": [
+    {
+     "repo": "anthropics/skills",
+     "stars": "182k",
+     "last_commit": "october",
+     "latest_release": "no releases or repo not found"
+    }
+   ]
+  },
+  {
+   "skill": "web-access",
+   "version": "2.5.4",
+   "last_updated": null,
+   "skill_bytes": 18657,
+   "upstream": [
+    {
+     "repo": "mendableai/firecrawl",
+     "stars": "193k",
+     "last_commit": "yesterday",
+     "latest_release": "v2.11.0"
+    },
+    {
+     "repo": "unclecode/crawl4ai",
+     "stars": "86k",
+     "last_commit": "last thursday",
+     "latest_release": "v0.9.5"
+    }
+   ],
+   "flags": [
+    "OVERSIZE_SOFT12K(18657B)"
+   ]
+  },
+  {
+   "skill": "xlsx",
+   "version": "1.0.2",
+   "last_updated": null,
+   "skill_bytes": 11703,
+   "upstream": [
+    {
+     "repo": "anthropics/skills",
+     "stars": "182k",
+     "last_commit": "october",
+     "latest_release": "no releases or repo not found"
+    }
+   ]
+  }
+ ]
+}

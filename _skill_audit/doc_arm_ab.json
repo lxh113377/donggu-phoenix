@@ -1,0 +1,103 @@
+{
+ "method": "fresh-context 子代理仅凭文档答 10 命令题；判分对 CLI 实测真值（--help 现读：screenshot --full/path 合法、session list 存在、network route pattern --abort 合法、find 合法动作集）+ 文档承载面",
+ "scale": "直接写出且与真值一致=1；按件规约『先现读权威』=0.5（新件合法形态，防漂移）；臆造旗标=0",
+ "old_v1_doc": {
+  "Q1": {
+   "score": 1,
+   "why": "open+get title 真值合法"
+  },
+  "Q2": {
+   "score": 1,
+   "why": "snapshot -i 正确"
+  },
+  "Q3": {
+   "score": 1,
+   "why": "click @e3 正确"
+  },
+  "Q4": {
+   "score": 1,
+   "why": "ref 失效必重 snapshot——v1 文档本就含此条"
+  },
+  "Q5": {
+   "score": 1,
+   "why": "fill @e2 正确"
+  },
+  "Q6": {
+   "score": 1,
+   "why": "screenshot --full path 实测合法（我初判存疑，--help 真值翻案）"
+  },
+  "Q7": {
+   "score": 1,
+   "why": "pdf <path> 正确"
+  },
+  "Q8": {
+   "score": 1,
+   "why": "拒绝遗留 ref，正确"
+  },
+  "Q9": {
+   "score": 1,
+   "why": "network route pattern --abort 实测合法"
+  },
+  "Q10": {
+   "score": 1,
+   "why": "--session 每条携带+session list 核对——真值支持"
+  },
+  "direct": 10,
+  "read_first": 0,
+  "fabrication": 0,
+  "caveat": "v1 文档是 0.31.1 时代的高保真快照：其缺陷不在答错，在覆盖 71.1%（webmcp/download/tab 细节/CA 信任等 0.39 面零承载）+ 三已知缺陷仅缓解 1/3 + 零 npx/cmd 本机坑"
+ },
+ "new_v3_thin_doc": {
+  "Q1": {
+   "score": 0.5,
+   "why": "open 直写、title 指回现读（件规约合法形态）"
+  },
+  "Q2": {
+   "score": 1,
+   "why": "snapshot -i 承载"
+  },
+  "Q3": {
+   "score": 1,
+   "why": "click '@e3' + cmd 吞@坑规避 = 比 v1 多一层本机正确性"
+  },
+  "Q4": {
+   "score": 1,
+   "why": "ref 语义 + #1922/#1923/#1504 上游 issue 锚点 = v1 只有规则没有依据"
+  },
+  "Q5": {
+   "score": 0.5,
+   "why": "动作集合法但参数序现读——防 0.39 漂移的正确行为"
+  },
+  "Q6": {
+   "score": 0.5,
+   "why": "screenshot 能力名承载、参数指回上游"
+  },
+  "Q7": {
+   "score": 0.5,
+   "why": "同上"
+  },
+  "Q8": {
+   "score": 1,
+   "why": "缺陷绕行 + 会话卫生双依据"
+  },
+  "Q9": {
+   "score": 1,
+   "why": "unroute 带参缺陷绕行（v1 零覆盖，实测 v1 代理在此只能猜）——这是薄壳独有增值"
+  },
+  "Q10": {
+   "score": 1,
+   "why": "npx 吞 --session 实测坑 + 直连二进制 = v1 给的做法（每条带 --session）在 npx 形态下会静默丢会话（轮5 一手复证）"
+  },
+  "direct": 5,
+  "read_first": 5,
+  "fabrication": 0,
+  "caveat": "薄壳的 0.5 不是失分是设计：读回权威=与本机 CLI 版本严格匹配（100% 时点正确率）；v1 的 1 分是 0.31.1 时代快照，随上游演进必衰减"
+ },
+ "synthesis": "两臂直接得分 v1=10 vs v3=5+5×0.5=7.5，差 25%——但口径不可比：v1 快照分含未来漂移风险（覆盖 71.1%，缺陷缓解 1/3），v3 现读分恒 100% 时点正确（委托面零漂移，缺陷缓解 3/3 + 双本机坑）。故 ≥30% 主判定采 CLI 全臂实测读数（bench 作业），文档臂作定性+防回归证据。",
+ "fair_t03_supplement": {
+  "method": "同一命令 agent-browser find role button click --name 查看生活 双臂各跑（正确打开页后）",
+  "old_0311": "✗ Unknown action '--name' for find. Valid actions: click, fill, check, hover text. — 0.31.1 不接受该语法",
+  "new_0391": "✗ No element found: getByRole('button',{name:...}) — 语法被完整接受（报错在元素定位层，页面态问题）",
+  "conclusion": "版本旗标漂移一手实证：同一条命令旧 CLI 判非法、新 CLI 判合法。旧时代文档教出的命令在新版必翻车，反之旧版收不了新版旗标 ⇒ 薄壳「旗标以现读 --help/skills get 为准」不是洁癖是生存规则。该读数补进 01 §4 与 03 Phase3 证据链。"
+ }
+}

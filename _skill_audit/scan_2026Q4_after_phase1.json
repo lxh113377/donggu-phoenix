@@ -1,0 +1,1383 @@
+{
+ "generated": "2026-10-20T09:10:23",
+ "total_skills": 181,
+ "attention": 48,
+ "rows": [
+  {
+   "skill": "9b-lightworkflow",
+   "version": "1.4.0",
+   "last_updated": null,
+   "skill_bytes": 8807
+  },
+  {
+   "skill": "A-ask-questions",
+   "version": "3.0.1",
+   "last_updated": null,
+   "skill_bytes": 11693
+  },
+  {
+   "skill": "A-dynamic-workflow",
+   "version": "1.3.0",
+   "last_updated": null,
+   "skill_bytes": 8033
+  },
+  {
+   "skill": "A-get-memory",
+   "version": "4.83.0",
+   "last_updated": null,
+   "skill_bytes": 12055
+  },
+  {
+   "skill": "A-java-problem",
+   "version": "1.6.0",
+   "last_updated": null,
+   "skill_bytes": 14469,
+   "flags": [
+    "OVERSIZE_SOFT12K(14469B)"
+   ]
+  },
+  {
+   "skill": "A-memory-start",
+   "version": "10.95.0",
+   "last_updated": "2026-10-12",
+   "skill_bytes": 19508,
+   "flags": [
+    "OVERSIZE_SOFT12K(19508B)"
+   ]
+  },
+  {
+   "skill": "A-project-better",
+   "version": "1.24.0",
+   "last_updated": null,
+   "skill_bytes": 7931
+  },
+  {
+   "skill": "A-project-handoff",
+   "version": "3.122.0",
+   "last_updated": null,
+   "skill_bytes": 9664,
+   "flags": [
+    "PYCACHE_JUNK(2)"
+   ]
+  },
+  {
+   "skill": "A-prompt-better",
+   "version": "1.3.0",
+   "last_updated": null,
+   "skill_bytes": 28736,
+   "flags": [
+    "OVERSIZE_SOFT12K(28736B)"
+   ]
+  },
+  {
+   "skill": "A-skill-manager",
+   "version": "1.20.0",
+   "last_updated": null,
+   "skill_bytes": 11749
+  },
+  {
+   "skill": "_my-skills",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 1062
+  },
+  {
+   "skill": "agent-browser",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 29313,
+   "upstream": [
+    {
+     "repo": "vercel-labs/agent-browser",
+     "stars": "44k",
+     "last_commit": "yesterday",
+     "latest_release": "v0.39.1"
+    }
+   ],
+   "flags": [
+    "OVERSIZE_SOFT12K(29313B)"
+   ]
+  },
+  {
+   "skill": "ai-video-homework-pipeline",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 6242
+  },
+  {
+   "skill": "algorithmic-art",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 19769,
+   "flags": [
+    "OVERSIZE_SOFT12K(19769B)"
+   ]
+  },
+  {
+   "skill": "audio-deliverable-pipeline",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 8320
+  },
+  {
+   "skill": "audit-runner-safe-aggregate",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 5654
+  },
+  {
+   "skill": "bigfile-split",
+   "version": "1.4.3",
+   "last_updated": null,
+   "skill_bytes": 4088
+  },
+  {
+   "skill": "brainstorming",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 16892,
+   "flags": [
+    "OVERSIZE_SOFT12K(16892B)"
+   ]
+  },
+  {
+   "skill": "brand-guidelines",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 2235
+  },
+  {
+   "skill": "browser-cdp",
+   "version": "1.1.0",
+   "last_updated": "2026-10-20",
+   "skill_bytes": 2858,
+   "upstream": [
+    {
+     "repo": "ChromeDevTools/chrome-devtools-mcp",
+     "stars": "54k",
+     "last_commit": "yesterday",
+     "latest_release": "chrome-devtools-mcp-v1.11.0"
+    },
+    {
+     "repo": "vercel-labs/agent-browser",
+     "stars": "44k",
+     "last_commit": "yesterday",
+     "latest_release": "v0.39.1"
+    }
+   ]
+  },
+  {
+   "skill": "browser-voice-call",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 10365
+  },
+  {
+   "skill": "byted-bp-cdn-pagesdeploy",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 8084
+  },
+  {
+   "skill": "byted-mediakit-shared",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 10910
+  },
+  {
+   "skill": "byted-seedance-video-generate",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 8305
+  },
+  {
+   "skill": "byted-seedream-image-generate",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 8991
+  },
+  {
+   "skill": "c-cleanup",
+   "version": "2.5.1",
+   "last_updated": null,
+   "skill_bytes": 30234,
+   "flags": [
+    "OVERSIZE_SOFT12K(30234B)"
+   ]
+  },
+  {
+   "skill": "canvas-design",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 12376,
+   "flags": [
+    "OVERSIZE_SOFT12K(12376B)"
+   ]
+  },
+  {
+   "skill": "chaoshi-admin-inline-edit",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 6220
+  },
+  {
+   "skill": "chaoshi-image-optimization",
+   "version": "1.5.0",
+   "last_updated": null,
+   "skill_bytes": 24491,
+   "flags": [
+    "OVERSIZE_SOFT12K(24491B)"
+   ]
+  },
+  {
+   "skill": "chaoshi-web-deploy",
+   "version": "3.9.5",
+   "last_updated": null,
+   "skill_bytes": 57431,
+   "flags": [
+    "OVERSIZE_SOFT12K(57431B)"
+   ]
+  },
+  {
+   "skill": "chart-visualization",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 3355
+  },
+  {
+   "skill": "ci-pipeline-debugging",
+   "version": "1.1.2",
+   "last_updated": null,
+   "skill_bytes": 12926,
+   "flags": [
+    "OVERSIZE_SOFT12K(12926B)"
+   ]
+  },
+  {
+   "skill": "cloudbase",
+   "version": "2.35.2",
+   "last_updated": null,
+   "skill_bytes": 19789,
+   "flags": [
+    "OVERSIZE_SOFT12K(19789B)"
+   ]
+  },
+  {
+   "skill": "cloudbase-db-optimize",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 8364
+  },
+  {
+   "skill": "code-review",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 21911,
+   "flags": [
+    "OVERSIZE_SOFT12K(21911B)"
+   ]
+  },
+  {
+   "skill": "codebuddy-chat-web",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 5505
+  },
+  {
+   "skill": "coding-agent",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 4940
+  },
+  {
+   "skill": "commit-archaeologist",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 5496
+  },
+  {
+   "skill": "computer-use-guidance-windows",
+   "version": "0.9.0",
+   "last_updated": null,
+   "skill_bytes": 28217,
+   "flags": [
+    "OVERSIZE_SOFT12K(28217B)"
+   ]
+  },
+  {
+   "skill": "consulting-analysis",
+   "version": "1.16.0",
+   "last_updated": null,
+   "skill_bytes": 71653,
+   "flags": [
+    "OVERSIZE_SOFT12K(71653B)"
+   ]
+  },
+  {
+   "skill": "cross-platform-agent-sync",
+   "version": "1.5.0",
+   "last_updated": null,
+   "skill_bytes": 4057
+  },
+  {
+   "skill": "data-analysis",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 8929
+  },
+  {
+   "skill": "data-visualization",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 13700,
+   "flags": [
+    "OVERSIZE_SOFT12K(13700B)"
+   ]
+  },
+  {
+   "skill": "debugging-fixing",
+   "version": "2.4.0",
+   "last_updated": null,
+   "skill_bytes": 15652,
+   "flags": [
+    "OVERSIZE_SOFT12K(15652B)"
+   ]
+  },
+  {
+   "skill": "defuddle",
+   "version": "1.1.0",
+   "last_updated": "2026-10-20",
+   "skill_bytes": 2608,
+   "upstream": [
+    {
+     "repo": "kepano/defuddle",
+     "stars": "9.7k",
+     "last_commit": "october",
+     "latest_release": "v0.19.5"
+    },
+    {
+     "repo": "adbar/trafilatura",
+     "stars": "7k",
+     "last_commit": "october",
+     "latest_release": "v2.3.1"
+    }
+   ]
+  },
+  {
+   "skill": "diagram-maker",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 2582
+  },
+  {
+   "skill": "dingtalk-aisearch",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 9238
+  },
+  {
+   "skill": "dingtalk-aitable",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 26977,
+   "flags": [
+    "OVERSIZE_SOFT12K(26977B)"
+   ]
+  },
+  {
+   "skill": "dingtalk-calendar",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 13506,
+   "flags": [
+    "OVERSIZE_SOFT12K(13506B)"
+   ]
+  },
+  {
+   "skill": "dingtalk-chat",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 9739
+  },
+  {
+   "skill": "dingtalk-contact",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 9640
+  },
+  {
+   "skill": "dingtalk-doc",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 12239
+  },
+  {
+   "skill": "dingtalk-drive",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 15614,
+   "flags": [
+    "OVERSIZE_SOFT12K(15614B)"
+   ]
+  },
+  {
+   "skill": "dingtalk-event",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 10265
+  },
+  {
+   "skill": "dingtalk-mail",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 9566
+  },
+  {
+   "skill": "dingtalk-minutes",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 16740,
+   "flags": [
+    "OVERSIZE_SOFT12K(16740B)"
+   ]
+  },
+  {
+   "skill": "dingtalk-misc",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 16260,
+   "flags": [
+    "OVERSIZE_SOFT12K(16260B)"
+   ]
+  },
+  {
+   "skill": "dingtalk-shared",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 7118
+  },
+  {
+   "skill": "dingtalk-todo",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 11934
+  },
+  {
+   "skill": "dingtalk-wiki",
+   "version": "1.0.62.3",
+   "last_updated": null,
+   "skill_bytes": 13707,
+   "flags": [
+    "OVERSIZE_SOFT12K(13707B)"
+   ]
+  },
+  {
+   "skill": "discover-agent-cli",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 8506
+  },
+  {
+   "skill": "doc-coauthoring",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 15815,
+   "flags": [
+    "OVERSIZE_SOFT12K(15815B)"
+   ]
+  },
+  {
+   "skill": "docker-e2e-gate",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 3573
+  },
+  {
+   "skill": "docx",
+   "version": "2.0.0",
+   "last_updated": null,
+   "skill_bytes": 28922,
+   "upstream": [
+    {
+     "repo": "anthropics/skills",
+     "stars": "182k",
+     "last_commit": "october",
+     "latest_release": "no releases or repo not found"
+    }
+   ],
+   "flags": [
+    "OVERSIZE_SOFT12K(28922B)"
+   ]
+  },
+  {
+   "skill": "dogfood",
+   "version": "1.1.0",
+   "last_updated": "2026-10-20",
+   "skill_bytes": 11882,
+   "upstream": [
+    {
+     "repo": "microsoft/playwright-mcp",
+     "stars": "38k",
+     "last_commit": "yesterday",
+     "latest_release": "v0.0.83"
+    },
+    {
+     "repo": "web-infra-dev/midscene",
+     "stars": "15k",
+     "last_commit": "yesterday",
+     "latest_release": "v1.16.0"
+    }
+   ]
+  },
+  {
+   "skill": "electron",
+   "version": "1.1.0",
+   "last_updated": "2026-10-20",
+   "skill_bytes": 2625,
+   "upstream": [
+    {
+     "repo": "vercel-labs/agent-browser",
+     "stars": "44k",
+     "last_commit": "yesterday",
+     "latest_release": "ERR:URLError"
+    },
+    {
+     "repo": "microsoft/playwright",
+     "stars": "98k",
+     "last_commit": "yesterday",
+     "latest_release": "v1.64.1"
+    }
+   ]
+  },
+  {
+   "skill": "elon-musk-perspective",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 23644,
+   "flags": [
+    "OVERSIZE_SOFT12K(23644B)"
+   ]
+  },
+  {
+   "skill": "fenjue-lessons-hitrate",
+   "version": "2.0.0",
+   "last_updated": null,
+   "skill_bytes": 3250
+  },
+  {
+   "skill": "fenjue-memory-audit",
+   "version": "1.7.0",
+   "last_updated": null,
+   "skill_bytes": 9743
+  },
+  {
+   "skill": "figma",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 3170
+  },
+  {
+   "skill": "find-skills",
+   "version": "1.1.0",
+   "last_updated": "2026-10-20",
+   "skill_bytes": 2674,
+   "upstream": [
+    {
+     "repo": "vercel-labs/skills",
+     "stars": "36k",
+     "last_commit": "yesterday",
+     "latest_release": "v1.7.4"
+    }
+   ]
+  },
+  {
+   "skill": "first-principles-decomposer",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 3034
+  },
+  {
+   "skill": "frontend-design",
+   "version": "2.1.0",
+   "last_updated": null,
+   "skill_bytes": 10173
+  },
+  {
+   "skill": "frontend-skill",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 7671
+  },
+  {
+   "skill": "frontend-slides",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 19654,
+   "flags": [
+    "OVERSIZE_SOFT12K(19654B)"
+   ]
+  },
+  {
+   "skill": "github",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 5084
+  },
+  {
+   "skill": "grill-me",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 2691
+  },
+  {
+   "skill": "gsap",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 7776
+  },
+  {
+   "skill": "gstack",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 27329,
+   "upstream": [
+    {
+     "repo": "garrytan/gstack",
+     "stars": "137k",
+     "last_commit": "today",
+     "latest_release": "no releases or repo not found"
+    }
+   ],
+   "flags": [
+    "OVERSIZE_SOFT12K(27329B)"
+   ]
+  },
+  {
+   "skill": "healthcare-cdss-patterns",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 9461
+  },
+  {
+   "skill": "healthcare-emr-patterns",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 6746
+  },
+  {
+   "skill": "healthcare-eval-harness",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 7849
+  },
+  {
+   "skill": "hermes-installer",
+   "version": "1.0.0",
+   "last_updated": "2026-08-04",
+   "skill_bytes": 2512
+  },
+  {
+   "skill": "hook-analyzer-skill",
+   "version": "1.0.3",
+   "last_updated": null,
+   "skill_bytes": 5446
+  },
+  {
+   "skill": "html-ppt",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 14265,
+   "flags": [
+    "OVERSIZE_SOFT12K(14265B)"
+   ]
+  },
+  {
+   "skill": "html-to-docx-win-fix",
+   "version": "1.0.0",
+   "last_updated": "2026-09-21",
+   "skill_bytes": 4554
+  },
+  {
+   "skill": "hyperframes",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 33031,
+   "flags": [
+    "OVERSIZE_SOFT12K(33031B)"
+   ]
+  },
+  {
+   "skill": "hyperframes-cli",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 8949
+  },
+  {
+   "skill": "hyperframes-media",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 15149,
+   "flags": [
+    "OVERSIZE_SOFT12K(15149B)"
+   ]
+  },
+  {
+   "skill": "hyperframes-registry",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 4763
+  },
+  {
+   "skill": "ican-deploy",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 10261
+  },
+  {
+   "skill": "ican-frontend-design-system",
+   "version": "4.25.0",
+   "last_updated": null,
+   "skill_bytes": 59503,
+   "flags": [
+    "OVERSIZE_SOFT12K(59503B)"
+   ]
+  },
+  {
+   "skill": "internal-comms",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 1511
+  },
+  {
+   "skill": "json-canvas",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 7624
+  },
+  {
+   "skill": "knowledge-capture",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 7337
+  },
+  {
+   "skill": "local-asr",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 4882
+  },
+  {
+   "skill": "local-computer-use",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 5837
+  },
+  {
+   "skill": "local-img2img",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 3760
+  },
+  {
+   "skill": "local-mineru",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 5729
+  },
+  {
+   "skill": "local-ocr-npu",
+   "version": "1.2.1",
+   "last_updated": null,
+   "skill_bytes": 6270
+  },
+  {
+   "skill": "local-realtime-translator",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 8216
+  },
+  {
+   "skill": "local-screenshot-qa",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 5749
+  },
+  {
+   "skill": "local-tts",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 6543
+  },
+  {
+   "skill": "local-txt2img",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 5242
+  },
+  {
+   "skill": "local-vram",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 5666
+  },
+  {
+   "skill": "mcp-builder",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 9092
+  },
+  {
+   "skill": "mcporter",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 1701
+  },
+  {
+   "skill": "meeting-intelligence",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 11299
+  },
+  {
+   "skill": "nano-pdf",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 1118
+  },
+  {
+   "skill": "no-manual-steps",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 3410
+  },
+  {
+   "skill": "node-inspect-debugger",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 3827
+  },
+  {
+   "skill": "notion-cli",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 2371
+  },
+  {
+   "skill": "obsidian-bases",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 13027,
+   "flags": [
+    "OVERSIZE_SOFT12K(13027B)"
+   ]
+  },
+  {
+   "skill": "obsidian-cli",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 3183
+  },
+  {
+   "skill": "obsidian-markdown",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 5367
+  },
+  {
+   "skill": "oc-dispatch-exec-guard",
+   "version": "1.1.1",
+   "last_updated": null,
+   "skill_bytes": 5298
+  },
+  {
+   "skill": "office-automation-pro",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 3173
+  },
+  {
+   "skill": "openai-whisper-api",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 2171
+  },
+  {
+   "skill": "openclaw-dual-gate-quality-audit",
+   "version": "1.3.0",
+   "last_updated": null,
+   "skill_bytes": 21562,
+   "flags": [
+    "OVERSIZE_SOFT12K(21562B)"
+   ]
+  },
+  {
+   "skill": "openclaw-fenjue-weekly",
+   "version": "2.0.2",
+   "last_updated": null,
+   "skill_bytes": 4891
+  },
+  {
+   "skill": "openclaw-task-supervision",
+   "version": "1.3.1",
+   "last_updated": null,
+   "skill_bytes": 34111,
+   "flags": [
+    "OVERSIZE_SOFT12K(34111B)"
+   ]
+  },
+  {
+   "skill": "oracle",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 4976
+  },
+  {
+   "skill": "pdf",
+   "version": "1.0.2",
+   "last_updated": null,
+   "skill_bytes": 11374,
+   "upstream": [
+    {
+     "repo": "anthropics/skills",
+     "stars": "182k",
+     "last_commit": "october",
+     "latest_release": "no releases or repo not found"
+    }
+   ]
+  },
+  {
+   "skill": "pixelle-api-ensure",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 3519
+  },
+  {
+   "skill": "ppt-master",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 10339,
+   "upstream": [
+    {
+     "repo": "hugohe3/ppt-master",
+     "stars": "64k",
+     "last_commit": "yesterday",
+     "latest_release": "v6.7.2"
+    }
+   ]
+  },
+  {
+   "skill": "prompt-consolidation",
+   "version": "2.1.0",
+   "last_updated": null,
+   "skill_bytes": 16120,
+   "flags": [
+    "OVERSIZE_SOFT12K(16120B)"
+   ]
+  },
+  {
+   "skill": "prompt-system-audit",
+   "version": "1.5.1",
+   "last_updated": null,
+   "skill_bytes": 32998,
+   "flags": [
+    "OVERSIZE_SOFT12K(32998B)"
+   ]
+  },
+  {
+   "skill": "python-debugpy",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 2985
+  },
+  {
+   "skill": "react-best-practices",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 7251
+  },
+  {
+   "skill": "refactoring",
+   "version": "2.1.0",
+   "last_updated": null,
+   "skill_bytes": 16436,
+   "flags": [
+    "OVERSIZE_SOFT12K(16436B)"
+   ]
+  },
+  {
+   "skill": "report-generator-skill",
+   "version": "1.0.2",
+   "last_updated": null,
+   "skill_bytes": 5184
+  },
+  {
+   "skill": "research-documentation",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 3803
+  },
+  {
+   "skill": "scope-creep-detector",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 5140
+  },
+  {
+   "skill": "screenshot",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 7874
+  },
+  {
+   "skill": "security-audit",
+   "version": "2.0.0",
+   "last_updated": null,
+   "skill_bytes": 19366,
+   "flags": [
+    "OVERSIZE_SOFT12K(19366B)"
+   ]
+  },
+  {
+   "skill": "shadcn",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 16472,
+   "flags": [
+    "OVERSIZE_SOFT12K(16472B)"
+   ]
+  },
+  {
+   "skill": "shell-encoding-pitfalls",
+   "version": "1.3.0",
+   "last_updated": null,
+   "skill_bytes": 14022,
+   "flags": [
+    "OVERSIZE_SOFT12K(14022B)"
+   ]
+  },
+  {
+   "skill": "spec-to-implementation",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 8808
+  },
+  {
+   "skill": "spike",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 2075
+  },
+  {
+   "skill": "sq-cleanmgr-c",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 12501,
+   "flags": [
+    "OVERSIZE_SOFT12K(12501B)"
+   ]
+  },
+  {
+   "skill": "sqlalchemy-loader-criteria-pitfalls",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 4535
+  },
+  {
+   "skill": "static-site-batch-audit-fix",
+   "version": "1.3.0",
+   "last_updated": null,
+   "skill_bytes": 14380,
+   "flags": [
+    "OVERSIZE_SOFT12K(14380B)"
+   ]
+  },
+  {
+   "skill": "story",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 9007
+  },
+  {
+   "skill": "story-cover",
+   "version": "1.0.1",
+   "last_updated": null,
+   "skill_bytes": 1673
+  },
+  {
+   "skill": "story-deslop",
+   "version": "1.0.1",
+   "last_updated": null,
+   "skill_bytes": 10511
+  },
+  {
+   "skill": "story-import",
+   "version": "1.0.1",
+   "last_updated": null,
+   "skill_bytes": 9627
+  },
+  {
+   "skill": "story-long-analyze",
+   "version": "1.0.1",
+   "last_updated": null,
+   "skill_bytes": 5883
+  },
+  {
+   "skill": "story-long-write",
+   "version": "1.0.2",
+   "last_updated": null,
+   "skill_bytes": 2413
+  },
+  {
+   "skill": "story-review",
+   "version": "1.1.1",
+   "last_updated": null,
+   "skill_bytes": 11084
+  },
+  {
+   "skill": "story-scan",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 6213
+  },
+  {
+   "skill": "story-setup",
+   "version": "1.2.9",
+   "last_updated": null,
+   "skill_bytes": 6167
+  },
+  {
+   "skill": "story-short-analyze",
+   "version": "3.0.1",
+   "last_updated": null,
+   "skill_bytes": 9634
+  },
+  {
+   "skill": "story-short-write",
+   "version": "1.0.1",
+   "last_updated": null,
+   "skill_bytes": 10444
+  },
+  {
+   "skill": "taskflow",
+   "version": "1.1.0",
+   "last_updated": "2026-10-20",
+   "skill_bytes": 5953,
+   "upstream": [
+    {
+     "repo": "gastownhall/beads",
+     "stars": "28k",
+     "last_commit": "today",
+     "latest_release": "v1.3.1"
+    }
+   ]
+  },
+  {
+   "skill": "taskflow-inbox-triage",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 2751
+  },
+  {
+   "skill": "test-driven-development",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 10649
+  },
+  {
+   "skill": "testing",
+   "version": "2.0.0",
+   "last_updated": null,
+   "skill_bytes": 7921
+  },
+  {
+   "skill": "theme-factory",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 3124
+  },
+  {
+   "skill": "ui-ux-pro-max",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 3055
+  },
+  {
+   "skill": "utf8-encoding-fix",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 8316
+  },
+  {
+   "skill": "verification-before-completion",
+   "version": "1.2.1",
+   "last_updated": null,
+   "skill_bytes": 11664
+  },
+  {
+   "skill": "video-breakdown-skill",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 6867
+  },
+  {
+   "skill": "video-frames",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 1191
+  },
+  {
+   "skill": "video-whisper-transcribe",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 5791
+  },
+  {
+   "skill": "vp-perspective-audit",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 15282,
+   "flags": [
+    "OVERSIZE_SOFT12K(15282B)"
+   ]
+  },
+  {
+   "skill": "wb-git-commit-recipe",
+   "version": "1.3.0",
+   "last_updated": null,
+   "skill_bytes": 8894
+  },
+  {
+   "skill": "web-access",
+   "version": "2.5.4",
+   "last_updated": null,
+   "skill_bytes": 18657,
+   "upstream": [
+    {
+     "repo": "Panniantong/Agent-Reach",
+     "stars": "invalid",
+     "last_commit": "october",
+     "latest_release": "v1.5.0"
+    },
+    {
+     "repo": "unclecode/crawl4ai",
+     "stars": "86k",
+     "last_commit": "last thursday",
+     "latest_release": "v0.9.5"
+    },
+    {
+     "repo": "D4Vinci/Scrapling",
+     "stars": "89k",
+     "last_commit": "last sunday",
+     "latest_release": "v0.5"
+    },
+    {
+     "repo": "firecrawl/firecrawl",
+     "stars": "193k",
+     "last_commit": "yesterday",
+     "latest_release": "v2.11.0"
+    }
+   ],
+   "flags": [
+    "OVERSIZE_SOFT12K(18657B)"
+   ]
+  },
+  {
+   "skill": "web-design-guidelines",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 1362
+  },
+  {
+   "skill": "wechat-automation",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 20184,
+   "flags": [
+    "OVERSIZE_SOFT12K(20184B)"
+   ]
+  },
+  {
+   "skill": "wechat-voice-transcription",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 3483
+  },
+  {
+   "skill": "win-toolchain-pitfalls",
+   "version": "1.5.0",
+   "last_updated": "2026-10-14",
+   "skill_bytes": 11846
+  },
+  {
+   "skill": "windows-bash-cli-interop-pitfalls",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 7486
+  },
+  {
+   "skill": "windows-cli-utf8-wrapper",
+   "version": "1.2.0",
+   "last_updated": null,
+   "skill_bytes": 9537
+  },
+  {
+   "skill": "windows-gitbash-chinese-path-pit",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 6043
+  },
+  {
+   "skill": "windows-native-ocr",
+   "version": "1.0.0",
+   "last_updated": null,
+   "skill_bytes": 2697
+  },
+  {
+   "skill": "workbuddy-mcp",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 4274
+  },
+  {
+   "skill": "workflow-preflight-check",
+   "version": "1.1.0",
+   "last_updated": null,
+   "skill_bytes": 11134
+  },
+  {
+   "skill": "wps-knowledgebase",
+   "version": "2.0.3",
+   "last_updated": null,
+   "skill_bytes": 21388,
+   "flags": [
+    "OVERSIZE_SOFT12K(21388B)"
+   ]
+  },
+  {
+   "skill": "writing-plans",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 11226
+  },
+  {
+   "skill": "xlsx",
+   "version": "1.0.2",
+   "last_updated": null,
+   "skill_bytes": 11703,
+   "upstream": [
+    {
+     "repo": "anthropics/skills",
+     "stars": "182k",
+     "last_commit": "october",
+     "latest_release": "no releases or repo not found"
+    }
+   ]
+  },
+  {
+   "skill": "天眼一下",
+   "version": null,
+   "last_updated": null,
+   "skill_bytes": 10331
+  }
+ ]
+}

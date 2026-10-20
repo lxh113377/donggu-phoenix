@@ -1,0 +1,1160 @@
+{
+ "weights": {
+  "functionality": 0.3,
+  "efficiency": 0.2,
+  "compatibility": 0.2,
+  "documentation": 0.15,
+  "community": 0.15
+ },
+ "rows": [
+  {
+   "skill": "agent-browser",
+   "family": "浏览器自动化",
+   "current": [
+    8,
+    4,
+    9,
+    7,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "vercel-labs/agent-browser（即其上游本体）",
+     "scores": [
+      8,
+      8,
+      8,
+      9,
+      10
+     ],
+     "evidence": "A 代理实测 Apache-2.0, 44,268★, push 10-19, v0.39.1(10-13) vs 本地钉死 0.31.1(npm 2026-06-26) = 落后 ~19 releases/112 天；0.38.0 重构 persistent refs（#1812）改写本地 lessons 描述的行为；unroute 缺陷经全 CHANGELOG 0 命中证实未修，find text 缺陷 #1504/#1611/#2037 仍开放；上游 CLI 自带版本匹配 skills（skills get core）"
+    },
+    {
+     "repo": "microsoft/playwright-mcp（拦截类任务备引擎）",
+     "scores": [
+      7,
+      6,
+      5,
+      8,
+      10
+     ],
+     "evidence": "A 代理实测 Apache-2.0, 38,380★, v0.0.83, open issues≈1（全家族最佳分诊）；Playwright auto-wait 设计性消除 stale-ref 类；MCP-only 无链式"
+    },
+    {
+     "repo": "browser-use/browser-use",
+     "scores": [
+      6,
+      5,
+      3,
+      8,
+      10
+     ],
+     "evidence": "A 代理实测 MIT, 118,546★, 0.13.13；LLM-in-loop 非确定性，属'替代 agent'而非'服务 agent'"
+    },
+    {
+     "repo": "browserbase/stagehand",
+     "scores": [
+      7,
+      6,
+      4,
+      8,
+      10
+     ],
+     "evidence": "A 代理实测 MIT, 25,743★, 日更 alpha；TS SDK 非 CLI"
+    }
+   ],
+   "verdict": "UPGRADE+lessons 重写",
+   "rationale": "A 组精确实测：落后 112 天/19 版。Phase1 动作改为：①re-pin 0.39.1 ②按 0.38.0 persistent-refs 语义重写 2026-08-09 ref 教训（引 #1922/#1923/#1504）③unroute 补 workaround（route '*' --abort --resource-type / 页面重开）并向上游提单 ④四个同族件共享一份版本锚点注记（blast-radius 合并）⑤补 untrusted 页面文本边界规则。"
+  },
+  {
+   "skill": "gstack",
+   "family": "浏览器自动化",
+   "current": [
+    7,
+    4,
+    8,
+    6,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "garrytan/gstack browse v2.0.0（上游）",
+     "scores": [
+      8,
+      7,
+      7,
+      8,
+      10
+     ],
+     "evidence": "A 代理实测 MIT ~137k★ push 10-20；无 releases → SHA-pin；含 /office-hours 等 23 specialists 工作流包"
+    },
+    {
+     "repo": "web-infra-dev/midscene",
+     "scores": [
+      7,
+      7,
+      6,
+      9,
+      10
+     ],
+     "evidence": "A 代理实测 MIT 15,325★ v1.16.0(10-16), ~45 issues；NL E2E+VL 视觉断言+HTML 报告，报告面借型不迁"
+    },
+    {
+     "repo": "microsoft/playwright（tracing 证据后端）",
+     "scores": [
+      8,
+      6,
+      7,
+      10,
+      10
+     ],
+     "evidence": "A 代理实测 Apache-2.0 98,100★ v1.64.1(10-14)；trace viewer=真证据链"
+    },
+    {
+     "repo": "antiwork/shortest",
+     "scores": [
+      4,
+      6,
+      5,
+      6,
+      2
+     ],
+     "evidence": "A 代理实测 5,691★ 但最后 release 2025-04-01（18 个月未发版）→ 否决"
+    }
+   ],
+   "verdict": "UPGRADE",
+   "rationale": "A 组：本地 v1.1.0 vs 上游 browse v2.0.0；上游 garrytan/gstack MIT 137k★ pushed 10-20 但**无 tags/releases** → 只能 SHA-pin；SKILL.md 由 .tmpl 自动生成，改动只回上游。借 midscene HTML 报告 schema + Playwright tracing 作证据后端。"
+  },
+  {
+   "skill": "web-access",
+   "family": "浏览器自动化/联网",
+   "current": [
+    8,
+    4,
+    8,
+    7,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "Panniantong/Agent-Reach（平台路由 REPLACER）",
+     "scores": [
+      9,
+      7,
+      6,
+      8,
+      9
+     ],
+     "evidence": "A 代理+我实测页面 200（'Give your AI agent eyes to see the entire internet'）；13 平台含小红书/微博/B站、零 API 费路由、自动装+健康检查；shields 星级读数异常(=invalid)以页面为准确认存在；README 含付费赞助商 → 采纳前信任审查"
+    },
+    {
+     "repo": "unclecode/crawl4ai",
+     "scores": [
+      8,
+      7,
+      5,
+      8,
+      10
+     ],
+     "evidence": "实测 Apache-2.0 85,861★ v0.9.5, ~41 issues"
+    },
+    {
+     "repo": "D4Vinci/Scrapling",
+     "scores": [
+      7,
+      8,
+      6,
+      8,
+      10
+     ],
+     "evidence": "实测 ~89k★/10-18, open≈2 最佳维护比；反爬自适应选择子"
+    },
+    {
+     "repo": "firecrawl/firecrawl（ex-mendableai, 改名）",
+     "scores": [
+      9,
+      7,
+      4,
+      9,
+      10
+     ],
+     "evidence": "实测 193,099★/10-20；**AGPL-3.0** 自托管传染→只做外挂服务不 vendoring；旧 sidecar 写 mendableai/ 需按 redirect 修正"
+    },
+    {
+     "repo": "NanmiCoder/MediaCrawler",
+     "scores": [
+      9,
+      7,
+      1,
+      8,
+      9
+     ],
+     "evidence": "实测 67,226★ 活跃，但 NON-COMMERCIAL LEARNING LICENSE 1.1 → **硬拒**（兼容=1）"
+    }
+   ],
+   "verdict": "REPLACE(平台路由+抽取层)+保留私有壳",
+   "rationale": "A 组：Agent-Reach 吸收连接器换代成本（'接入方式会换代，你不用操心'），抽取层交 crawl4ai/Scrapling；本地件保留 GFW 源策略与台账衔接壳。MediaCrawler/firecrawl-vendoring 双雷区入规范。"
+  },
+  {
+   "skill": "defuddle",
+   "family": "浏览器自动化/联网",
+   "current": [
+    6,
+    9,
+    9,
+    5,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "kepano/defuddle 主包 v0.19.5（非 defuddle-cli）",
+     "scores": [
+      8,
+      9,
+      9,
+      8,
+      9
+     ],
+     "evidence": "A 组实测：defuddle-cli@0.7.0 npm 冻结于 2026-03-02（且我实跑见 deprecated 公告'merged into defuddle'），主包 2.36M dl/月月度发版 → 正确调用面是 defuddle@0.19.5"
+    },
+    {
+     "repo": "adbar/trafilatura（fallback）",
+     "scores": [
+      8,
+      8,
+      6,
+      8,
+      8
+     ],
+     "evidence": "A 组实测 Apache-2.0 ~7k★ 2.3.1(10-06), pypi 13M dl/月≈defuddle 5 倍，基准精度；需自备 HTML"
+    },
+    {
+     "repo": "microsoft/markitdown",
+     "scores": [
+      8,
+      7,
+      6,
+      8,
+      10
+     ],
+     "evidence": "实测 MIT ~191k★/本周；多格式→MD 统一器（PDF/Office/图），非文章向"
+    },
+    {
+     "repo": "postlight/parser",
+     "scores": [
+      5,
+      6,
+      4,
+      5,
+      0
+     ],
+     "evidence": "A 组实测最后 push 2024-07-10 → 死档否决"
+    }
+   ],
+   "verdict": "UPGRADE(调用面切主包+trafilatura 兜底)",
+   "rationale": "A 组把坑定位到包级别名：CLI 包冻结 7 个月而库月更——本地件'npm install -g defuddle'写法其实对，但缺安装自检与版本口径；补两行即闭环。"
+  },
+  {
+   "skill": "browser-cdp",
+   "family": "浏览器自动化",
+   "current": [
+    6,
+    7,
+    8,
+    5,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "ChromeDevTools/chrome-devtools-mcp",
+     "scores": [
+      9,
+      6,
+      6,
+      9,
+      10
+     ],
+     "evidence": "A 代理实测 Apache-2.0, 53,865★(我 shields 复测 54k/yesterday), v1.11.0(10-15)；官方 org；attach 运行中 Chrome(--browserUrl)+network/console/perf-trace/memory 取证面超本地件；MCP 形态需适配层"
+    },
+    {
+     "repo": "agent-browser --cdp（同二进制配方）",
+     "scores": [
+      7,
+      8,
+      9,
+      8,
+      10
+     ],
+     "evidence": "A 代理判定本件即 agent-browser 的 --cdp 9222 配方（frontmatter requires bins:[agent-browser]），漂移与本体同；Chrome144+ 远程调试回归仅 0.39.0 修（#2026）"
+    },
+    {
+     "repo": "hangwin/mcp-chrome",
+     "scores": [
+      6,
+      7,
+      6,
+      6,
+      5
+     ],
+     "evidence": "A 代理实测 ~12k★ 但 commit≈2026-01, 203 open → 停摆，否决"
+    },
+    {
+     "repo": "browserless/browserless",
+     "scores": [
+      5,
+      6,
+      3,
+      7,
+      8
+     ],
+     "evidence": "A 代理实测 ~14k★/10-19 active，但许可'not identifiable'/source-available + Docker 运维面，仅服务化场景"
+    }
+   ],
+   "verdict": "REPLACE→chrome-devtools-mcp + 残值并入",
+   "rationale": "A 组裁定覆盖我初判：取证面（perf trace/network HAR memory）本地件根本达不到，chrome-devtools-mcp 严格超集；启动配方残值折进 agent-browser --cdp 一节，本件退役。"
+  },
+  {
+   "skill": "electron",
+   "family": "桌面自动化",
+   "current": [
+    6,
+    7,
+    8,
+    5,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "vercel-labs/agent-browser（README 明列 Electron/WebView2/remote-debug Chrome）",
+     "scores": [
+      8,
+      8,
+      9,
+      9,
+      10
+     ],
+     "evidence": "A 组实测：同二进制 CDP 面，0.34.0 修 session→tab 绑定；限制=须 --remote-debugging-port 重启目标应用"
+    },
+    {
+     "repo": "microsoft/playwright _electron.launch",
+     "scores": [
+      9,
+      6,
+      7,
+      10,
+      10
+     ],
+     "evidence": "A 组实测 v1.64.1：一等公民 Electron——免调试端口启动、主进程 eval、多窗口、tracing"
+    },
+    {
+     "repo": "webdriverio + @wdio/electron-service v10.0.0",
+     "scores": [
+      7,
+      6,
+      5,
+      8,
+      7
+     ],
+     "evidence": "A 组实测 10-19 活跃含中文文档；栈重"
+    },
+    {
+     "repo": "electron-userland/spectron",
+     "scores": [
+      1,
+      5,
+      3,
+      4,
+      0
+     ],
+     "evidence": "A 组实测 DEPRECATED 2024-02 → 文档提及一律剔除"
+    }
+   ],
+   "verdict": "UPGRADE(双路：attach=agent-browser / launch=Playwright)",
+   "rationale": "A 组裁定：'驱动已开着的 app'与'启动并测 Electron'是两条能力线，各取最强上游；退役件引用清理。"
+  },
+  {
+   "skill": "dogfood",
+   "family": "浏览器自动化/QA",
+   "current": [
+    5,
+    6,
+    8,
+    5,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "web-infra-dev/midscene",
+     "scores": [
+      7,
+      7,
+      6,
+      9,
+      10
+     ],
+     "evidence": "实测同 gstack 行；'走查→证据→报告'闭环 1:1 最近"
+    },
+    {
+     "repo": "microsoft/playwright-mcp",
+     "scores": [
+      6,
+      8,
+      6,
+      8,
+      10
+     ],
+     "evidence": "免费确定性逐步取证；无报告模板（保留自有）"
+    },
+    {
+     "repo": "alexanderop/dogfood-qa",
+     "scores": [
+      3,
+      6,
+      5,
+      3,
+      1
+     ],
+     "evidence": "A 代理实测 2★/无 license → 玩具，否决"
+    }
+   ],
+   "verdict": "KEEP+UPGRADE",
+   "rationale": "A 组修正初判：件为 prompt-only 编排（allowed-tools=agent-browser），维护成本低 → KEEP+UPGRADE 而非整体 MERGE：加 playwright-mcp console/network 取证 pass + midscene 报告 schema，driver 不变；同族路由重叠治理归 Phase 2 划界动作。"
+  },
+  {
+   "skill": "A-memory-start",
+   "family": "记忆/上下文",
+   "current": [
+    9,
+    5,
+    10,
+    8,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "tobi/qmd（router 直替候选）",
+     "scores": [
+      7,
+      8,
+      7,
+      8,
+      9
+     ],
+     "evidence": "B 代理实测 REST API：MIT, ★30.5k, push 2026-10-15, v2.8.3；本地 BM25+vector+rerank CLI over markdown = unified_router.py 关键词路由的直接上位替代；仅检索面，门禁契约仍需本地（兼容 7）"
+    },
+    {
+     "repo": "mem0ai/mem0",
+     "scores": [
+      7,
+      6,
+      3,
+      9,
+      10
+     ],
+     "evidence": "实测 ts-v3.3.1, stars 67k, last_commit=last wednesday；向量记忆服务，与'目录索引+门禁契约+九端 junction'治理形态不兼容（架构冲突=兼容3）"
+    },
+    {
+     "repo": "letta-ai/letta",
+     "scores": [
+      7,
+      5,
+      3,
+      8,
+      9
+     ],
+     "evidence": "实测 v0.16.8, stars 25k, last_commit=last sunday；agent 内存服务器，需运行时服务，非指令包"
+    },
+    {
+     "repo": "basicmemory-co/basic-memory（概念最近）",
+     "scores": [
+      6,
+      7,
+      4,
+      7,
+      7
+     ],
+     "evidence": "B 代理实测：AGPL-3.0（许可雷区，junction 九端分发场景传染风险）, ★4.3k, push 10-19；markdown-over-MCP 按需检索=目录索引同哲学，但 MCP-only 无门禁语义"
+    },
+    {
+     "repo": "agentsmd/agents.md（格式标准）",
+     "scores": [
+      4,
+      8,
+      8,
+      8,
+      9
+     ],
+     "evidence": "B 代理实测：MIT, ★25k，openai/agents.md 重定向于此，60k+ 项目采用；Step 3.5 项目级探测的格式权威采纳项，非功能替代"
+    }
+   ],
+   "verdict": "KEEP(门禁契约)+UPGRADE(路由→qmd, 索引格式对齐 agentskills.io/agents.md)",
+   "rationale": "B 代理 ~50 仓核验：执行门禁契约/4KB 体量治理为全行业零等价物（保留）；关键词路由层有实测活跃上位件 qmd（换）；seed 纠偏记录（garrytan/claude-code-config 等 8 个虚构名已证伪，防二手清单污染决策面）。"
+  },
+  {
+   "skill": "A-project-handoff",
+   "family": "记忆/项目交接",
+   "current": [
+    9,
+    6,
+    10,
+    7,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "anthropics/skills 无 handoff 等价件",
+     "scores": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "evidence": "实测 README：捆绑件为文档/创意/技术示例（docx/pdf/pptx/xlsx + art/testing/MCP），无项目记忆治理件 — 诚实记 NO-EQUIVALENT"
+    },
+    {
+     "repo": "AGENTS.md standard (agents.md spec)",
+     "scores": [
+      4,
+      8,
+      6,
+      8,
+      9
+     ],
+     "evidence": "anthropics README 指向 agentskills.io 标准站；作为'项目级绑定表'格式标准采纳，非功能替代"
+    }
+   ],
+   "verdict": "KEEP+修命令漂移",
+   "rationale": "SKILL.md 自述在册 20 命令 vs 实装漂移（Unknown command trim-shell 实测记录 2026-09-26）。迁移对象不存在，缺陷自修：命令表现读现 run。"
+  },
+  {
+   "skill": "A-project-better",
+   "family": "项目治理",
+   "current": [
+    8,
+    5,
+    10,
+    8,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "NO-EQUIVALENT（方向优化器+六支柱前端判据为私有体系）",
+     "scores": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "evidence": "anthropics/skills、superpowers、obsidian-skills 三个上游实测清单均无对应件"
+    }
+   ],
+   "verdict": "KEEP",
+   "rationale": "私有治理管线；对标 GitHub 职能已由本审计的巡检脚本固化。"
+  },
+  {
+   "skill": "A-ask-questions",
+   "family": "交互协议",
+   "current": [
+    8,
+    7,
+    10,
+    8,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "NO-EQUIVALENT（澄清协议为老大定制偏好件：问透/零中断两段口径）",
+     "scores": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "evidence": "检索全部候选清单（superpowers 含 brainstorming 但为发散非澄清门禁），无同职能开源件"
+    }
+   ],
+   "verdict": "KEEP",
+   "rationale": "行为定制件，外部替代=行为倒退。"
+  },
+  {
+   "skill": "A-dynamic-workflow (wflow)",
+   "family": "工作流编排",
+   "current": [
+    8,
+    8,
+    9,
+    7,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "ruvnet/claude-flow",
+     "scores": [
+      8,
+      6,
+      5,
+      7,
+      10
+     ],
+     "evidence": "实测 stars 77k, last_commit=yesterday；重型编排平台，跨机/分布式职能超出'仓内子代理派发'边界"
+    },
+    {
+     "repo": "crewAIInc/crewAI",
+     "scores": [
+      7,
+      5,
+      3,
+      8,
+      10
+     ],
+     "evidence": "实测 stars 60k, last_commit=yesterday；Python 运行时框架，与'指令包+python wflow.toml'形态冲突"
+    },
+    {
+     "repo": "langchain-ai/langgraph",
+     "scores": [
+      7,
+      6,
+      3,
+      8,
+      10
+     ],
+     "evidence": "实测 stars 44k, last_commit=yesterday；图状态机库，需代码化，五道守卫需重建"
+    }
+   ],
+   "verdict": "KEEP(边界内)+借上游机制",
+   "rationale": "本件边界=仓内任务拆分+守卫，wflow SKILL.md 明文'跨机用 Argo/Temporal、可视化用 Dify/n8n'——替代检索结论与既有边界声明一致；借 claude-flow 的 hooks 形态升级守卫可观测性。"
+  },
+  {
+   "skill": "A-skill-manager",
+   "family": "技能治理",
+   "current": [
+    9,
+    6,
+    10,
+    8,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "anthropics/skills (规范权威)",
+     "scores": [
+      5,
+      9,
+      7,
+      9,
+      10
+     ],
+     "evidence": "实测 stars 182k, last_commit=october + agentskills.io 标准；作为 SKILL.md 格式权威源采纳（frontmatter/triggers 规范），治理管线本身无替代"
+    },
+    {
+     "repo": "obra/superpowers",
+     "scores": [
+      6,
+      7,
+      5,
+      9,
+      10
+     ],
+     "evidence": "实测 v7.0.0, stars 302k, last_commit=october；技能包+治理流程（TDD/brainstorm 等），可作为外部件引入源清单，非总管替代"
+    },
+    {
+     "repo": "vercel-labs/skills (skills CLI)",
+     "scores": [
+      7,
+      8,
+      6,
+      8,
+      10
+     ],
+     "evidence": "实测 v1.7.4, stars 36k, last_commit=yesterday；市场安装 CLI，对接 find-skills 职能"
+    }
+   ],
+   "verdict": "KEEP+接 vercel-labs/skills 作发现通道",
+   "rationale": "九端 junction 生命周期总管为私有基建；R-DISCOVER 通道由手写升级为 skills CLI 上游。"
+  },
+  {
+   "skill": "find-skills",
+   "family": "技能治理",
+   "current": [
+    6,
+    5,
+    8,
+    6,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "vercel-labs/skills",
+     "scores": [
+      8,
+      8,
+      7,
+      8,
+      10
+     ],
+     "evidence": "实测 v1.7.4, 36k, yesterday；skills.sh 市场 CLI（anthropics README 头徽标即 skills.sh/b/anthropics/skills——上游生态互证）"
+    }
+   ],
+   "verdict": "REPLACE(壳)+UPSTREAM 指向",
+   "rationale": "本地 20.7KB 发现逻辑（>软限）被上游 CLI 一条命令覆盖且永远版本匹配。"
+  },
+  {
+   "skill": "docx / pdf / xlsx / pptx 家族",
+   "family": "文档产物",
+   "current": [
+    7,
+    4,
+    9,
+    7,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "anthropics/skills/skills/docx（superset fork 上游）",
+     "scores": [
+      9,
+      7,
+      6,
+      9,
+      10
+     ],
+     "evidence": "C 组实测：upstream 59 文件 vs 本地 77（超集含 {{token}}/CJK 流程）；upstream 路径动过 2026-07-17，repo 无 tags/releases → SHA-pin 手动回灌；license=Proprietary source-available"
+    },
+    {
+     "repo": "anthropics/skills/skills/pdf",
+     "scores": [
+      7,
+      7,
+      6,
+      9,
+      10
+     ],
+     "evidence": "C 组实测：12 文件近镜像，upstream 自 2026-02-06 未动 → 无需回拉；解析面另强"
+    },
+    {
+     "repo": "anthropics/skills/skills/xlsx",
+     "scores": [
+      4,
+      8,
+      6,
+      9,
+      10
+     ],
+     "evidence": "C 组实测：upstream 仅 3 文件（SKILL.md+recalc.py+LICENSE），本地 61 文件超集 20× 分歧 → **无回拉价值，KEEP 本地**"
+    },
+    {
+     "repo": "docling / marker / MinerU / Stirling-PDF（pdf 解析增强层）",
+     "scores": [
+      9,
+      7,
+      4,
+      9,
+      10
+     ],
+     "evidence": "C 组实测 docling MIT ~69.1k★/10-19、marker Apache ~40.5k★/10-19、MinerU ~82.1k★(NOASSERTION 慎)、Stirling-PDF ~94.6k★(NOASSERTION)"
+    }
+   ],
+   "verdict": "分件裁定：docx=UPGRADE(SHA-pin 回灌) · pdf=KEEP+解析增强 · xlsx=KEEP(20×超集) · pptx 上游件未引入=候选新增 · ppt-master=另件",
+   "rationale": "C 组把'家族一刀切'修正为分件：docx 落后 2026-07-17 校验修复需回灌；xlsx 本地反而领先；pdf 稳定；家族级共性动作=.upstream 同步通道 + 剔除在库 .pyc。"
+  },
+  {
+   "skill": "ppt-master",
+   "family": "文档产物",
+   "current": [
+    8,
+    1,
+    8,
+    6,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "hugohe3/ppt-master（真上游，非 anthropics 镜像）",
+     "scores": [
+      8,
+      8,
+      6,
+      8,
+      10
+     ],
+     "evidence": "C 组+我复测：MIT ~64k★(shields 64k/yesterday), releases v6.7.2 领先本地 6.6.0 三个版本；tag-pin 重拉；上游 SKILL.md 不在仓根（布局漂移）"
+    },
+    {
+     "repo": "anthropics/skills/skills/pptx（56 文件，本地缺位）",
+     "scores": [
+      8,
+      7,
+      5,
+      9,
+      10
+     ],
+     "evidence": "C 组实测 Proprietary source-available；html2pptx/缩略/重排工具面 → 候选引入补缺"
+    },
+    {
+     "repo": "scanny/python-pptx（引擎层参考）",
+     "scores": [
+      5,
+      7,
+      8,
+      7,
+      2
+     ],
+     "evidence": "C 组实测 MIT 3,558★ 停 2024-08（dormant by design，API 冻结）"
+    }
+   ],
+   "verdict": "UPGRADE(6.6.0→v6.7.2 tag-pin)+体量拆卷",
+   "rationale": "真上游是 hugohe3/ppt-master（我核验本地件正文确含 hugohe3 引用）：有正规 release 纪律，回拉即同步；13,123 文件异常值独立走拆卷。"
+  },
+  {
+   "skill": "taskflow",
+   "family": "工作流编排",
+   "current": [
+    6,
+    6,
+    8,
+    5,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "gastownhall/beads",
+     "scores": [
+      9,
+      7,
+      5,
+      8,
+      10
+     ],
+     "evidence": "C 组+我 shields 复测：MIT ~28k★(28k/today 一致), v1.3.2-rc.2；agent 原生持久任务图，跨会话、依赖感知、MCP+多平台；pre-1.0 API 有 churn → 保留 JSON fallback 条款"
+    },
+    {
+     "repo": "eyaltoledano/claude-task-master",
+     "scores": [
+      7,
+      6,
+      5,
+      8,
+      3
+     ],
+     "evidence": "C 组实测 ~28k★ 但 push 2026-04-28（~6 个月）+ NOASSERTION 许可 → 双雷否决"
+    },
+    {
+     "repo": "TemporalIO/temporal",
+     "scores": [
+      8,
+      6,
+      2,
+      9,
+      10
+     ],
+     "evidence": "实测 MIT 23,838★/10-20；工业级耐久但要集群运维——超出技能层重量"
+    }
+   ],
+   "verdict": "REPLACE(状态层委托 bd)",
+   "rationale": "C 组：唯一活跃 MIT agent 原生持久任务图；SKILL.md 壳保留、委托 bd，rc 版破坏性变更以 plain-JSON fallback 兜底。"
+  },
+  {
+   "skill": "coding-agent",
+   "family": "工作流编排",
+   "current": [
+    7,
+    8,
+    9,
+    6,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "smtg-ai/claude-squad",
+     "scores": [
+      8,
+      7,
+      4,
+      7,
+      6
+     ],
+     "evidence": "C 组实测 AGPL-3.0 ~8.6k★ push 08-20(~2 月)；并行会话+worktree 隔离正对胃口，但 AGPL+TUI 交互形态；借 worktree 隔离思想"
+    },
+    {
+     "repo": "BloopAI/vibe-kanban",
+     "scores": [
+      8,
+      6,
+      4,
+      8,
+      9
+     ],
+     "evidence": "C 组实测 Apache-2.0 ~28.4k★；看板编排桌面应用+DB ≫ 技能壳"
+    },
+    {
+     "repo": "gastownhall/beads(+gastown)",
+     "scores": [
+      7,
+      7,
+      6,
+      7,
+      10
+     ],
+     "evidence": "实测同上；ready→claim→done 生命周期可直接借入派发协议"
+    }
+   ],
+   "verdict": "KEEP+pin 上游名册",
+   "rationale": "C 组：薄派发器抽象正确；上游名册剔除 archived Roo-Code(push 停 05-15)与 dormant aider(05-22)。"
+  },
+  {
+   "skill": "html-ppt / frontend-slides / slides 家族",
+   "family": "文档产物",
+   "current": [
+    7,
+    4,
+    8,
+    6,
+    0
+   ],
+   "candidates": [
+    {
+     "repo": "hakimel/reveal.js",
+     "scores": [
+      7,
+      7,
+      4,
+      8,
+      10
+     ],
+     "evidence": "C 组实测 MIT ~72.4k★ push 09-30"
+    },
+    {
+     "repo": "slidevjs/slidev",
+     "scores": [
+      6,
+      8,
+      4,
+      9,
+      10
+     ],
+     "evidence": "实测 MIT ~49.1k★/10-18；开发者向"
+    },
+    {
+     "repo": "marp-team/marp",
+     "scores": [
+      6,
+      8,
+      5,
+      8,
+      9
+     ],
+     "evidence": "C 组实测 MIT ~12.7k★, open issues=1"
+    }
+   ],
+   "verdict": "KEEP",
+   "rationale": "框架非 agent 交付形态，替换=丢一次性成片能力。⚠️ 另：注册表派生件 skill_content/creative.json 仍引用已退役件 slides（磁盘无目录+在 73 项退役名册）→ 判 R-DRIFT 红项 P8。"
+  }
+ ],
+ "composites": [
+  {
+   "skill": "agent-browser",
+   "family": "浏览器自动化",
+   "current_composite": 6.05,
+   "best_candidate": {
+    "repo": "vercel-labs/agent-browser (上游内置 skills get core)",
+    "composite": 8.45
+   },
+   "verdict": "UPGRADE",
+   "rationale": "本地手写 38.6KB 文档 = 漂移根源（0.31.1 时代三缺陷 lessons 在案，其中 unroute 带参缺陷本地文档零覆盖）。上游 0.39.1 CLI 自带版本匹配 skill（skills get core），改薄壳指回上游可把效率分从 4 提到 8，功能面 91.1% 覆盖保持。"
+  },
+  {
+   "skill": "gstack",
+   "family": "浏览器自动化",
+   "current_composite": 5.4,
+   "best_candidate": {
+    "repo": "agent-browser 上游内置 exploratory-testing skill",
+    "composite": 8.05
+   },
+   "verdict": "UPGRADE",
+   "rationale": "本地 gstack 是 garrytan/gstack 的降质镜像（超软限 2 倍 + 无上游同步通道）。回拉上游 + 与 agent-browser QA 面整合。"
+  },
+  {
+   "skill": "web-access",
+   "family": "浏览器自动化/联网",
+   "current_composite": 5.85,
+   "best_candidate": {
+    "repo": "mendableai/firecrawl",
+    "composite": 8.15
+   },
+   "verdict": "KEEP+局部UPGRADE",
+   "rationale": "联网操作总调度含大量本地私有约定（GFW 源、微信/小红书路径），无等价替代；但'网页抽取为干净 markdown'子职能应让位 kepano/defuddle 上游（本地件已引用 CLI）。"
+  },
+  {
+   "skill": "defuddle",
+   "family": "浏览器自动化/联网",
+   "current_composite": 6.15,
+   "best_candidate": {
+    "repo": "kepano/defuddle",
+    "composite": 8.55
+   },
+   "verdict": "UPGRADE",
+   "rationale": "薄壳件升级上游版本口径即可；docx/pdf 抽取职能与 markitdown 对照记录为'转换统一入口'候选。"
+  },
+  {
+   "skill": "browser-cdp",
+   "family": "浏览器自动化",
+   "current_composite": 5.55,
+   "best_candidate": {
+    "repo": "agent-browser connect <port|url> (上游内置)",
+    "composite": 8.5
+   },
+   "verdict": "MERGE→agent-browser",
+   "rationale": "职能被上游内置 connect 全覆盖，独立件消解，降低路由面重叠（lessons 有路由误命中记录）。"
+  },
+  {
+   "skill": "electron",
+   "family": "桌面自动化",
+   "current_composite": 5.55,
+   "best_candidate": {
+    "repo": "agent-browser 上游 electron specialization skill",
+    "composite": 8.5
+   },
+   "verdict": "MERGE→agent-browser",
+   "rationale": "同上；本地 electron 件 6.7KB 手写，被上游 specialization 取代后漂移风险清零。"
+  },
+  {
+   "skill": "dogfood",
+   "family": "浏览器自动化/QA",
+   "current_composite": 5.05,
+   "best_candidate": {
+    "repo": "agent-browser 上游 exploratory-testing skill",
+    "composite": 8.2
+   },
+   "verdict": "MERGE→gstack/上游",
+   "rationale": "QA 走查职能三件重叠（dogfood/gstack/agent-browser），lessons 记录 dogfood 泛规则误命中路由 7 处。合并到两个上游锚点，退役一个。"
+  },
+  {
+   "skill": "A-memory-start",
+   "family": "记忆/上下文",
+   "current_composite": 6.9,
+   "best_candidate": {
+    "repo": "mem0ai/mem0",
+    "composite": 6.75
+   },
+   "verdict": "KEEP+内部瘦身",
+   "rationale": "治理件（门禁/契约/路由）无开源等价物；19.1KB>软限，按 bigfile-split 拆卷提效率分，不动行为。"
+  },
+  {
+   "skill": "A-project-handoff",
+   "family": "记忆/项目交接",
+   "current_composite": 6.95,
+   "best_candidate": null,
+   "verdict": "KEEP+修命令漂移",
+   "rationale": "SKILL.md 自述在册 20 命令 vs 实装漂移（Unknown command trim-shell 实测记录 2026-09-26）。迁移对象不存在，缺陷自修：命令表现读现 run。"
+  },
+  {
+   "skill": "A-project-better",
+   "family": "项目治理",
+   "current_composite": 6.6,
+   "best_candidate": null,
+   "verdict": "KEEP",
+   "rationale": "私有治理管线；对标 GitHub 职能已由本审计的巡检脚本固化。"
+  },
+  {
+   "skill": "A-ask-questions",
+   "family": "交互协议",
+   "current_composite": 7,
+   "best_candidate": null,
+   "verdict": "KEEP",
+   "rationale": "行为定制件，外部替代=行为倒退。"
+  },
+  {
+   "skill": "A-dynamic-workflow (wflow)",
+   "family": "工作流编排",
+   "current_composite": 6.85,
+   "best_candidate": {
+    "repo": "ruvnet/claude-flow",
+    "composite": 7.15
+   },
+   "verdict": "KEEP(边界内)+借上游机制",
+   "rationale": "本件边界=仓内任务拆分+守卫，wflow SKILL.md 明文'跨机用 Argo/Temporal、可视化用 Dify/n8n'——替代检索结论与既有边界声明一致；借 claude-flow 的 hooks 形态升级守卫可观测性。"
+  },
+  {
+   "skill": "A-skill-manager",
+   "family": "技能治理",
+   "current_composite": 7.1,
+   "best_candidate": {
+    "repo": "vercel-labs/skills (skills CLI)",
+    "composite": 7.6
+   },
+   "verdict": "KEEP+接 vercel-labs/skills 作发现通道",
+   "rationale": "九端 junction 生命周期总管为私有基建；R-DISCOVER 通道由手写升级为 skills CLI 上游。"
+  },
+  {
+   "skill": "find-skills",
+   "family": "技能治理",
+   "current_composite": 5.3,
+   "best_candidate": {
+    "repo": "vercel-labs/skills",
+    "composite": 8.1
+   },
+   "verdict": "REPLACE(壳)+UPSTREAM 指向",
+   "rationale": "本地 20.7KB 发现逻辑（>软限）被上游 CLI 一条命令覆盖且永远版本匹配。"
+  },
+  {
+   "skill": "docx / pdf / xlsx / pptx 家族",
+   "family": "文档产物",
+   "current_composite": 5.75,
+   "best_candidate": {
+    "repo": "anthropics/skills skills/docx|pdf|pptx|xlsx (生产同源)",
+    "composite": 8.35
+   },
+   "verdict": "UPGRADE(回拉上游)",
+   "rationale": "本地镜像落后生产版；建立 .upstream sidecar 纳入季度巡检，按上游回拉覆盖。"
+  },
+  {
+   "skill": "ppt-master",
+   "family": "文档产物",
+   "current_composite": 5.1,
+   "best_candidate": {
+    "repo": "anthropics/skills skills/pptx",
+    "composite": 8.25
+   },
+   "verdict": "ATTN-SPLIT",
+   "rationale": "13,123 文件为全库体量异常值（次高 html-ppt 225）。巡检判红后拆体量：保留主壳+按需卷，不迁行为。"
+  }
+ ],
+ "license_notes": {
+  "proprietary_source_available": [
+   "anthropics/skills skills/docx|pdf|pptx|xlsx（每件自带 LICENSE.txt，© Anthropic PBC；禁衍生禁分发；私有镜像可用）"
+  ],
+  "agpl_run_as_service_only": [
+   "firecrawl/firecrawl",
+   "Skyvern-AI/skyvern",
+   "lightpanda-io/browser",
+   "skillfish",
+   "claude-squad",
+   "basic-memory"
+  ],
+  "hard_reject": [
+   "NanmiCoder/MediaCrawler（NON-COMMERCIAL LEARNING LICENSE 1.1）"
+  ],
+  "no_spdx_detected_watch": [
+   "anthropics/skills 根（404 实测无 LICENSE）",
+   "vercel-labs/agent-skills",
+   "gptme-agent-template",
+   "RobMitt/grill-me-skill",
+   "browserless（source-available 不可辨识）"
+  ],
+  "clean_permissive_pool": "Apache/MIT：agent-browser, playwright-mcp, playwright, puppeteer, browser-use, stagehand, crawl4ai, Scrapling, defuddle, trafilatura, readability, midscene, chrome-devtools-mcp, gstack, Agent-Reach(页面核), markitdown, beads, qmd, superpowers"
+ },
+ "seed_corrections": [
+  "ruvnet/claude-flow→ruvnet/ruflo",
+  "steveyegge/beads→gastownhall/beads",
+  "trigger-dev/trigger→triggerdotdev/trigger.dev",
+  "block/goose→aaif-goose/goose",
+  "mendableai/firecrawl→firecrawl/firecrawl(改名)",
+  "openclaw/AGENTS.md→agentsmd/agents.md",
+  "garrytan/claude-code-config→garrytan/gstack",
+  "getzep/zep-oss→graphiti(CE 已停)",
+  "tobi/lazy-agents/Pimzino/claude-code-memory-bank/anthropics/dxt/skills-sh/skills/openpyxl@GitHub 均 404"
+ ]
+}

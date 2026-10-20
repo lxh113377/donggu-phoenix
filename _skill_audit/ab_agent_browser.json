@@ -1,0 +1,26 @@
+{
+ "metrics": {
+  "head_v1": {
+   "bytes": 30063,
+   "lines": 750,
+   "cmdCoverage": 71.1,
+   "mentionsWebMCP": false,
+   "delegatesUpstreamSkills": false,
+   "documentsUnroute": false,
+   "documentsFindText": true,
+   "documentsRefInvalidation": true
+  },
+  "worktree_v2": {
+   "bytes": 38626,
+   "lines": 594,
+   "cmdCoverage": 91.1,
+   "mentionsWebMCP": true,
+   "delegatesUpstreamSkills": true,
+   "documentsUnroute": false,
+   "documentsFindText": true,
+   "documentsRefInvalidation": true
+  }
+ },
+ "upstreamVersion": "0.39.1",
+ "pinnedEra": "0.31.1 (lessons 2026-08-09)"
+}

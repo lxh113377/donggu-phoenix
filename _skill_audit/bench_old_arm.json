@@ -1,0 +1,81 @@
+{
+ "arm": "OLD-0.31.1",
+ "Q": 0.6,
+ "parts": {
+  "success": 0.9,
+  "first_try": 0.8,
+  "efficiency": 0.833
+ },
+ "rows": [
+  {
+   "task": "T01 open+title",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1,
+   "note": ""
+  },
+  {
+   "task": "T02 snapshot",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1,
+   "note": ""
+  },
+  {
+   "task": "T03 click",
+   "pass": 0,
+   "first_try": 0,
+   "rounds": 2,
+   "note": ""
+  },
+  {
+   "task": "T04 url",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1,
+   "note": ""
+  },
+  {
+   "task": "T05 eval",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1,
+   "note": ""
+  },
+  {
+   "task": "T06 wiki",
+   "pass": 1,
+   "first_try": 0,
+   "rounds": 2,
+   "note": ""
+  },
+  {
+   "task": "T07 screenshot",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1,
+   "note": ""
+  },
+  {
+   "task": "T08 pdf",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1,
+   "note": ""
+  },
+  {
+   "task": "T09 network",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1,
+   "note": ""
+  },
+  {
+   "task": "T10 cookies",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1,
+   "note": ""
+  }
+ ]
+}

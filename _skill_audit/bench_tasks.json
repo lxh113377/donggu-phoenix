@@ -1,0 +1,80 @@
+{
+ "Q_new": 0.7364,
+ "parts": {
+  "success": 0.9,
+  "first_try": 0.9,
+  "efficiency": 0.9091
+ },
+ "tasks": [
+  {
+   "task": "T01 open+title",
+   "skill": "agent-browser@0.39.1",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T02 snapshot refs",
+   "skill": "agent-browser@0.39.1",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T03 click fresh-ref",
+   "skill": "agent-browser@0.39.1",
+   "pass": 0,
+   "first_try": 0,
+   "rounds": 2
+  },
+  {
+   "task": "T04 url after click",
+   "skill": "agent-browser@0.39.1",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T05 eval JS",
+   "skill": "agent-browser@0.39.1",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T06 wiki load+snapshot",
+   "skill": "agent-browser@0.39.1",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T07 screenshot",
+   "skill": "agent-browser@0.39.1",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T08 pdf export",
+   "skill": "agent-browser@0.39.1",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T09 network requests",
+   "skill": "agent-browser@0.39.1",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T10 cookies",
+   "skill": "agent-browser@0.39.1",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  }
+ ]
+}
