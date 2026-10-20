@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:10;
+  --build:11;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -989,6 +989,22 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 }
 
 /* 窄屏与横屏兜底 */
+/* 手机首屏必须真的是一屏（2026-10-20 轮10）
+ * 实测基线：360x780 hero=1213（1.56 屏）、390x844 1183（1.40）、430x932 1226（1.32）。
+ * 根因：.hero{min-height:100svh;padding-top:96px} + .hero-grid 单列两行
+ *       + .hero-visual{min-height:clamp(320px,58svh,620px)} → 内容超出视口，把首屏撑长。
+ * 后果：用户要滚一屏多才过首屏；凤凰画布被拉到 1183px，粒子纵向摊薄。
+ * 修法：手机断点锁一屏高度，画布吃剩余空间而非固定 58svh。
+ * 注意：本段必须放在基础 .hero-visual 规则之后，否则会被 clamp 的 min-height 覆盖。 */
+@media (max-width:900px){
+  .hero{height:100svh;min-height:100svh;padding-top:84px;padding-bottom:8px;align-items:stretch}
+  .hero-grid{height:100%;align-content:center;grid-template-rows:auto minmax(150px,1fr);gap:2px}
+  .hero-visual{min-height:0;height:100%}
+  .hero-visual canvas{height:100%!important;width:100%!important}
+  .hero-inner{margin-bottom:0}
+  .scroll-hint{display:none}
+}
+
 @media (max-width:420px){
   :root{--sec-y:76px}
   .hero-acts{gap:10px}

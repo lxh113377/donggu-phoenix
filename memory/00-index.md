@@ -6,7 +6,8 @@
 | 02-structure.md | 目录与技术栈 |
 | 03-status.md | 当前状态 |
 | 04-decisions.md | 关键决策与理由 |
-| 05-next-steps.md | 待办 |
+| 05-next-steps.md | 待办（已排期） |
 | 06-sources.md | 素材与事实来源 |
 | 07-deploy.md | 部署链路 |
 | 08-verify.md | 验收命令与结果 |
+| 09-upgrade-ledger.md | **升级建议台账**（每轮建议强制登记，U-xx 编号） |

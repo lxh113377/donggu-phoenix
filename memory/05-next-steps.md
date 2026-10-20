@@ -1,5 +1,8 @@
 # 待办
 
+> **升级建议台账**：每轮提出的升级建议统一登记在 memory/09-upgrade-ledger.md（U-xx 编号）。
+> 本文件只放**已决定要做**的（有排期）；台账放**所有提出过的**（含待排期、已否决）。
+>
 - [x] 场景一：扫描传统造像「从木料到神像」流程动画
 - [x] 场景二：扫描红色地标历史复现 + 双语解说
 - [x] 中英双语（AR 三段每章 en / enBody）
@@ -33,3 +36,17 @@
       （「未取证不等于通过」）。CI 用 actions/checkout 带 .git 故不受影响，
       但本地/离线校验会误红。请补 `if tracked is not None` 条件。
 - [ ] 跟踪 **PR #1898** 维护者反馈（若被要求改 base 到 main 或补 docs/index.html 一并处理）
+
+
+## skill 开源替代治理（2026-10-20 登记，源 docs/skill治理/01-04）
+
+- [x] Phase 0.3 last_updated 回填 ×172（git 真值，纯插行，CRLF 副损已字节级修复）随 ab6663e3 入库
+- [ ] agent-browser 薄壳收口（并行端工作面，不代提交）；mirror -Fix 待脏窗归一
+- [x] Phase 0.5 sidecar 分发 ×13（轮2 实测：.upstream 已落 13 个技能目录，shields 只认 owner/repo 口径）
+- [x] Phase 1 首批六件执行（2026-10-20 轮2）：defuddle 上游切换+降级链 v1.1.0 | browser-cdp 换芯委托 agent-browser@0.39.1+chrome-devtools-mcp（保名保接口，story 20 处引用零改动）v1.1.0 | electron 双路化(+Playwright _electron) v1.1.0 | dogfood 证据泳道 v1.1.0 | taskflow 双路委托 beads(+fallback) v1.1.0 | find-skills 薄策略壳(21KB→2.7KB) v1.1.0；索引复绿 53/0/0 + P8 slides 幽灵清除
+- [x] Phase 1 续序第二批（轮3 7caa6760）：web-access v2.6.0 抽取换芯 / gstack v1.2.0 受控吸收 browse v2（整包回拉实测否决留档）/ docx v2.1.0 SHA-pin 锚点 / ppt-master 延期专窗登记
+- [ ] 待办：agent-browser 薄壳收口（并行端）、ppt-master v6.7.2 专窗分卷回拉、qmd 路由灰度、mirror -Fix（脏窗归零）、Phase 3 全臂终验（含文档臂）——Q 中间读数 +25% 诚实登记，30% 判定未下
+- [x] P8 注册表漂移：slides 幽灵经 build_registry/build_indexes 重建清除（轮2 实测精确名 0 命中，disk_registry_diff 三类全 0）
+- [ ] 基线复测：10+5+5 套件 Q≥+30% 判定（tools/run_bench.py；A/B 已有：命令覆盖 71.1%→91.1%）
+- [x] 季度巡检脚本+基线扫描跑通（tools/skill_quota_scan.py；scan_2026Q4_baseline.json 181 件/47 红）+ 排程挂季（schedule-0846f2a9）
+- [ ] 焚诀 bge_fullbody_embeddings.npy 等向量派生件：常驻进程锁释放后补一次 build_indexes --apply（或季巡自动覆盖）
