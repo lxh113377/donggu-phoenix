@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:26;
+  --build:27;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -252,7 +252,7 @@ body::after{
   font-size:var(--fs-hero);line-height:1.04;letter-spacing:.09em;
   background:linear-gradient(176deg,#FFF6E6 4%,var(--she-gold-light) 42%,var(--she-vermilion) 82%,var(--she-red) 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 10px 46px rgba(217,79,43,.32));
+  filter:drop-shadow(0 8px 22px rgba(212,162,76,.18));
   text-wrap:balance;
   clip-path:inset(0 100% 0 0);
   animation:inkSweep 1.25s var(--ease-out) .35s forwards;
@@ -303,7 +303,7 @@ body::after{
 .btn--link:hover::after,.hero-cta.ghost:hover::after{transform:translateX(5px)}
 a.hero-cta.ar-entry{
   border-color:rgba(232,183,97,.5);
-  background:linear-gradient(120deg,rgba(179,32,44,.32),rgba(212,162,76,.18));
+  background:none;
 }
 a.hero-cta.ar-entry:hover{letter-spacing:.26em;border-color:var(--she-gold)}
 a.hero-cta,a.btn-ask{text-decoration:none}
