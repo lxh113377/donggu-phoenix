@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:29;
+  --build:30;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -1134,4 +1134,40 @@ section.foot{padding-top:var(--sec-y-loose)}
  * 触屏用户不会「按住画面左右拖」，这条提示在窄屏是噪音，隐藏之。 */
 @media (max-width:420px){
   .carve-slider-label::after{content:none}
+}
+/* === LOWHEIGHT-FIX（轮42） ===
+ * 568×320（手机横屏）下 .hero-tag top -119、.hero h1 top -77，
+ * 首屏标题直接跑出视口。根因是矮屏规则里的 padding-block:96px 48px
+ * 占了视口 45%%，叠加 align-items:center 让溢出对称分布。
+ * 横屏高度本就紧张，砍掉次要内容、压缩留白、改为顶对齐。 */
+@media (max-height:520px) and (orientation:landscape){
+  .hero{padding-block:4px 10px;align-items:flex-start;overflow:visible}
+  .hero-lead{display:none}
+  .hero-meta{display:none}
+  .hero-tag{margin:0}
+  .hero h1{font-size:clamp(1.75rem,5.2vw,2.4rem);margin-top:4px;line-height:1}
+  .hero-acts{margin-top:14px}
+  .hero-grid{align-items:start;align-content:start;height:auto;min-height:0}
+  .hero-inner{margin:0}
+  .hero h1 em{display:none}
+  .hero-grid{align-items:start;align-content:start;height:auto;min-height:0}
+  .hero-inner{margin:0}
+  .hero h1 em{display:none}
+}
+/* === MOBILE-TOPALIGN（轮42） ===
+ * 375x667（iPhone SE 竖屏）下 .hero-inner top -8，眉题顶部被裁。
+ * 根因：.hero-grid 用 align-items:center，内容 606 > 容器 575 时上下对称溢出。
+ * 手机竖屏改为顶对齐，让溢出向下走（下方是装饰性 hero-visual，已 overflow:hidden）。 */
+@media (max-width:480px){
+  .hero-grid{align-items:start}
+}
+/* === SHORT-SCREEN-UNLOCK（轮42） ===
+ * 375x667（iPhone SE）下 H1 top 56 而 .nav bottom 82 —— 标题被导航遮挡 26px。
+ * 根因：max-width:900px 的 .hero{height:100svh} 强制锁一屏，
+ * 内容区仅 575px（667-84-8）而实际内容需 606px -> 溢出被居中推上。
+ * 权衡：削减内容 vs 允许滚动。小屏上内容放不下是客观事实，
+ * 强行锁一屏导致标题被遮挡，比需要滚动更糟。
+ * 故仅在高度 < 700px 时放开锁一屏，主流机型继续锁。 */
+@media (max-width:900px) and (max-height:700px){
+  .hero{height:auto;min-height:100svh}
 }
