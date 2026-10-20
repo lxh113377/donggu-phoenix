@@ -141,17 +141,13 @@
 
     ctx.save();
     ctx.beginPath(); ctx.rect(rx, ry, rw, rh); ctx.clip();
-    // 关键：扫描到的区域内**先抹掉底下那层矢量像**，再贴照片。
-    // 不做这步，照片 alpha=0 的地方会透出矢量段的金色轮廓 —— 成品周围围一圈金边，
-    // 看起来像「贴上去的贴纸」，而不是「木头被雕成了这尊像」。
-    if (opts && opts.backdrop) {
-      // 用逻辑宽高重绘背景板 + 光柱：ctx.canvas.width 是 DPR 放大后的设备像素，传错会画出错位木纹。
-      // 只补背景不补光柱，会出现「照片背后一块更亮的矩形」—— 光柱被盖掉了而四周没有被盖。
-      backdrop(ctx, w, h, 0);
-      if (opts.beam !== false) { beam(ctx, w, h, box.cx, box.cy, box.s, 0.75); }
-    } else {
-      ctx.clearRect(rx, ry, rw, rh);                            // AR：叠层透明，露出摄像头画面
-    }
+    /* 这里**不擦除**底层矢量，也不重绘背景板 —— 矢量整层已按 takeover 淡出（见 draw()）。
+     * 一手事故（2026-10-20 轮6，两连）：
+     *   ① 先写的是 clearRect：落地页看着正常（底下有背景板），但 AR 是透明叠加层，
+     *      照片区域被擦成透明后露出深底 ⇒ 成品周围一圈明显矩形暗框；
+     *   ② 改成「重绘背景板 + 光柱」补洞：落地页补得回来，AR 没有背景板可补，暗框照旧，
+     *      而且落地页上那道重绘光柱与原来位置差一拍，能看出一道更亮的矩形。
+     * 正解：让矢量层自己淡出，照片不透明区自然覆盖它 —— 不擦、不补，两处环境都成立。 */
     ctx.globalAlpha = a;
     // 高质量重采样：浏览器默认 imageSmoothingQuality 是 'low'，缩到一半以下会出现明显振铃/模糊，
     // 那属于「渲染损失」而不是「复刻不像」。这里显式拉到 high（Safari 不支持该属性时静默忽略）。
@@ -763,12 +759,20 @@
     if (opts.backdrop) { backdrop(ctx, w, h, now); }
     if (opts.beam !== false) { beam(ctx, w, h, cx, cy, s, opts.backdrop ? 0.75 : 0.9); }
 
+    /* 矢量造像层整体按 takeover 淡出。
+     * 一手教训（2026-10-20 轮6）：revealStatue 里曾用 clearRect 抹掉照片区域内的矢量层，
+     * 落地页看不出问题（底下有背景板），但 AR 是透明叠加层，擦完直接露出深底 ——
+     * 成品周围出现明显矩形暗框。改成整层淡出后，照片不透明区自然覆盖它，两处环境都成立。 */
+    var vecA = 1 - takeover;
+    ctx.save();
+    ctx.globalAlpha = vecA;
+
     // 背光（开光阶段在像后亮起）；照片接管后交给照片自带的舟形背光
-    if (pOpen > 0 && takeover < 0.999) { mandorla(ctx, cx, cy, s, ease(pOpen) * (1 - takeover), now); }
+    if (pOpen > 0 && vecA > 0.002) { mandorla(ctx, cx, cy, s, ease(pOpen) * vecA, now); }
 
     // 落影
     ctx.save();
-    ctx.globalAlpha = 0.5 * (0.35 + 0.65 * pc);
+    ctx.globalAlpha = 0.5 * (0.35 + 0.65 * pc) * vecA;
     var sg = ctx.createRadialGradient(cx, cy + s * 0.42, 0, cx, cy + s * 0.42, s * 0.42);
     sg.addColorStop(0, "rgba(0,0,0,.55)"); sg.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = sg;
@@ -783,16 +787,19 @@
     ctx.fillStyle = wg;
     bodyPath(ctx, cx, cy, s, pc); ctx.fill();
     ctx.restore();
-    grain(ctx, cx, cy, s, pc, 1 - pLacq * 0.85);
-    endRings(ctx, cx, cy, s, (1 - pc * 2.4) * (1 - pLacq), pc);
-    chisel(ctx, cx, cy, s, pc, (1 - pSand) * (pc > 0.5 ? 1 : pc * 2));
+    grain(ctx, cx, cy, s, pc, (1 - pLacq * 0.85) * vecA);
+    endRings(ctx, cx, cy, s, (1 - pc * 2.4) * (1 - pLacq) * vecA, pc);
+    chisel(ctx, cx, cy, s, pc, (1 - pSand) * (pc > 0.5 ? 1 : pc * 2) * vecA);
 
     // 彩绘 / 贴金
-    if (pLacq > 0 || pPaint > 0 || pGold > 0) { painted(ctx, cx, cy, s, pLacq, pPaint, pGold, now); }
+    if ((pLacq > 0 || pPaint > 0 || pGold > 0) && vecA > 0.002) {
+      painted(ctx, cx, cy, s, pLacq * vecA, pPaint * vecA, pGold * vecA, now);
+    }
     // 开面：照片接管后淡出（真实五官由照片本身给出，矢量线描再叠上去就是双层）
-    face(ctx, cx, cy, s, band(p, 0.40, 0.56) * (0.6 + 0.4 * pSand) * (1 - takeover), band(p, 0.88, 0.97) * (1 - takeover));
+    face(ctx, cx, cy, s, band(p, 0.40, 0.56) * (0.6 + 0.4 * pSand) * vecA, band(p, 0.88, 0.97) * vecA);
     // 定像粉线（进入开坯即隐去）
-    layoutLines(ctx, cx, cy, s, pLine * (1 - band(p, 0.20, 0.30)) * (1 - takeover), true);
+    layoutLines(ctx, cx, cy, s, pLine * (1 - band(p, 0.20, 0.30)) * vecA, true);
+    ctx.restore();   // 收掉矢量层整体透明度
 
     // 木屑与器具在成品接管后收起：照片一贴上来，画面上就不该再浮着斧凿与金箔方块
     if (takeover < 0.5) { chips(ctx, cx, cy, s, pc, now); }
