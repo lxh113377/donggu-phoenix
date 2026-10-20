@@ -141,7 +141,7 @@ IntersectionObserver 用 `threshold:0.12` ⇒ 交叉比最高只有 0.17，用�
 ### I-7 引擎打磨
 - 粒子密度按面积自适应。**标定方法**：两点式线性拟合，锚在两个已验证的历史档位上
   （手机 390x844 实测 anchor 53,100px² → 旧档 1500；桌面 1440x900 实测 288,829px² → 旧档 2600），
-  得 粒子数 = 1252.2 + 0.004666 × 面积。第一版用 CSS 推导面积，被浏览器实测推翻两条假设（U-124）。
+  得 粒子数 = 1252.2 + 0.004666 × 面积。第一版用 CSS 推导面积，被浏览器实测推翻两条假设（U-132）。
 - 实测 7 视口：320/360→1451、390→1500、1024x768→2256、768x1024/1440/1920→2600；
   **两锚点逐字复现且无一处比旧口径更密**（只省不涨）。
 - HUD 借 aframe throttleLeadingAndTrailing 语义：leading 立写 + trailing 补写 + hud.force 旁路。
@@ -156,10 +156,10 @@ IntersectionObserver 用 `threshold:0.12` ⇒ 交叉比最高只有 0.17，用�
 ### 本轮实测发现并修掉的真缺陷
 | # | 缺陷 | 证据 | 修法 |
 |---|---|---|---|
-| 1 | 旁白 aria-pressed 只在 paintHud 内同步，而 paintHud 开头 if(!state.scene) return | 点击后 narr.on=true 但 pressed 仍 "false"、.on 未加 | 抽 syncNarrBtn()，点击/API/paintHud 三处调用 |
+| 1 | 旁白 aria-pressed 只在 paintHud 内同步（U-134），而 paintHud 开头 if(!state.scene) return | 点击后 narr.on=true 但 pressed 仍 "false"、.on 未加 | 抽 syncNarrBtn()，点击/API/paintHud 三处调用 |
 | 2 | create() 抛错后播放层停在「已打开但无场景」的空舞台（白屏） | 代码走查 + 场景不存在路径 | 回落其他已注册场景，全不可用则 close() |
-| 3 | reduced_motion_test.blocks() 死循环：CSS **注释**里出现 prefers-reduced-motion 时 idx 倒退 | CI job 静默挂死 15 分钟被取消；本机 20 个 python 进程各烧 900+ 秒 CPU | 只匹配真 @media 块 + 先剥注释；同类倒退全仓扫描 0 命中 |
-| 4 | 新判据未剥注释，把 phoenix.js 注释里的「旧口径 isMobile ? 1500 : 2600」当代码 → 误报 | 逐行定位命中文本在 /* */ 内 | strip_comments 定为判据标配（engine/narration 均过） |
+| 3 | reduced_motion_test.blocks() 死循环（并行端 U-126）：CSS **注释**里出现 prefers-reduced-motion 时 idx 倒退 | CI job 静默挂死 15 分钟被取消；本机 20 个 python 进程各烧 900+ 秒 CPU | 只匹配真 @media 块 + 先剥注释；同类倒退全仓扫描 0 命中 |
+| 4 | 新判据未剥注释（U-133），把 phoenix.js 注释里的「旧口径 isMobile ? 1500 : 2600」当代码 → 误报 | 逐行定位命中文本在 /* */ 内 | strip_comments 定为判据标配（engine/narration 均过） |
 | 5 | build_fonts.py 把注释字符收进子集 → 写一段中文注释就让线上 woff2 +117KB | 289KB（超 260KB 险线） vs 剥注释后 193KB | 子集只收非注释字符，与 verify 第 20 项口径统一 |
 | 6 | verify_site 字体版本控制检查缺「无 git 环境」守卫（在册待办） | 无 .git 副本判红「字体未入版本控制」 | tracked is None → SKIP + WARNING（实测转 SKIP） |
 

@@ -296,17 +296,21 @@
 | U-123 | 50 | 撤销测试一度「无效」——验证脚本没绕缓存 | 判据 measure() 内置 cacheBust（注入带时间戳 <link>），撤销后真实读到变化；反向验证恢复可信 | **已完成** | tools/merch_image_fill_test.py |
 ## 轮51 新增条目（对标改进 I-5/I-6/I-7/I-8 落实轮）
 
+> **编号撞车说明**：本块与下方「## 轮51 新增条目」（并行端同时写入）都从当时的最大值 U-123 续编，造成 U-124/126/127 撞号、U-125 与其 U-126 重复登记同一事故。
+> 处理：本块（锋/ds 端）改让号为 U-132/133/134，重复的死循环条目改为指向其 U-126；并行端条目原样不动（不代改他人工作面）。教训入本块末尾：并发写台账必须先 list 现值再续编。
+
 | ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
 |---|---|---|---|---|---|
-| U-124 | 51 | 面积/几何类参数从 CSS 脑补：我推导「手机 anchor≈354x370、平板画布小于桌面」，浏览器实测推翻两条 —— anchor 实测 53,100px²（高被 grid 压到 150px），且 768x1024 面积 367,733px² 比桌面还大 | 几何参数一律实测取值再标定；密度改用两点式拟合（锚在两个已验证的历史档位上），并用 7 个视口实测校核「无一处比旧口径更密」 | **已完成** | site/assets/js/phoenix.js |
-| U-125 | 51 | **CI 静默挂死 9 分钟+**：reduced_motion_test.blocks() 在 CSS 注释出现 `prefers-reduced-motion` 字样时，往前 rfind(@media) 命中的块结束位置早于命中位置 ⇒ idx 倒退 ⇒ 无限循环；本机一次烧掉 20 个 python 进程各 900+ 秒 CPU | 判据只认真块（正则 `@media[^{]*prefers-reduced-motion[^{]*{`）+ idx 严格前进；同类「find+rfind 倒退死循环」全站扫描 0 命中；判据必须带超时上限 | **已完成** | tools/reduced_motion_test.py |
-| U-126 | 51 | 新判据扫源码未剥注释，把我写在 phoenix.js 注释里的「旧口径 isMobile ? 1500 : 2600」当成代码，误报「硬档位复活」 | 与 U-24 同因，本轮把 strip_comments 定为判据标配（engine/narration 两判据都过一遍） | **已完成** | tools/engine_polish_test.py |
-| U-127 | 51 | 真缺陷：旁白 aria-pressed 只在 paintHud 内同步，而 paintHud 开头 `if (!state.scene) return` ⇒ AR 未开时点旁白，narr.on 已 true 但按钮不变、读屏不知 | 状态同步抽成独立 syncNarrBtn()，点击与 API 两处立刻调用 | **已完成** | site/assets/js/ar.js |
+| U-132 | 51 | 面积/几何类参数从 CSS 脑补：我推导「手机 anchor≈354x370、平板画布小于桌面」，浏览器实测推翻两条 —— anchor 实测 53,100px²（高被 grid 压到 150px），且 768x1024 面积 367,733px² 比桌面还大 | 几何参数一律实测取值再标定；密度改用两点式拟合（锚在两个已验证的历史档位上），并用 7 个视口实测校核「无一处比旧口径更密」 | **已完成** | site/assets/js/phoenix.js |
+| （并入） | 51 | reduced_motion_test.blocks() 死循环挂死 CI —— 与并行端 **U-126 同一事故**（双方都从 max U-123 起编导致撞号），此处不再重复占号 | 见下方 U-126 的修法（只匹配真 @media 块 + 先剥注释）；我这边补充的证据：20 个 python 进程各烧 900+ 秒 CPU、CI run 39422600111 卡 15m21s 被取消 | **已完成** | tools/reduced_motion_test.py |
+| U-133 | 51 | 新判据扫源码未剥注释，把我写在 phoenix.js 注释里的「旧口径 isMobile ? 1500 : 2600」当成代码，误报「硬档位复活」 | 与 U-24 同因，本轮把 strip_comments 定为判据标配（engine/narration 两判据都过一遍） | **已完成** | tools/engine_polish_test.py |
+| U-134 | 51 | 真缺陷：旁白 aria-pressed 只在 paintHud 内同步，而 paintHud 开头 `if (!state.scene) return` ⇒ AR 未开时点旁白，narr.on 已 true 但按钮不变、读屏不知 | 状态同步抽成独立 syncNarrBtn()，点击与 API 两处立刻调用 | **已完成** | site/assets/js/ar.js |
 | U-128 | 51 | 真缺陷：I-8 让 create() 对未知场景抛错后，播放层停在「已打开但无场景」的空舞台 = 白屏，比报错更难解释 | 抛错后依次回落到其他已注册场景，全不可用则 close() 退回落地页 | **已完成** | site/assets/js/ar.js |
 | U-129 | 51 | 反向验证用例锚点与真实代码不同步（我写的破坏串按 LF 拼、文件是 CRLF）⇒ 破坏没生效，「判据 PASS」被误读成「判据无效」 | 锚点失配必须显式打 [锚点失配] 并计入未抓到（FAIL），不得静默 continue；文本模式读取会归一行尾，破坏串一律先归一再比 | **已完成** | tools/reverse_new_gates.py |
 | U-130 | 51 | run_code 沙箱内 python 缺 USERPROFILE ⇒ 用户 site-packages 不可见 ⇒ fontTools/cv2 报缺库、判据假红（「环境伪红」被当代码缺陷） | 判据一律经 pwsh 真实环境执行；报错先查 sys.executable 与库可见性再归因（win-toolchain-pitfalls 同族） | **已完成**（本轮改用 pwsh 复跑） | — |
 | U-131 | 51 | 本地 safe_script_test 判红：并行端留下的 `_qa/apply_review3.py` 含 `open(site/index.html,'w')` 原地写真实文件 | 不代改他人工作面文件。CI 不受影响（_qa/ 被 .gitignore 排除、git 跟踪面为空），故本地噪声；由并行端自行改用 safe_mutation 或删除 | 待排期（归并行端） | _qa/apply_review3.py |
 ## 轮51 新增条目
+| U-135 | 51 | **并发写台账撞号**：我与并行端同轮都从当时最大值 U-123 续编，产出 U-124/126/127 三对同号、并把同一起 reduced_motion 死循环事故登记了两次。台账是「已登记」的唯一凭据，撞号等于两条记录互相覆盖语义 | 续编前先扫现值再定号（不要假设自己独占）；本轮我的条目让号为 U-132/133/134、重复条目改为指向并行端 U-126，并行端条目一律不代改。建议把「U 号唯一性」做成判据（脚本扫 `^\| U-(\d+) \|` 计数>1 即判红） | **已完成**（本轮已让号）；判据化待排期 | memory/09-upgrade-ledger.md |
 
 | ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
 |---|---|---|---|---|---|

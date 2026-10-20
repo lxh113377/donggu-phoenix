@@ -148,7 +148,7 @@ def main():
     if ".ar-btn.narrate.on" not in css.replace(" ", ""):
         fails.append("旁白开关缺开启态样式（用户看不出旁白是否正在播）")
 
-    # 8b) 旁白可视态必须独立于 paintHud 同步（U-127 一手缺陷：
+    # 8b) 旁白可视态必须独立于 paintHud 同步（U-134 一手缺陷：
     #     原先只在 paintHud 里写 aria-pressed，而 paintHud 开头 if (!state.scene) return;
     #     ⇒ AR 未打开时点旁白，narr.on 已 true 但按钮不变、读屏也不知道。
     #     实测证据：点击后 narr.on=true 而 aria-pressed 仍是 "false"。）
