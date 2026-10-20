@@ -263,3 +263,11 @@
 | U-106 | 46 | 进场元素若永不触发会「静默消失」（不报错不白屏，只是某块内容永久不可见） | 建 reveal_coverage_test.py：滚遍全站后所有 `.reveal` 必须带 `.in`；反向验证注入永不进视口的元素能判红 | **已完成** | tools/reveal_coverage_test.py |
 | U-107 | 46 | 探针步进 `y+=600` 最后一步不一定落在 maxY，导致页脚误报「不显示」 | 循环后必须显式 `scrollTo(0, scrollHeight)` 一次；已写进判据注释 | **已完成**（方法论） | tools/reveal_coverage_test.py |
 | U-108 | 46 | 15 个浏览器判据只在本地跑，CI 覆盖不到，长期不跑会悄悄失效 | 建 run_browser_suite.py 统一入口（15 项，--fast 9 项 143s）；聚合判定「一项 FAIL 即 FAIL」 | **已完成** | tools/run_browser_suite.py |
+## 轮47 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-109 | 47 | `og:description`（微信分享卡片文案）仅 24 字且缺主体身份，而另外两处描述都有 | 补为 45 字含「江西科技学院薪火寰行实践团 × 东固畲族乡」；建 social_meta_test.py 6 项判据接入 CI | **已完成** | site/index.html + tools/social_meta_test.py |
+| U-110 | 47 | 判据关键词选错：「东固」既是地名又出现在「东固非遗文创」里，导致「缺身份」误判为「有身份」 | 主体身份必须是「谁做的」（实践团/学院），不能用「在哪做的」（东固） | **已完成**（方法论） | tools/social_meta_test.py |
+| U-111 | 47 | 反向验证替换打错位置：身份串在 index.html 出现 2 次，`replace(...,1)` 只改了 description | 用正则精确替换目标 meta 整条，不要用全局字符串替换 | **已完成**（方法论） | tools/reverse_social_meta.py |
+| U-112 | 47 | 曾误判「首屏间距梯度反了」（组内 32 / 组间 47，比值 1.47） | 裁切放大后发现 CTA 与数据条之间有 1px 分隔线，分组信号足够 → **不是缺陷**；只看 margin 数值会误判 | **已否决**（有理据） | — |
