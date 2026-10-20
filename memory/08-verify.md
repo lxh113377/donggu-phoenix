@@ -714,3 +714,42 @@ focus-visible 有可见焦点环。
 - 线上 build=20，CI：39373372518 success
 - 干净克隆复验：verify_site / ci_design_static 全 PASS
 - 静态门禁 15 条
+
+
+## 轮22 结果（2026-10-20 · 死数据清理 + 「数据必须有消费者」门禁）
+
+### 排查
+用「数据字段是否出现在前端代码里」做静态对账，发现 8 个字段从未被引用。
+
+**会误导的（已处理）**
+1. culture.js meta.year='2025' 而页面 menu-foot 写 2026。
+   核实后两者都对：2025 是**田野调研年份**（采访稿 2025-07），2026 是**交付年份**。
+   问题是字段名 year 含义模糊 → 改名 fieldworkYear 并加注释。
+2. ar-data.js meta.subtitle / weight 是**旧版文案**，
+   HTML 第 207/219 行已有更完整表述（多了零第三方库/零外部请求/降级说明）。
+   留着会让维护者误以为那是当前文案 → 删除（ar-data.js 8884 → 8779 字节）。
+
+**无害冗余（保留 + 白名单说明）**
+  · culture.js hero.line1「畲」——首屏水印已在 HTML 写死
+  · ar-data.js costumes —— culture 段「一生」章节已完整覆盖三式
+  · ui.stampNew / tapScene —— 预留文案
+
+### 新增 tools/dead_data_test.py
+检查数据字段是否在前端代码出现；不在且未登记白名单则判红。白名单须写理由。
+结果：56 个字段 = 50 有消费者 + 6 预留 + 0 无消费者。
+
+### 又一次「假绿」自查（重要）
+第一版正则写成 r'^\\s{2,6}(\\w+):\\s'（raw string 里双反斜杠 = 字面量反斜杠），
+**一个字段都没匹配到** → 打印「检查 0 个字段」→ RESULT: PASS。
+典型的「没测到 = 通过」。与轮9 perf_anim、轮15 reveal 同一类错误，这已是第三次。
+修正正则后检查 56 个字段。
+→ 已把「检查到 0 个对象必须判 SKIP/FAIL」写进教训。
+
+### 验证
+清理后全部门禁 PASS；页面渲染复验：
+H1 正确、AR 卡片 3、出处块 3、文创 12、文化 4 段、console 错误 0。
+
+### 读数
+- 线上 build=21，CI：39374071763 success
+- 干净克隆复验：verify_site / ci_design_static / dead_data 全 PASS
+- 静态门禁 17 条
