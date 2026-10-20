@@ -165,3 +165,10 @@
 |---|---|---|---|---|---|
 | U-61 | 33 | 单次性能采样不可靠：首测得 DCL -56% / FCP -43%，严格 A/B（各 10 次）后变成 domInteractive -40%、FCP 持平 | 性能结论必须多次采样取中位数并排除冷启动异常值；单次测量会骗人 | **已完成** | _qa/ab_final.py |
 | U-62 | 33 | 本地 8791 服务曾停止，导致测试读到 chrome-error 页面（误以为 defer 破坏站点） | 测试前先探服务可用性（Invoke-WebRequest 200 检查） | **已完成** | — |
+## 轮34 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-63 | 34 | defer 改了脚本执行时机，静态判据只能证明「有 defer」不能证明「功能正常」 | 建 defer_regression_test.py 5 项运行时回归（7 全局对象/body.ready/H1/六类内容块/凤凰画布） | **已完成** | tools/defer_regression_test.py |
+| U-64 | 34 | 第 6 次「测量不可靠」：defer_regression_test 反向验证被 SW 缓存假绿（打乱脚本顺序仍全 PASS） | 固定套路：about:blank → clear_sw.js → about:blank → 唯一 URL。并建 browser_test_lint.py 检查所有浏览器测试 | **已完成** | tools/browser_test_lint.py |
+| U-65 | 34 | 3 个反向验证脚本缺防缓存（reverse_image_quality / reverse_reveal / 误报的 reverse_contrast3） | 已由 browser_test_lint 抓出并纳入警告；reverse_contrast3 经核实安全，判据改为「满足任一即可」 | **已完成** | tools/browser_test_lint.py |
