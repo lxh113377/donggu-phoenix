@@ -468,3 +468,39 @@ agent-browser 守护进程报 "daemon configuration mismatch"，kill + 清 ~/.ag
 ### 读数
 - CI：e21820e 已提交（页面代码未变，build 保持 15）
 - tools/reveal_after_jump_test.py 可复跑
+
+
+## 轮16 结果（2026-10-20 · 两处真实缺陷：H1 文案重复 + 商品图溢出）
+
+### 转向内容与渲染质量后，立刻找到两个「自动化判据查不出」的问题
+
+**缺陷一：H1 主标题重复两遍**
+main.js:40 的运行时拼接
+  t.innerHTML = C.hero.line2 + '<em>' + C.meta.title + '</em>'
+数据：line2='凤鸣东固'，meta.title='畲 · 凤鸣东固'（已含 line2）
+运行时 H1 实际文本 = '凤鸣东固畲 · 凤鸣东固'
+后果：主标题视觉出现两次、读屏念两遍；
+      且 em 用 Cinzel（实测 0 个汉字字形），中文全部回退系统字体。
+修法：副标题改纯拉丁 '畲 · SHE PHOENIX'，Cinzel 正好覆盖拉丁。
+注意：静态 HTML 里本来是对的，是 JS 在运行时覆盖成重复文本 ——
+      这就是静态门禁查不出、必须真打开页面看渲染结果的原因。
+
+**缺陷二：商品图溢出压住「现有延续」标签**
+实测：.merch-shot 高 196px，图片实测 218~237px，底部溢出 69px，压住 .tier 标签。
+根因：.merch-shot 是 display:grid 且未定义行高 → 隐式行高被图片撑到 279px；
+      此时子项 max-height:78% 的基准变成 279（行高）而非 196（容器高），
+      78%×279≈218px —— 正是实测值。
+修法：grid-template-rows:100% 锁行高 + 图片固定 max-height:150px（特写大格 320px）。
+验证：所有商品 tierOverlapsImg 由 true 变 false。
+
+### 门禁新增 2 条 + 自己踩了两次误报
+gate 21（H1 不得重复拼接）、gate 22（grid 行高锁定 / 禁百分比 max-height）。
+两次误报均已修正：
+  1) 正则范围过宽，把特写大格的 76% 也算进去（那相对 420px 大容器，合理）
+  2) 规则含中文注释，先 replace(' ','') 再判子串会失败
+修正后三种破坏均判红（沙箱内，真实文件零改动）。
+
+### 读数
+- 线上 build=16：H1='凤鸣东固畲 · SHE PHOENIX'，商品图 max-height=150px
+- CI：39368844216 success
+- 静态门禁增至 9 条，全部在 CI 里跑
