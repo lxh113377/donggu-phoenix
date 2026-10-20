@@ -70,7 +70,7 @@
         /* 头像是装饰性小图：紧随其后的 h3 已给出人名，
          * 若 alt 也写人名，读屏会连续念两遍（图像一次、标题一次）。
          * WCAG H67：装饰性图片用 alt="" 明确声明跳过。 */
-        '<img class="avatar" src="' + (p.avatar || 'assets/img/phoenix-mark.svg') + '" alt="" aria-hidden="true"' +
+        '<img class="avatar" src="' + (p.avatar || 'assets/img/phoenix-mark.svg') + '" alt="" aria-hidden="true" loading="lazy" decoding="async"' +
         ' onerror="this.src=\'assets/img/phoenix-mark.svg\'" width="74" height="74">' +
         '<h3>' + (p.name || '') + '</h3>' +
         '<p class="role">' + (p.role || '') + '</p>' +
@@ -100,8 +100,13 @@
           // 否则单类筛选只剩一件时会出现一整块空置的大格。
           var feature = (tier === '全部' && idx === 0) ? ' is-feature' : '';
           var img = m.image
-            ? '<figure class="merch-shot"><img src="' + m.image + '" alt="' + (m.name || '') + ' 效果图" loading="lazy" width="380" height="380" onerror="this.style.opacity=0"></figure>'
-            : '<figure class="merch-shot placeholder"><img src="assets/img/phoenix-mark.svg" alt="" aria-hidden="true"></figure>';
+            /* I-6 响应式图片（对标缺口 4：站点 srcset=0、lazy 仅 1 处）：
+             * 归一格渲染宽 ~232px、特写大格 ~320px，DPR2 要 464/640 CSS px；
+             * 620w 原图 + 340w 小档两档足够（本站只有两种展示尺寸，不加第三档）。
+             * 小档由 tools/make_srcset.py 生成，约定名 r-<id>-340.webp，12 件全有档；
+             * verify 第 25 项断言 srcset 指向的每个文件必须真实存在（防线上 404）。
+             */
+            ? '<figure class="merch-shot"><img src="' + m.image + '" srcset="' + m.image.replace(/\.([a-z]+)$/, '-340.$1') + ' 340w, ' + m.image + ' 620w" sizes="(min-width: 900px) 380px, (min-width: 600px) 300px, 232px" alt="' + (m.name || '') + ' 效果图" loading="lazy" decoding="async" width="380" height="380" onerror="this.style.opacity=0"></figure>'            : '<figure class="merch-shot placeholder"><img src="assets/img/phoenix-mark.svg" alt="" aria-hidden="true"></figure>';
           return '<article class="merch-item' + feature + '">' +
             img +
             '<div class="tier">' + (m.tier || '') + '</div>' +

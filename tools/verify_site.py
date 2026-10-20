@@ -441,7 +441,12 @@ for wf in woff2:
     fp = os.path.join(font_dir, wf)
     if os.path.getsize(fp) < 8000:
         fails.append("字体子集过小（可能未生成完整字形）: " + wf)
-    if "site/assets/fonts/" + wf not in (tracked or set()):
+    # 无 git 环境（git archive 产物、离线校验副本）时 tracked 为 None：
+    # 本仓其余跟踪面判据一律走 SKIP + WARNING ——「未取证」不等于「缺失」，
+    # 原来的 (tracked or set()) 会把取证不到判成红，本地/离线校验必误红。
+    if tracked is None:
+        warns.append("无 git 环境，字体入版本控制检查跳过（未取证不等于通过）: " + wf)
+    elif "site/assets/fonts/" + wf not in tracked:
         fails.append("字体未入版本控制（部署后 404）: " + wf)
 face_rules = re.findall(r"@font-face\{([^}]+)\}", css_txt)
 faces_with_src = [f for f in face_rules if "../fonts/" in f]

@@ -24,7 +24,12 @@
  * 注意：SW 的 VERSION 只管缓存名；跨版本对账的唯一锚点是 CSS --build ⇄ HTML BUILD。 */
 /* v6：「一木成像」成品改为像素级复刻位图（assets/img/statue-cut.webp +
  * assets/data/statue-profile.js 入 PRECACHE），画布高度上限提升。清单与内容都变了。 */
-var VERSION = 'v36';
+/* v37（2026-10-20 轮50）：I-5 旁白音道（ar.js 新增 speechSynthesis 模块 +
+ * index.html 播放层 #ar-narrate 开关 + main.css .narrate 态）。
+ * PRECACHE 清单未变但 index.html / main.css / ar.js 内容变了 —— 不 bump 则已装 SW 的访客
+ * 对 JS/CSS 走 cache-first，永远拿不到旁白开关（本项目第 4 次踩同一坑，写进注释）。
+ * 跨版本对账锚点仍是 CSS --build(36) ⇄ HTML BUILD(36)。 */
+var VERSION = 'v37';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [

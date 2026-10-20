@@ -66,6 +66,7 @@ jobs:
           python tools/social_meta_test.py
           python tools/bilingual_parity_test.py
           python tools/originality_audit.py
+          python tools/orphan_asset_test.py
 
   deploy:
     name: Deploy

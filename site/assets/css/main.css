@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:35;
+  --build:36;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -680,6 +680,17 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   background:rgba(11,9,8,.5);transition:all .35s var(--ease);min-height:44px}
 .ar-btn:hover{border-color:var(--she-gold);color:var(--she-gold)}
 .ar-btn.primary{border-color:var(--line);color:var(--she-gold);background:rgba(212,162,76,.12)}
+
+/* I-5 旁白开关（2026-10-20 轮50）：未开启=描边态；开启=实心金底，
+ * 一眼能看出"正在念"。无 TTS 引擎时 ar.js 置 disabled，走原生弱化不另造灰。 */
+.ar-btn.narrate.on{
+  background:rgba(212,162,76,.86);color:#17110c;border-color:var(--she-gold);font-weight:600;
+}
+.ar-btn.narrate[disabled]{opacity:.45;cursor:not-allowed;}
+/* 念读中的脉动点。reduced-motion 由文末的全局动画开关统一停掉，此处不重复判据 */
+.ar-btn.narrate.on::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:#17110c;margin-right:8px;vertical-align:middle;animation:narrPulse 1.4s var(--ease) infinite;}
+@keyframes narrPulse{0%,100%{opacity:.25}50%{opacity:.9}}
 .ar-meta{margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
   font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.1em;color:var(--fg-faint)}
 .ar-meta b{color:var(--she-gold);font-weight:400}
@@ -1184,3 +1195,16 @@ section.foot{padding-top:var(--sec-y-loose)}
 .merch-item.is-feature .merch-shot img{
   max-height:88%;max-width:88%;width:auto;height:auto;
 }
+/* === TOUCH-SLIDER-FIX（轮51） ===
+ * 390×844 实测 .carve-slider 命中区 195×3px、thumb 22px，
+ * 低于 WCAG 2.5.8 AA 的 24×24 下限，拇指也难拖中 3px 轨道。
+ * input 加高到 44px 作命中区，轨道视觉用 background-size 锁 3px 居中，
+ * thumb 22->26px。视觉不变，触摸区扩大。 */
+.carve-slider{
+  height:44px;
+  background-size:100% 3px;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+.carve-slider::-webkit-slider-thumb{width:26px;height:26px}
+.carve-slider::-moz-range-thumb{width:26px;height:26px}

@@ -74,6 +74,12 @@
     el.restart = $("#ar-restart");
     el.dots = $("#ar-dots");
     el.camToggle = $("#ar-cam-toggle");
+    el.narrate = $("#ar-narrate");
+    if (el.narrate && !narr.supported) {
+      el.narrate.disabled = true;
+      el.narrate.setAttribute("aria-disabled", "true");
+      el.narrate.textContent = "旁白 不可用";
+    }
     el.toast = $("#toast");
   }
 
@@ -85,6 +91,93 @@
     toast._t = setTimeout(function () { el.toast.classList.remove("on"); }, ms || 2600);
   }
 
+  /* ---------- 旁白音道（I-5，2026-10-20 轮50）----------
+   * 对标结论：本项目 152s 叙事此前完全依赖视觉阅读（speechSynthesis=0、<track>=0、
+   * 音视频字幕文件 0）。乡村展陈现场嘈杂、受众含长者与视障，无声道是真实缺口。
+   * 选型：浏览器内置 speechSynthesis —— 零音频文件、零外部请求，不破坏「零第三方库」硬约束。
+   * 边界：
+   *   ① 不支持（无 TTS 引擎/无声卡）→ 按钮置为「旁白 不可用」并 disabled，不抛错；
+   *   ② 只在用户点过开关后才发声（浏览器自动播放策略要求手势，点击本身就是手势）；
+   *   ③ 切章/暂停/关闭一律 cancel，避免语音堆叠与「画面已走、声音还在念上一章」。 */
+  var narr = (function () {
+    var supported = !!(global.speechSynthesis && global.SpeechSynthesisUtterance);
+    var api = {
+      supported: supported,
+      on: false,
+      speaking: false,
+      lastText: "",
+      voiceName: null,
+      utterSeq: 0
+    };
+    var zhVoice = null;
+
+    function pickVoice() {
+      if (!supported) { return; }
+      var vs = [];
+      try { vs = global.speechSynthesis.getVoices() || []; } catch (e) { vs = []; }
+      if (!vs.length) { return; }
+      /* 优先中文名语音；退化顺序：任何 zh* 语音 → 任何中文 locale → 默认语音。
+       * 内置浏览器（微信/QQ）常返回空列表或只有 en-US，故最后仍可念但语速会怪 —— 有比没有好。 */
+      /* 只用 ASCII 名匹配（Microsoft Tingting / Huihui / Yaoyao、Google中文 等）。
+       * 不在正则字面量里写中文：门禁按引号配对收集"渲染文本"字符，
+       * 字面量里的中文会被当成要渲染的字，逼着字体子集为不显示的字买单。 */
+      var byName = vs.filter(function (v) {
+        return /ting|hui|kang|yao|li.?ying|xiao|yun|zhiwei|wiki/i.test(v.name || "");
+      });
+      var byLang = vs.filter(function (v) { return /^zh/i.test(v.lang || ""); });
+      var loc = vs.filter(function (v) { return /(CN|zh|TW|HK)/i.test(v.lang || ""); });
+      zhVoice = byName[0] || byLang[0] || loc[0] || (vs.length ? vs[0] : null);
+      api.voiceName = zhVoice ? (zhVoice.name || zhVoice.lang) : null;
+    }
+    if (supported) {
+      pickVoice();
+      /* iOS/Android 的语音列表是异步填充的；不监听 voiceschanged 就会永远挑不到中文语音 */
+      try {
+        /* 列表是异步填充的（iOS/Android/微信内置），不监听就永远挑不到中文语音 */
+        global.speechSynthesis.addEventListener("voiceschanged", pickVoice);
+      } catch (e) { /* 极老内核不支持 addEventListener */ }
+    }
+
+    function cancel() {
+      if (!supported) { return; }
+      try { global.speechSynthesis.cancel(); } catch (e) { /* noop */ }
+      api.speaking = false;
+    }
+
+    /* 一段话 = 一个 utterance；标题与正文合并念，避免两次起音之间的空隙 */
+    function speak(text) {
+      if (!supported || !api.on) { return; }
+      var clean = String(text || "").replace(/\s+/g, " ").trim();
+      if (!clean) { return; }
+      cancel();
+      try {
+        var u = new global.SpeechSynthesisUtterance(clean);
+        if (zhVoice) { u.voice = zhVoice; }
+        u.lang = (zhVoice && zhVoice.lang) || "zh-CN";
+        u.rate = 1.04; u.pitch = 1; u.volume = 1;
+        var seq = ++api.utterSeq;
+        u.onstart = function () { api.speaking = true; };
+        u.onend = function () { if (seq === api.utterSeq) { api.speaking = false; } };
+        u.onerror = function () { if (seq === api.utterSeq) { api.speaking = false; } };
+        api.lastText = clean;
+        global.speechSynthesis.speak(u);
+      } catch (e) { api.speaking = false; }
+    }
+
+    api.cancel = cancel;
+    api.chapter = function (ch) {
+      if (!api.on || !ch) { return; }
+      /* 念「第几章 · 章名：正文」；正文是逐字史料文案，不改写、不摘要 */
+      speak((ch.title ? ch.title.replace(/\s*·\s*/, " ") + "：" : "") + (ch.body || ""));
+    };
+    api.set = function (want) {
+      api.on = !!want && supported;
+      if (!api.on) { cancel(); api.lastText = ""; }
+      return api.on;
+    };
+    api.toggle = function () { return api.set(!api.on); };
+    return api;
+  })();
   /* ---------- 画布 ---------- */
   var ctx = null, dpr = 1, W = 0, H = 0, raf = null, lastNow = 0;
   var fpsFrames = 0, fpsT = 0;
@@ -148,6 +241,7 @@
       if (el.chapterEn) { el.chapterEn.textContent = ch.en || ""; }
       if (el.body) { el.body.textContent = ch.body || ""; }
       if (el.bodyEn) { el.bodyEn.textContent = ch.enBody || ""; }
+      narr.chapter(ch);
       el.root.classList.remove("beat");
       void el.root.offsetWidth;
       el.root.classList.add("beat");
@@ -158,6 +252,14 @@
     if (el.play) {
       var label = state.playing ? (D.ui.pause || "暂停") : (D.ui.play || "继续");
       if (el.play.textContent !== label) { el.play.textContent = label; }
+    }
+    if (el.narrate && narr.supported) {
+      /* 只在状态真的变了才写 DOM：本函数是逐帧调用的（见 paintHud 节流说明） */
+      var want = narr.on ? "true" : "false";
+      if (el.narrate.getAttribute("aria-pressed") !== want) {
+        el.narrate.setAttribute("aria-pressed", want);
+        el.narrate.classList.toggle("on", narr.on);
+      }
     }
   }
 
@@ -201,6 +303,7 @@
     if (!data) { return; }
     state.sceneIdx = D.scenes.indexOf(data);
     state.scene = global.AR_SCENES.create(id, data);
+    narr.cancel();
     state.t = 0;
     lastChapter = -1;
     state.chapterDone = [];
@@ -381,6 +484,7 @@
   function close() {
     state.open = false;
     state.playing = false;
+    narr.cancel();
     if (el.root) {
       el.root.classList.remove("on");
       el.root.setAttribute("aria-hidden", "true");
@@ -458,10 +562,12 @@
         if (!state.scene) { return; }
         if (state.t >= state.scene.duration) { state.t = 0; }
         state.playing = !state.playing;
+        if (!state.playing) { narr.cancel(); }
       });
     }
     if (el.restart) {
       el.restart.addEventListener("click", function () {
+        narr.cancel();
         state.t = 0; lastChapter = -1; state.playing = true;
       });
     }
@@ -479,6 +585,21 @@
       el.camToggle.addEventListener("click", function () {
         if (state.mode === "camera") { stopCamera(); toast("已切回展柜模式", 2000); }
         else { startCamera(); }
+      });
+    }
+    if (el.narrate) {
+      el.narrate.addEventListener("click", function () {
+        if (!narr.supported) { toast("这台设备没有可用语音引擎，旁白暂不可用", 2600); return; }
+        var on = narr.toggle();
+        if (on) {
+          /* 开启即念当前章：用户不必等到下一次切章才听到反馈 */
+          var s = state.scene;
+          if (s) { narr.chapter(s.chapters[chapterIndex()]); }
+          toast("旁白已开启（浏览器内置语音，不下载任何音频）", 2600);
+        } else {
+          toast("旁白已关闭", 1800);
+        }
+        paintHud();
       });
     }
     if (el.dots) {
@@ -500,7 +621,11 @@
       if (e.key === "Escape") { close(); }
       else if (e.key === "ArrowRight") { step(1); }
       else if (e.key === "ArrowLeft") { step(-1); }
-      else if (e.key === " ") { e.preventDefault(); state.playing = !state.playing; }
+      else if (e.key === " ") {
+        e.preventDefault();
+        state.playing = !state.playing;
+        if (!state.playing) { narr.cancel(); }
+      }
     });
     global.addEventListener("resize", function () { if (state.open) { resize(); } }, { passive: true });
     document.addEventListener("visibilitychange", function () {
@@ -542,6 +667,13 @@
     close: close,
     goto: function (id) { if (!state.open) { open(id); } else { loadScene(id, true); } },
     seek: function (sec) { state.t = sec; lastChapter = -1; },
+    narrate: function (v) {
+      if (!narr.set(v)) { return false; }
+      var s = state.scene;
+      if (v !== false && s) { narr.chapter(s.chapters[chapterIndex()]); }
+      paintHud();
+      return narr.on;
+    },
     play: function (v) { state.playing = v !== false; },
     stats: function () {
       return {
@@ -550,6 +682,7 @@
         t: Math.round(state.t * 10) / 10,
         chapter: state.scene ? chapterIndex() : -1,
         stamps: state.stamps.slice(), visits: state.visits,
+        narr: narr.supported ? { on: narr.on, speaking: narr.speaking, lastText: narr.lastText, voice: narr.voiceName } : null,
         dwell: Math.round(state.dwell), fps: state.fps,
         canvas: W + "x" + H
       };

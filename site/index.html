@@ -275,6 +275,9 @@
         <button class="ar-btn primary" id="ar-play" type="button">暂停</button>
         <button class="ar-btn" id="ar-next" type="button" aria-label="下一段">下一段</button>
         <button class="ar-btn" id="ar-restart" type="button" aria-label="重播">重播</button>
+        <!-- I-5 旁白音道：浏览器内置 speechSynthesis，零音频文件、零外部请求。
+             aria-pressed 由 ar.js 随状态同步；无 TTS 引擎时 ar.js 会置 disabled + 「旁白 不可用」 -->
+        <button class="ar-btn narrate" id="ar-narrate" type="button" aria-pressed="false" aria-label="开启或关闭章节旁白朗读" title="用浏览器内置语音朗读本章解说">旁白</button>
       </div>
       <div class="ar-meta">
         <div class="ar-stamps" id="ar-stamps" aria-label="集章进度"></div>
@@ -347,7 +350,9 @@
     <span class="seal-mark" aria-hidden="true">凤鸣</span>
     <div class="wrap">
       <div class="foot-grid reveal">
-        <div class="qr-box" id="qr-box"><img id="qr-img" src="assets/img/qr.png" alt="本站二维码" width="512" height="512"
+        <div class="qr-box" id="qr-box"><!-- I-6：二维码在页尾「扫码」区，首屏用不到 → lazy + async 解码，
+             不再和首屏抢 4G 带宽（对标缺口 4：lazy 此前仅 1 处） -->
+             <img id="qr-img" src="assets/img/qr.png" alt="本站二维码" loading="lazy" decoding="async" width="512" height="512"
              onerror="var b=document.getElementById('qr-box');if(b){b.classList.add('failed');}
                       var f=document.getElementById('qr-fallback');if(f){f.hidden=false;}"></div>
         <!-- 二维码加载失败时的降级：整块换成可手输/复制的地址。
@@ -401,7 +406,7 @@
  * 比白屏更难看，而且看起来像「网站坏了」。VERSION bump 只能保证下次访问正常，
  * 救不了这一次。故用 CSS 里的 --build 与本文常量对账：不等则清缓存重载一次（有防循环闸）。 */
 (function () {
-  var BUILD = '35';
+  var BUILD = '36';
   var KEY = 'dg-build-fix';
   var got = '';
   try { got = (getComputedStyle(document.documentElement).getPropertyValue('--build') || '').trim(); } catch (e) {}

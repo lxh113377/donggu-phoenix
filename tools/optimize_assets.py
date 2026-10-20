@@ -3,7 +3,8 @@
 import os, sys
 from PIL import Image, ImageDraw, ImageFilter
 
-BASE = r"C:\Users\37533\Desktop\workspace\项目\新建文件夹"
+# 仓库根由脚本位置推导（硬编码本机绝对路径 → 换机器/CI 必失败，与 verify_site.py 同规则）
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(BASE, "素材")
 OUT = os.path.join(BASE, "site", "assets", "img", "photos")
 os.makedirs(OUT, exist_ok=True)
@@ -35,20 +36,16 @@ liu = Image.open(os.path.join(SRC, "96682e925857cd70e7d96aef552c8743.jpg"))
 w, h = liu.size
 crop = liu.crop((int(w*0.36), int(h*0.30), int(w*0.66), int(h*0.78)))
 save_webp(circle(crop, 320), "craft-liu.webp", q=86)
-save_webp(crop, "scene-interview-1.webp", 1000)
+ # 正文大图 scene-interview-1/2、merch-badge、merch-sketch 已停出（2026-10-20 轮50 · I-6）：
+ # 部署面（HTML/JS/manifest/sw）零引用，却占 322KB 体积。判据见 tools/orphan_asset_test.py；
+ # 页面将来要放正文大图，恢复这几行并在 culture.js 加消费点，两侧一起改。
 
 liu2 = Image.open(os.path.join(SRC, "18a24570c9bea0bf1a08a89f431d04e5.jpg"))
 w, h = liu2.size
 crop2 = liu2.crop((int(w*0.38), int(h*0.32), int(w*0.68), int(h*0.80)))
 save_webp(circle(crop2, 320), "craft-lei.webp", q=86)  # 占位：同为采访现场
-save_webp(crop2, "scene-interview-2.webp", 1000)
 
-# 文化用图：凤凰装静态图（用图腾替代） + 徽章实拍
-badge = Image.open(os.path.join(SRC, "000557355a872aeedb5660fd8a947421.png")).convert("RGB")
-save_webp(badge, "merch-badge.webp", 1200)
-
-sketch = Image.open(os.path.join(SRC, "a29d83e23df67a5f9bb2feac7e785843.png")).convert("RGB")
-save_webp(sketch, "merch-sketch.webp", 1200)
+# （徽章/草图正文图停出，见上；原 3.6MB/3.1MB PNG 源仍在 素材/，随时可恢复）
 
 # og 封面 1200x630：生成渐变色块 + 图腾叠加
 og = Image.new("RGB", (1200, 630), (11, 9, 8))
