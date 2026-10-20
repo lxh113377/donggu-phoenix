@@ -13,7 +13,7 @@ def ps(cmd, timeout=50):
         return 'TIMEOUT'
 
 # 干净重开 AR
-ps('agent-browser close --all'); time.sleep(2)
+ps('agent-browser close')  # 不带 --all：并行端共用 daemon，--all 会杀掉对方会话; time.sleep(2)
 ps('agent-browser set viewport 1440 900')
 ps('agent-browser open "about:blank"'); time.sleep(0.4)
 ps('agent-browser open "http://127.0.0.1:8791/"')

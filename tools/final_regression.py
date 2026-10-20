@@ -19,7 +19,7 @@ def ev_file(path):
 
 # 0) 先关掉可能残留的调试会话：agent-browser 是常驻 daemon，
 #    上一次异常退出留下的会话会让后续 set viewport 卡到超时（本轮实测踩到）。
-ps('agent-browser close --all', timeout=40)
+ps('agent-browser close', timeout=40)
 
 # 1) 门禁
 r = subprocess.run([PS, '-NoProfile', '-Command', 'python tools/verify_site.py'], capture_output=True, text=True, cwd=WD, encoding='utf-8', errors='replace')

@@ -75,6 +75,31 @@ def main():
             else:
                 warns.append(msg)
 
+    # === 会话隔离判据（轮61）===
+    # agent-browser 是常驻 daemon + 共享会话。本仓有并行端同时在用浏览器，
+    # `close --all` 会关掉**所有**会话 —— 等于每次跑判据都把对方正在用的浏览器杀掉。
+    # 这是连续 10 轮「agent-browser 卡死」的真相：不是 daemon 坏，是两个 agent 互杀会话。
+    # tools/ 下是长期维护、进 CI 的判据，必须只关自己的会话（close 不带 --all）。
+    killer = []
+    for f in glob.glob(os.path.join(BASE, 'tools', '*.py')):
+        bn = os.path.basename(f)
+        if bn == 'browser_test_lint.py':
+            continue
+        # 反向验证脚本必须含被检字符串才能造样本，跳过自身（轮61：
+        # 它因含 'close --all' 字面量被自己扫到判红）。
+        # 违规样本内容应由拼接生成，或用 -- 拼接绕过；这里直接排除。
+        if bn.startswith('reverse_'):
+            continue
+        try:
+            t = open(f, encoding='utf-8', errors='ignore').read()
+        except Exception:
+            continue
+        if 'close --all' in t:
+            killer.append(os.path.basename(f))
+    if killer:
+        hard_fail.append('%d 个 tools/ 判据用了 close --all（会杀并行端会话）：%s'
+                         % (len(killer), ', '.join(sorted(killer)[:6])))
+
     print('检查 %d 个浏览器测试脚本' % checked)
     if checked == 0:
         print()
@@ -89,7 +114,9 @@ def main():
 
     print()
     if hard_fail:
-        print('RESULT: FAIL  反向验证脚本必须防缓存（否则会假绿）')
+        # 标题必须能涵盖所有硬失败原因。轮61 曾固定写「必须防缓存」，
+        # 但失败原因其实是 close --all —— 归因文案不准会让人查错方向。
+        print('RESULT: FAIL  浏览器测试判据有 %d 项硬性问题' % len(hard_fail))
         for m in hard_fail[:8]:
             print('  -', m)
         return 1
