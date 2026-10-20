@@ -36,10 +36,13 @@ def main():
         if os.path.isdir(d):
             files.extend(glob.glob(os.path.join(d, '*.py')))
 
+    # 豁免：反向验证脚本需要「造违规样本」（写入字符串字面量里），
+    # 它们本身不会执行那段代码，只是把它写成 _qa 下的临时文件。
+    EXEMPT = {'reverse_safe_script.py'}  # 造违规样本的反向验证脚本
     offenders = []
     checked = 0
     for f in files:
-        if os.path.basename(f) == 'safe_script_test.py':
+        if os.path.basename(f) in EXEMPT or os.path.basename(f) == 'safe_script_test.py':
             continue
         try:
             s = open(f, encoding='utf-8', errors='ignore').read()
