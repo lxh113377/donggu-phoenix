@@ -27,27 +27,33 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSS = os.path.join(BASE, 'site', 'assets', 'css', 'main.css')
 
 
+def strip_comments(s):
+    """剥注释 —— 判据扫的是 CSS 行为，注释里的字面量不是行为。"""
+    s = re.sub(r"/\*.*?\*/", " ", s, flags=re.S)
+    return s
+
+
 def blocks(s):
-    """提取所有 reduced-motion 块的文本。"""
+    """提取所有 reduced-motion @media 块的文本。
+
+    一手事故（2026-10-20 轮50）：本函数原先直接 find("prefers-reduced-motion")，
+    当这个词只出现在**注释**里（我在 .narrate 段写了「必须在文末 prefers-reduced-motion
+    块登记」），它往前 rfind("@media") 找到的块在注释位置**之前**，于是
+    idx = end <= i，下一轮又找到同一个 i —— 无限循环。CI 上表现为 job 静默挂死，
+    本机则一次烧掉 20 个 python 进程各 900+ 秒 CPU。
+    两处根治：① 只匹配 @media ... { 这种真块（正则）；② idx 严格前进 + 迭代上限兜底。
+    """
     out = []
-    idx = 0
-    while True:
-        i = s.find('prefers-reduced-motion', idx)
-        if i < 0:
-            break
-        start = s.rfind('@media', 0, i)
+    for m in re.finditer(r"@media[^{]*prefers-reduced-motion[^{]*\{", s):
         depth = 0
-        end = start
-        for k in range(start, len(s)):
-            if s[k] == '{':
+        for k in range(m.end() - 1, len(s)):
+            if s[k] == "{":
                 depth += 1
-            elif s[k] == '}':
+            elif s[k] == "}":
                 depth -= 1
                 if depth == 0:
-                    end = k + 1
+                    out.append(s[m.start():k + 1])
                     break
-        out.append(s[start:end])
-        idx = end
     return out
 
 
@@ -57,12 +63,13 @@ def main():
         return 0
 
     s = open(CSS, encoding='utf-8').read()
-    rm = ' '.join(blocks(s))
+    snc = strip_comments(s)
+    rm = ' '.join(blocks(snc))
     # 剥注释后再找动画（注释里提到 infinite 不算）
-    body = re.sub(r'/\*.*?\*/', ' ', s, flags=re.S)
+    body = snc
     # 去掉 media 块内部，避免把 reduced-motion 块里的 animation:none 当成使用者
     flat = body
-    for b in blocks(body):
+    for b in blocks(snc):
         flat = flat.replace(b, ' ')
 
     users = []
