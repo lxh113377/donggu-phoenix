@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:21;
+  --build:22;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -70,6 +70,13 @@
   /* 间距：8 的倍数，随视口轻微伸缩 */
   --sp-1:8px; --sp-2:16px; --sp-3:24px; --sp-4:40px; --sp-5:64px; --sp-6:96px; --sp-7:140px;
   --sec-y:clamp(88px,11vw,148px);
+  /* 留白分级：按各段实测内容密度决定，形成编辑节奏而非匀速。
+   * 实测（1440 宽）：merch 内容 2016px（最密）、scan 357px（最疏）。
+   * 密处收紧避免被打断，疏处放开给呼吸。 */
+  --sec-y-tight:clamp(62px,7.5vw,104px);
+  --sec-y-snug:clamp(76px,9vw,126px);
+  --sec-y-roomy:clamp(100px,12vw,170px);
+  --sec-y-loose:clamp(108px,13vw,185px);
   --gut:clamp(18px,4vw,48px);
   --maxw:1180px;
 
@@ -864,6 +871,17 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 }
 
 /* ---------- ⑮ 页脚 ---------- */
+/* === RHYTHM-MAP：留白分级（轮27） ===
+ * 全站原本 8 个 section 的 padding 全是 148px（唯一值 [148]），
+ * 但内容密度差 5.6 倍（merch 2016px vs scan 357px）。
+ * 同样的补白在密处局促、在疏处空旷 —— 滚动是匀速的，没有起伏。
+ * 现按实测内容密度分级，让节奏有紧有松。
+ * 注意：这里只覆盖 section{padding:var(--sec-y) 0} 的默认值。 */
+section.totem-sec,section#culture,section#craft{padding-top:var(--sec-y-snug);padding-bottom:var(--sec-y-snug)}
+section#merch{padding-top:var(--sec-y-tight);padding-bottom:var(--sec-y-tight)}
+section#road{padding-top:var(--sec-y-roomy);padding-bottom:var(--sec-y-roomy)}
+section.foot{padding-top:var(--sec-y-loose)}
+
 .foot{position:relative;padding:var(--sec-y) 0 var(--sp-5);border-top:1px solid var(--line-soft);
   margin-top:var(--sp-6);overflow:hidden}
 .foot::before{content:"";position:absolute;inset:0;pointer-events:none;
