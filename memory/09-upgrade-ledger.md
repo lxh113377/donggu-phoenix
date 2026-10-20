@@ -306,3 +306,11 @@
 | U-129 | 51 | 反向验证用例锚点与真实代码不同步（我写的破坏串按 LF 拼、文件是 CRLF）⇒ 破坏没生效，「判据 PASS」被误读成「判据无效」 | 锚点失配必须显式打 [锚点失配] 并计入未抓到（FAIL），不得静默 continue；文本模式读取会归一行尾，破坏串一律先归一再比 | **已完成** | tools/reverse_new_gates.py |
 | U-130 | 51 | run_code 沙箱内 python 缺 USERPROFILE ⇒ 用户 site-packages 不可见 ⇒ fontTools/cv2 报缺库、判据假红（「环境伪红」被当代码缺陷） | 判据一律经 pwsh 真实环境执行；报错先查 sys.executable 与库可见性再归因（win-toolchain-pitfalls 同族） | **已完成**（本轮改用 pwsh 复跑） | — |
 | U-131 | 51 | 本地 safe_script_test 判红：并行端留下的 `_qa/apply_review3.py` 含 `open(site/index.html,'w')` 原地写真实文件 | 不代改他人工作面文件。CI 不受影响（_qa/ 被 .gitignore 排除、git 跟踪面为空），故本地噪声；由并行端自行改用 safe_mutation 或删除 | 待排期（归并行端） | _qa/apply_review3.py |
+## 轮51 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-124 | 51 | 移动端 `.carve-slider` 命中区 195×3px、thumb 22px，低于 WCAG 2.5.8 AA 的 24px；拇指拖不中（进度轴是该段唯一操作方式） | input 高 3→44px 作命中区，轨道用 `background-size:100% 3px` + center 保持视觉细线，thumb 22→26px；视觉零变化 | **已完成** | site/assets/css/main.css |
+| U-125 | 51 | 触摸目标尺寸此前从未检查 | 新增 touch_target_test.py：双视口（390×844 + 1440×900）非 inline 交互元素 >= 24px；Inline 链接按 WCAG 2.5.8 豁免 | **已完成** | tools/touch_target_test.py |
+| U-126 | 51 | **判据自身死循环把 CI job 静默挂死 8 分钟**：`reduced_motion_test.blocks()` 在未剥注释的 CSS 上 find('prefers-reduced-motion')，命中注释里的字面量后 rfind('@media') 找到注释之前的无关块，`end <= i` 使 idx 回退 → 无限循环 | 只匹配 `@media ... {` 真块（正则）+ 调用前 strip_comments + idx 严格前进；这是 U-22/U-24「扫代码必须先剥注释」**第 3 次**复现 | **已完成** | tools/reduced_motion_test.py |
+| U-127 | 51 | 并发操作失误：我删掉了外部并行工作留下的 `_qahero_out.txt`（误判为我的垃圾） | 并发环境下只清理**自己**明确产生的文件；时间戳早于本轮动作的未跟踪文件不动 | **已记录**（教训） | — |

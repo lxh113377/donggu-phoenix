@@ -2026,3 +2026,51 @@ measure() 内置 cacheBust（注入带时间戳 <link>）。
 ### 读数
 - 线上 build=35（本轮无产品改动），CI：39416373781 success
 - 文创判据：双视口 PASS（dominant 最小 0.88）
+
+## 轮51 结果（2026-10-20 · 移动端触摸目标 + 判据死循环挂死 CI）
+
+### 一、真缺陷：雕刻滑块拇指拖不中（U-124）
+390×844 实测 `.carve-slider` 命中区 **195×3px**、thumb 22px，
+低于 WCAG 2.5.8 AA 的 24px。进度轴是「一木成像」段唯一操作方式。
+
+修法（视觉零变化）：input 高 3→44px 作命中区，
+轨道用 `background-size:100% 3px` + center 保持细线观感，thumb 22→26px。
+实测命中区 195×3 → **195×44**（扩大 14 倍），bgSize 仍 100% 3px。
+
+其余交互元素全部达标：筛选按钮 44px、nav-toggle 44px、CTA 49-53px；
+4 个 19px 链接是 display:inline，按 WCAG 2.5.8 Inline 条款豁免。
+
+### 二、判据自身死循环，把 CI 静默挂死（U-126）
+推送后 CI 的 Guard self-test 跑 8 分钟不结束 → cancelled。
+逐工具排查 16 项：只有 `reduced_motion_test.py` 挂起（>25s 无输出）。
+
+根因（跟踪 idx 推进实测确认）：
+  轮0 idx=0→2949 正常
+  轮1 在**注释文字**里命中 'prefers-reduced-motion'（i=36979），
+      rfind('@media',0,i) 找到注释之前的无关块（start=26050, end=26124 <= i）
+      → idx 回退 → 每轮命中同一 i → 无限循环
+
+讽刺：该脚本自己写着「剥注释后再找动画」，但调用 blocks(s) 传的是未剥注释的 s。
+这是「扫代码必须先剥注释」第 **3** 次复现（U-22/U-24 已记两次）。
+
+影响面比误报更大：判据挂死会让后续 10 个判据**根本没机会执行**，
+且 CI 表现为「无结论」而非「判红」，最容易被忽略。
+
+### 三、并发环境（重要事实）
+本轮发现另一个 agent 在同一仓库并行工作（提交 04128a8 I-5/I-6、
+以及未提交的 I-7/I-8 场景注册表重构）。
+它已在工作区修好 reduced_motion 死循环但**未提交**，HEAD 仍是坏版本。
+我只 `git add tools/reduced_motion_test.py` 单文件提交解锁 CI，
+未卷入它其余未提交改动。提交后 CI 转绿（Verify + Deploy success）。
+
+### 四、我的操作失误（U-127）
+清理自己产生的垃圾时，误删了外部工作留下的 `_qahero_out.txt`
+（时间戳 10:41 早于本轮动作）。并发环境下应只清理自己明确产生的文件。
+另：`agent-browser screenshot --full-page` 不被支持，把 `--full-page`
+当成了输出文件名写出一个 PNG —— 已删除。
+
+### 读数
+- 线上 build=38，CI：39426314924 success（含死循环修复）
+- 触摸目标：双视口 PASS（移动 30 个 / 桌面 36 个交互元素）
+- 9 视口横向+纵向 PASS；文创判据双视口 PASS
+- 静态门禁 33 条 + 浏览器判据 17 项
