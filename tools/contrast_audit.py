@@ -121,12 +121,38 @@ def main():
     open(tmp, 'w', encoding='utf-8').write(PROBE)
 
     ps('agent-browser set viewport 1440 900')
+    # 先 about:blank 重置浏览器态（sessionStorage / 内存缓存），
+    # 否则可能拿到上一次测试污染过的 CSS（轮25 实测过：还原 CSS 后仍报 66 处不达标）
+    ps('agent-browser open "about:blank"')
+    time.sleep(0.4)
     ps('agent-browser open "http://127.0.0.1:8791/?contrast=%d"' % int(time.time()))
     ps('agent-browser wait --load networkidle')
-    time.sleep(2.2)
+    time.sleep(2.8)
     # 滚一遍让所有段落完成 reveal
     ps('agent-browser eval "(async function(){for(var y=0;y<document.body.scrollHeight;y+=700){window.scrollTo(0,y);await new Promise(function(r){setTimeout(r,60)});}window.scrollTo(0,0);return 1;})()"')
     time.sleep(2.0)
+
+    # 防缓存污染：CSS 文件里声明的 --build 必须等于页面实际读到的 --build，
+    # 不等说明拿到的是旧缓存 → 判 SKIP，不输出可能错误的结论。
+    css_path = os.path.join(BASE, 'site', 'assets', 'css', 'main.css')
+    declared = ''
+    try:
+        import re as _re
+        m = _re.search(r'--build:(\d+);', open(css_path, encoding='utf-8').read())
+        declared = m.group(1) if m else ''
+    except Exception:
+        pass
+    live = ps("agent-browser eval \"getComputedStyle(document.documentElement).getPropertyValue('--build').trim()\"")
+    live_build = ''
+    for line in reversed(live.splitlines()):
+        line = line.strip().strip('"')
+        if line and line.isdigit():
+            live_build = line
+            break
+    if declared and live_build and declared != live_build:
+        print('RESULT: SKIP  CSS 版本不一致（磁盘 %s / 浏览器 %s）——疑似缓存污染，不输出结论'
+              % (declared, live_build))
+        return 0
 
     out = ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "%s")' % tmp)
     data = None
