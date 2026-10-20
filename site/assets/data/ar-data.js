@@ -96,19 +96,19 @@ window.AR_DATA = {
         {
           at: 11, key: 'longgang', title: '一九三〇 · 龙冈大捷', en: '1930 · Victory at Longgang',
           body: '第一次反「围剿」，张辉瓒部被诱入龙冈的「布袋」。红军全歼敌十八师。毛泽东写下《渔家傲》：雾满龙冈千嶂暗，齐声唤，前头捉了张辉瓒。',
-          enBody: 'In the first counter-encirclement campaign, Zhang Huizan’s 18th Division was drawn into the “cloth bag” at Longgang and annihilated.',
+          enBody: 'In the first counter-encirclement campaign, Zhang Huizan’s 18th Division was lured into the “cloth bag” at Longgang and wiped out. Mao Zedong wrote in his poem “Pride of Fisherman”: ‘Mist veils Longgang, a thousand peaks in gloom; all cry out — Zhang Huizan is taken at the front.’',
           note: '《江西日报》2021-08-06'
         },
         {
           at: 22, key: 'baiyun', title: '一九三一 · 白云山首战', en: '1931 · First Battle at Baiyun Mountain',
           body: '第二次反「围剿」首战，毛泽东、朱德在白云山前的小山村设指挥所，与敌遭遇；红军主力自山上压向敌人，一举歼敌七千余人。「白云山头云欲立」。',
-          enBody: 'The opening battle of the second counter-encirclement: command post at the foot of Baiyun Mountain, the main force sweeping down from the ridge.',
+          enBody: 'The opening battle of the second counter-encirclement: Mao Zedong and Zhu De set their command post in a hamlet before Baiyun Mountain and met the enemy head-on; the main Red Army force swept down from the ridge and destroyed over seven thousand of them. ‘Clouds rise over Baiyun’s peak.’',
           note: '《江西日报》2021-08-06'
         },
         {
           at: 33, key: 'huang', title: '一九三一 · 六渡坳', en: '1931 · Liudu’ao',
           body: '1931 年 9 月 15 日，红三军军长黄公略在六渡坳遭敌机扫射牺牲，年仅 33 岁。临终他说：就把我埋在东固，我喜欢这里的人民，喜欢这里的山和水。',
-          enBody: 'On 15 September 1931, Huang Gonglue, commander of the Third Red Army, was killed by strafing aircraft at Liudu’ao. He asked to be buried in Donggu.',
+          enBody: 'On 15 September 1931, Huang Gonglue, commander of the Third Red Army, was killed by strafing aircraft at Liudu’ao. He was 33. His last words: ‘Bury me in Donggu — I love its people, I love its mountains and its waters.’',
           note: '《江西日报》2021-08-06'
         }
       ],
@@ -145,13 +145,13 @@ window.AR_DATA = {
         {
           at: 18, key: 'flight', title: '振翅与盘旋', en: 'Wings and Circles',
           body: '凤凰装随年龄分大、小、老三式，样式相同而繁简有别。三式只有年龄与地域之别，没有等级贵贱——每一位畲族女性，都被视作三公主的化身。',
-          enBody: 'The phoenix costume comes in three forms — great, small, elder — differing in age and region, never in rank.',
+          enBody: 'The phoenix costume comes in three forms — great, small and elder — alike in cut, differing only in richness. The three differ by age and region, never by rank: every She woman is held to be an incarnation of the Third Princess.',
           note: '福建省文物局《畲族「凤凰装」》'
         },
         {
           at: 27, key: 'settle', title: '落羽归位', en: 'Feathers Settle',
           body: '红头绳、金丝银线、后腰的金黄腰带随风飘曳，是凤凰的尾羽；周身银器叮当，是凤凰的鸣啭。山歌一开口，凤凰就落在东固。',
-          enBody: 'Red cord, gold thread, a golden sash trailing like tail feathers, silver ornaments chiming like birdsong.',
+          enBody: 'Red cord, gold thread, a golden sash trailing like tail feathers, silver ornaments chiming like birdsong — the moment a mountain song begins, the phoenix alights on Donggu.',
           note: '福建省文物局《畲族「凤凰装」》'
         }
       ],
