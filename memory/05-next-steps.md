@@ -45,8 +45,16 @@
 - [x] Phase 0.5 sidecar 分发 ×13（轮2 实测：.upstream 已落 13 个技能目录，shields 只认 owner/repo 口径）
 - [x] Phase 1 首批六件执行（2026-10-20 轮2）：defuddle 上游切换+降级链 v1.1.0 | browser-cdp 换芯委托 agent-browser@0.39.1+chrome-devtools-mcp（保名保接口，story 20 处引用零改动）v1.1.0 | electron 双路化(+Playwright _electron) v1.1.0 | dogfood 证据泳道 v1.1.0 | taskflow 双路委托 beads(+fallback) v1.1.0 | find-skills 薄策略壳(21KB→2.7KB) v1.1.0；索引复绿 53/0/0 + P8 slides 幽灵清除
 - [x] Phase 1 续序第二批（轮3 7caa6760）：web-access v2.6.0 抽取换芯 / gstack v1.2.0 受控吸收 browse v2（整包回拉实测否决留档）/ docx v2.1.0 SHA-pin 锚点 / ppt-master 延期专窗登记
-- [ ] 待办：agent-browser 薄壳收口（并行端）、ppt-master v6.7.2 专窗分卷回拉、qmd 路由灰度、mirror -Fix（脏窗归零）、Phase 3 全臂终验（含文档臂）——Q 中间读数 +25% 诚实登记，30% 判定未下
+- [x] agent-browser 薄壳收口（轮4 e6b5032+63e1f66：4862B，−87.9%，三坑绕行+fork 留痕保留）
+- [ ] ppt-master v6.7.2 专窗分卷回拉 / qmd 路由灰度 / mirror -Fix（脏窗归零）/ Phase 3 全臂终验（bench_browser_arms.ps1 已沉淀，含文档臂）
+- [ ] C25 注入硬顶红（并行端 #30 条款 +417B 所致）归焚诀值守裁量瘦身或留痕上调——已入 upgrade_suggestions 待办
 - [x] P8 注册表漂移：slides 幽灵经 build_registry/build_indexes 重建清除（轮2 实测精确名 0 命中，disk_registry_diff 三类全 0）
 - [ ] 基线复测：10+5+5 套件 Q≥+30% 判定（tools/run_bench.py；A/B 已有：命令覆盖 71.1%→91.1%）
 - [x] 季度巡检脚本+基线扫描跑通（tools/skill_quota_scan.py；scan_2026Q4_baseline.json 181 件/47 红）+ 排程挂季（schedule-0846f2a9）
 - [ ] 焚诀 bge_fullbody_embeddings.npy 等向量派生件：常驻进程锁释放后补一次 build_indexes --apply（或季巡自动覆盖）
+
+## skill 治理终判（r7 · 2026-10-20）
+
+- [x] **要求 6 终签：≥30% 达标**——双臂 file:// 夹具公平形态，主口径 +330.8%（Q 0.4308/0.1000）/ 保守口径 +75.0%（完成率 8/9 vs 3/9）；公平性独立反证（旧臂真挂死非判据偏置）；兼容护栏 verify_site 全绿维持
+- [x] 七项要求交付核验全过（`_skill_audit/q_gate_final.json` + 四文档 + 扫描器 + 2027Q1 排程在列）
+- [ ] 遗留为计划内后续（非目标缺口）：Phase 2 拆卷 41 件 / mirror -Fix 待脏窗 / qmd 路由灰度 / ppt-master v6.7.2 专窗 / T03 索引位噪声下季带验
