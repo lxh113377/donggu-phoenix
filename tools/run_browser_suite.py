@@ -41,6 +41,7 @@ SUITE = [
     ('tools/reveal_after_jump_test.py', True, '跳转后进场不失效'),
     ('tools/touch_target_test.py', False, '双视口触摸目标 >= 24px'),
     ('tools/runtime_health_test.py', False, '运行时健康（无泄漏/累积/循环叠加）'),
+    ('tools/engine_behavior_test.py', False, '引擎行为（密度自适应+HUD节流实测）'),
     ('tools/defer_regression_test.py', False, 'defer 后运行时不回归'),
     ('tools/ar_e2e_test.py', False, 'AR 端到端 7 项'),
     ('tools/ar_playback_test.py', False, 'AR 播放时序'),
