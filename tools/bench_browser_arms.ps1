@@ -2,7 +2,8 @@
 # Measured traps encoded: (1) npx eats --session -> old arm uses default session, serial chain.
 # (2) PS5.1 Set-Content -Encoding utf8 writes BOM -> use [IO.File]::WriteAllText (UTF8 no BOM).
 # (3) keep $rows pure: logs via Write-Host only.
-# (4) SERIAL ONLY: never run this while any other agent-browser session is active (measured 2026-10-20: concurrent fair-T03 test poisoned NEW arm T02-T10 pass=0). Close-all before AND between arms.
+# (4) PROGRESS: Write-Host does not reach stdout through cmd wrappers -> use Write-Output for progress lines.
+# (5) SERIAL ONLY: never run this while any other agent-browser session is active (measured 2026-10-20: concurrent fair-T03 test poisoned NEW arm T02-T10 pass=0). Close-all before AND between arms.
 $ErrorActionPreference = 'Continue'
 $env:npm_config_userconfig = 'NUL'
 $repo = Join-Path (Join-Path 'C:\Users\37533\Desktop\workspace' ([string][char]0x9879 + [string][char]0x76EE)) ([string][char]0x65B0 + [string][char]0x5EFA + [string][char]0x6587 + [string][char]0x4EF6 + [string][char]0x5939)
