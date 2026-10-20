@@ -63,6 +63,14 @@ def main():
     fails = []
     checked = 0
 
+    # 先清 SW + caches：cache-first 会返回旧 JS，导致反向验证假绿
+    _clear = os.path.join(BASE, '_qa', 'clear_sw.js')
+    if os.path.exists(_clear):
+        ps('agent-browser open "http://127.0.0.1:8791/"')
+        time.sleep(1.2)
+        ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "%s")' % _clear)
+        time.sleep(1.0)
+
     ps('agent-browser set viewport 1440 900')
     ps('agent-browser open "about:blank"')
     time.sleep(0.4)
@@ -108,6 +116,32 @@ def main():
     else:
         fails.append('完整播放未落章: %s' % st)
         print('[FAIL] 完整播放未落章')
+
+
+    # === DEEPLINK：深链接与浏览器历史（轮44） ===
+    # 一手问题：按浏览器返回键清空 hash 后，AR 仍保持打开（状态不同步）。
+    # 注意：history.back() 会触发页面导航，CDP 会中断 async 探针，
+    # 故必须拆成「读状态 -> 触发返回 -> 重连后再读」。
+    ps('agent-browser open "http://127.0.0.1:8791/?dl=%d"' % int(time.time()))
+    ps('agent-browser wait --load networkidle')
+    time.sleep(1.5)
+    ps('agent-browser eval "if(window.__ar) window.__ar.open(\'craft\'); 1"')
+    time.sleep(0.9)
+    h1 = ev_json("JSON.stringify({hash:location.hash,open:window.__ar?window.__ar.stats().open:null})")
+    ps('agent-browser eval "history.back();1"')
+    time.sleep(1.6)
+    h2 = ev_json("JSON.stringify({hash:location.hash,open:window.__ar?window.__ar.stats().open:null})")
+    checked += 1
+    _ok = (h1 and (h1.get("hash") or "").startswith("#ar=") and h2
+           and h2.get("open") is False)
+    print("[%s] 深链接+返回键：打开 hash=%s，返回后 hash=%s，AR关闭=%s" % (
+        "PASS" if _ok else ("SKIP" if (not h1 or not h2) else "FAIL"),
+        h1.get("hash") if h1 else None, h2.get("hash") if h2 else None,
+        not (h2.get("open") if h2 else True)))
+    if _ok:
+        pass
+    elif h1 and h2:
+        fails.append("浏览器返回键未关闭 AR（hash 与状态不同步）")
 
     print()
     if checked == 0:

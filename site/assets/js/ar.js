@@ -518,10 +518,18 @@
       if (first) { open(first, { camera: true }); }
     } catch (e) { /* 哈希异常不影响页面 */ }
     // 同页内改哈希（例如从一张展签扫到另一张、或站内链接）：跟随切换
+    var _closingByHash = false;
     global.addEventListener("hashchange", function () {
       try {
         var id = readHash();
-        if (!id) { return; }
+        if (!id) {
+          // HASH-BACK-FIX: hash cleared by browser back -> close AR too.
+          if (state.open && !_closingByHash) {
+            _closingByHash = true;
+            try { close(); } finally { _closingByHash = false; }
+          }
+          return;
+        }
         if (!state.open) { open(id, { camera: false }); }
         else if (!state.scene || state.scene.id !== id) { loadScene(id, true); }
       } catch (e) { /* noop */ }
