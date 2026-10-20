@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:19;
+  --build:20;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -563,6 +563,26 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .ar-card ol li{position:relative;padding-left:26px;font-size:var(--fs-sm);color:var(--fg-dim)}
 .ar-card ol li::before{content:"";position:absolute;left:6px;top:.75em;width:5px;height:5px;
   border-radius:50%;background:var(--she-gold);opacity:.8}
+/* 出处展开块：默认收起，不打断阅读流；展开后逐条列出可溯源链接。
+ * 数据早已存在于 ar-data.js，此前只渲染数量「N 条」——读者看不到内容。 */
+.ar-src{margin-top:auto;padding-top:6px;border-top:1px solid rgba(212,162,76,.14)}
+.ar-src>summary{
+  cursor:pointer;list-style:none;
+  font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.18em;
+  color:var(--she-gold);opacity:.85;padding:4px 0;
+  transition:opacity .3s var(--ease), letter-spacing .3s var(--ease);
+}
+.ar-src>summary::-webkit-details-marker{display:none}
+.ar-src>summary::before{content:"＋ ";font-family:var(--font-sans)}
+.ar-src[open]>summary::before{content:"－ "}
+.ar-src>summary:hover{opacity:1;letter-spacing:.24em}
+.ar-src>summary:focus-visible{outline:2px solid var(--she-gold);outline-offset:3px;border-radius:2px}
+.ar-src ol{margin:6px 0 0;padding-left:18px;display:grid;gap:7px}
+.ar-src li{font-size:var(--fs-2xs);line-height:1.75;color:var(--fg-faint);letter-spacing:.02em}
+.ar-src a{color:var(--she-gold-light);text-decoration:underline;
+  text-decoration-color:rgba(212,162,76,.4);text-underline-offset:3px;transition:color .3s}
+.ar-src a:hover{color:var(--she-gold);text-decoration-color:var(--she-gold)}
+
 .ar-card .dur{font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.18em;color:var(--fg-faint)}
 .ar-card .go{margin-top:auto;align-self:flex-start;display:inline-flex;align-items:center;gap:10px;
   padding:12px 26px;border-radius:var(--radius-pill);border:1px solid var(--line);background:rgba(212,162,76,.08);

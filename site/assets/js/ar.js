@@ -413,7 +413,25 @@
     if (!box) { return; }
     box.innerHTML = D.scenes.map(function (s) {
       var ch = s.chapters.map(function (c) { return "<li>" + c.title + "</li>"; }).join("");
-      var extra = s.sources && s.sources.length ? '<span class="kick">素材出处 ' + s.sources.length + " 条</span>" : "";
+      /* 出处：不能只显示数量。读者/评审看到「N 条」却看不到是什么，
+       * 会质疑出处标得实不实。用原生 <details> 默认收起（不打断阅读流），
+       * 点开逐条列出；有 url 的给可点击链接（rel/target 齐全）。
+       * 链接只在用户主动点击时发起请求，不违反「页面自身零外部请求」。 */
+      var extra = "";
+      if (s.sources && s.sources.length) {
+        var items = s.sources.map(function (src) {
+          var label = src.label || "";
+          if (src.url) {
+            return '<li><a href="' + src.url + '" target="_blank" rel="noopener noreferrer">' +
+              label + '</a></li>';
+          }
+          return "<li>" + label + "</li>";
+        }).join("");
+        extra = '<details class="ar-src">' +
+          '<summary>素材出处 ' + s.sources.length + ' 条</summary>' +
+          '<ol>' + items + '</ol>' +
+          '</details>';
+      }
       return '<article class="ar-card">' +
         '<span class="no">' + s.no + "</span>" +
         "<h3>" + s.name + "</h3>" +
