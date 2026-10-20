@@ -316,3 +316,30 @@ perf_anim 假绿）。判据错的时候，越努力优化越偏。所以每轮�
 ### 读数
 - 线上 build=11，390x844 实测 hero=844/844 = 1.00x
 - CI：39359940355 success
+
+## 轮11 结果（2026-10-20 · 台账推进 U-07 完成 / U-08 实测否决）
+
+### U-07 装饰环溢出 — 已修
+实测 390x844：totem-ring.b 用 inset:-5% 向外扩，宽 399px > 视口 390（左右各溢 5px），
+全靠祖先 overflow 裁切兜住 —— 隐式依赖，换容器就露横向滚动。
+修法：inset:-5% → inset:0 + transform:scale(1.09)；hero-ring.b 加宽 → scale(1.10)。
+transform 不参与布局盒计算，天然不溢。
+修复后：hero-ring[64,326] / hero-ring.b[34,356] / totem-ring[17,373] / totem-ring.b[16,374]
+—— 全部在 390 内，且保持「外环包住内环」的同心关系。
+新增 tools/ring_containment_test.py（静态 + 浏览器双轨判据），反向验证恢复 inset:-5% 判红。
+
+### U-08 入口体积（defer）— 实测否决
+数据：9 个脚本共 162KB 全同步无 defer，但**全部在 18ms 内执行完、0 个长任务**；
+DCL 223ms / FCP 216ms 与脚本无关（屏蔽字体后 FCP 反而变 520ms，证否「字体阻塞」假设）。
+结论：加 defer 收益≈0，不值得引入执行顺序风险。**按数据否决，不为指标而改。**
+
+### 两个真问题（方法论级别）
+1) 判据基准错：最初用 scrollWidth > clientWidth 判溢出，但内容把视口撑宽时两者会一起
+   变成 1248，比值永远不成立 → 漏判。基准必须是 window.innerWidth。
+2) **修复被自己的测试覆盖丢失**：U-07 改完一直没提交，反向测试脚本原地改真实 CSS，
+   跑了几轮后修复被覆盖没了（git checkout 时才发现恢复的是未修版本）。
+   教训：修复先落盘再跑破坏性测试；破坏性测试必须在副本上做。
+
+### 读数
+- 门禁：verify_site PASS / ring_containment PASS
+- CI：39363573624 success，线上 build=12
