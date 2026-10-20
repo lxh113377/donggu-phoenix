@@ -1209,3 +1209,57 @@ C 删掉 .nav-toggle 新增的 active → 仍 PASS：
 - CI：bbfb0c7 failure（我的错）→ 0aa8c11 success（已修）
 - 干净克隆复验：safe_script_test 82 个脚本 PASS / verify_site PASS
 - 静态门禁 25 条
+
+## 轮33 结果（2026-10-20 · U-11 终于定位并修复）
+
+### U-11 的真相：9 个阻塞脚本
+挂了好几轮的性能悬案，本轮用静态分析找到根因：
+
+HTML 第 377-385 行有 **9 个同步 <script>**（无 defer/async）：
+  culture.js / ar-data.js / statue-profile.js / phoenix.js / wood-to-statue.js
+  / ar-scenes.js / ar.js / wood-demo.js / main.js
+合计 **163.4KB 原始 / 58.2KB gzip**。
+浏览器必须对每个脚本「下载 → 解析 → 执行」完才继续解析后续 HTML，
+DCL 被整条脚本链推后。前几轮排查的字体、backdrop-filter 都不是主因。
+
+### defer 安全性逐项核实
+· 数据文件：纯 window.X = {...}，无 DOM 操作
+· IIFE 脚本挂 global 命名空间；defer 保证按文档顺序执行，依赖链不变
+· **依赖链实测**：每个脚本依赖的全局均由更早脚本提供，无前向依赖
+· ar.js 已处理 readyState === 'loading' → 监听 DOMContentLoaded
+· main.js / phoenix.js 在 <body> 末尾，defer 后仍在 DOM 就绪后执行
+· 两个 inline script 保持原样（不能加 defer）
+
+### 运行时验证：功能完全正常
+7 个全局对象全部正确加载，body.ready=true，H1 正确，
+文创 12 件、AR 卡片 3 个。
+
+### A/B 对照（各 10 次采样，排除冷启动异常值）
+| 指标 | A 有 defer | B 无 defer | 变化 |
+|---|---|---|---|
+| **domInteractive** | **143ms** | 237ms | **-40% 显著** |
+| DCL | 240ms | 238ms | 持平 |
+| FCP | 160ms | 156ms | +4ms（噪声内）|
+
+FCP 分布：A=[152,156,156,156,156,160,160,164,216,324]
+→ 8 次集中在 152-164，后两个是冷启动异常值。
+
+### 一次差点误判的教训
+**首测**（每轮 3 次）得：DCL -56%、FCP -43%，看起来是大胜。
+**严格 A/B**（各 10 次）后：domInteractive -40%、FCP 基本持平、DCL 持平。
+如果只看首测，我会写出「FCP 提升 43%」这种错误结论。
+→ 性能结论必须多次采样取中位数并排除冷启动。
+
+### 另一个环境陷阱
+中途本地 8791 服务停了，浏览器打开的是 chrome-error 页面，
+所有全局都是 undefined。我一度以为 defer 破坏了站点。
+→ 测试前应先探服务可用性。
+
+### 新增 tools/critical_path_test.py（接入 CI）
+判据：所有带 src 的 <script> 必须有 defer 或 async；inline 豁免。
+反向验证：去掉 defer → 精确抓出并判红。
+
+### 读数
+- 线上 build=26，CI 待确认
+- domInteractive 237→143ms（-40%）
+- 静态门禁 26 条
