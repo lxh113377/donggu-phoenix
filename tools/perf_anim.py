@@ -15,6 +15,12 @@
 """
 import json, subprocess, sys, time
 
+# 零样本守卫：checked==0 时判 SKIP 而非 PASS（防止「没测到」被当「通过」）
+import sys as _sys
+import os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+from gate_guard import verdict, emit
+
 PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 BASE = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
 
@@ -92,10 +98,13 @@ def run():
 def main():
     d = run()
     if d is None:
-        return 0          # 环境原因跳过，不误报性能失败
+        # 环境原因跳过：必须可见，不能静默 return 0（那等于伪装成通过）
+        code, msg = verdict(checked=0, fails=[], what='动画性能样本')
+        return emit(code, msg)
     if 'error' in d:
         print('[SKIP] 探针未取到实例:', d)
-        return 0
+        code, msg = verdict(checked=0, fails=[], what='动画性能样本')
+        return emit(code, msg)
     fails = []
     if d['targetsUs'] >= 120:
         fails.append("_targets 单次 %.1fµs 超阈值 120µs（热路径退化）" % d['targetsUs'])
@@ -110,13 +119,11 @@ def main():
     print('粒子 %d | _targets %.1fµs | NaN %d | 降档 %d→%d' % (
         d['particles'], d['targetsUs'], d['nanCount'],
         d['particlesBefore'], d['particlesAfterLite']))
-    if fails:
-        print('RESULT: FAIL')
-        for f in fails:
-            print('  -', f)
-        return 1
-    print('RESULT: PASS  动画热路径性能达标')
-    return 0
+    for f in fails:
+        print('  -', f)
+    # checked 用粒子数：0 个粒子 = 没测到，不能算"性能达标"
+    code, msg = verdict(checked=d.get('particles', 0), fails=fails, what='动画性能样本')
+    return emit(code, msg)
 
 
 if __name__ == '__main__':

@@ -53,6 +53,7 @@ jobs:
         run: |
           python tools/gate_guard.py
           python tools/dead_data_test.py
+          python tools/prove_no_visual_change.py
 
   deploy:
     name: Deploy

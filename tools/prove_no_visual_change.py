@@ -19,6 +19,11 @@ backdrop-filter 作用于元素**背后**区域，其结果绘制在元素背景
 """
 import re
 import sys
+import os as _os
+_syspath = _os.path.dirname(_os.path.abspath(__file__))
+if _syspath not in sys.path:
+    sys.path.insert(0, _syspath)
+from gate_guard import verdict
 
 CSS = 'site/assets/css/main.css'
 
@@ -73,10 +78,16 @@ def main():
         print('  WARN %-26s %-22s %s' % s)
 
     print()
-    if warns:
-        print('RESULT: WARN  %d 处需要处理或说明' % len(warns))
+    checked = len(oks) + len(warns)
+    code, msg = verdict(checked=checked, fails=warns, what='backdrop-filter 用法')
+    if code == 'PASS':
+        print('RESULT: ' + msg)
         return 0
-    print('RESULT: PASS  所有 backdrop-filter 用法与背景不透明度自洽')
+    if code == 'SKIP':
+        print('RESULT: ' + msg)
+        return 0
+    # warns 视为「需说明」而非硬失败（保持原语义：退出码 0）
+    print('RESULT: WARN  %d 处需要处理或说明' % len(warns))
     return 0
 
 
