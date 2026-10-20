@@ -63,6 +63,7 @@ jobs:
           python tools/browser_test_lint.py
           python tools/cjk_typography_test.py
           python tools/cjk_latin_spacing_test.py
+          python tools/cjk_punctuation_test.py
           python tools/resilience_test.py
           python tools/social_meta_test.py
           python tools/bilingual_parity_test.py
