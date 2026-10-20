@@ -279,3 +279,11 @@
 | U-114 | 48 | 根因是 `.merch-shot img{max-height:150px}`（为普通卡片设）未被 is-feature 覆盖 | 大容器必须显式覆盖小容器的尺寸约束，否则继承到不适用的值 | **已完成**（方法论） | site/assets/css/main.css |
 | U-115 | 48 | 反向验证破坏点选在文件中部旧规则块，被末尾新规则覆盖 → 判据仍 PASS，误判为缓存 | 破坏测试必须作用在**最终生效**的那条规则上（同特异性后写者胜） | **已完成**（方法论） | tools/reverse_merch_fill.py |
 | U-116 | 48 | canvas 曾疑似未处理 DPR | 实查三个 canvas 均正确 `Math.min(devicePixelRatio,2)` + `setTransform`；当前环境 dpr=1 所以 ratio=1 是正确表现 → **不是缺陷** | **已否决**（有理据） | — |
+## 轮49 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-117 | 49 | agent-browser 视口曾被压缩到 565px（而非 900px），会让视觉结论基于错误视口 | 逐段审视前必须显式 `set viewport`；browser_test_lint 新增 viewport-lint（open 页面却未设视口 → WARN） | **已完成** | tools/browser_test_lint.py |
+| U-118 | 49 | 曾误判匠人头像「像同一张照片」 | 实查是两个独立文件 craft-liu.webp / craft-lei.webp；缩略图太小看错 | **已否决**（有理据） | — |
+| U-119 | 49 | 曾误判头像「缺 alt」 | 实为 `alt="" aria-hidden="true"` + 注释说明 WCAG H67（后面 h3 已有人名，避免读屏念两遍）；正则漏匹配 aria-hidden 导致误判 | **已否决**（有理据） | — |
+| U-120 | 49 | 批量补视口时正则匹配错位，把 reveal_after_jump_test.py 插成 8 空格缩进 → IndentationError | 批量改脚本后必须 `py_compile` 验证 + 实跑；已修复并复跑 8/8 PASS | **已完成** | tools/reveal_after_jump_test.py |

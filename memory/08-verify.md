@@ -1951,3 +1951,43 @@ hero / totem / carve-sec / ar-gallery / culture / craft / merch / road / scan。
 ### 读数
 - 线上 build=35，CI：39411964922 success
 - 干净克隆：verify_site / ci_design_static 全 PASS
+
+## 轮49 结果（2026-10-20 · 视口环境排查，三个误判自我纠正）
+
+### 一、起点：发现视口被压缩
+逐段截图时测得 `innerHeight = 565`（而非 900），
+说明 agent-browser 窗口曾被压缩 —— 这会让所有视觉结论基于错误视口。
+
+排查结论：**不是隐患**。
+27 个 *_test.py 中 10 个会 open 页面，全部已有 `set viewport`；
+其余未设视口的脚本实查后确认不需要（读离线截图 / 静态查 CSS / 假定页面已开）。
+实测 1440×900 / 1440×565 / 1440×700 三种视口下，
+visual_balance 结果完全一致（52.8/47.2）。
+
+### 二、仍加了固化：viewport-lint
+browser_test_lint 新增：凡 open 页面却没设视口 → WARN（不 FAIL）。
+「显式优于隐式」——判据结果不该随环境漂移。
+
+### 三、三个误判的自我纠正
+**① 匠人头像「像同一张照片」**
+  实为两个独立文件 craft-liu.webp / craft-lei.webp。缩略图太小看错。
+
+**② 头像「缺 alt」**
+  实际是 `alt="" aria-hidden="true"`，代码有注释：
+  紧随其后的 h3 已给出人名，alt 写人名会被读屏念两遍（WCAG H67）。
+  我的正则只匹配 `alt=`，漏掉 aria-hidden → 误判。
+
+**③ `phoenix-mark.svg` 的 alt=''**
+  它是导航 logo，紧跟文字「畲 · 凤鸣东固」，alt='' 是正确写法。
+
+### 四、一个真实失误（已修）
+批量补视口时正则匹配错位，把 `reveal_after_jump_test.py` 的
+`set viewport` 插成 8 空格缩进 → IndentationError。
+已修，复跑 8/8 段落 PASS。
+
+→ 教训：**批量改脚本后必须 py_compile + 实跑，不能只看改动成功提示**。
+
+### 读数
+- 线上 build=35，CI：39413177934 success
+- 干净克隆：verify_site PASS、browser_test_lint PASS（26 个，因 _qa/ 被 gitignore）
+- 本地 lint 统计 82 个（含 _qa 里 634 个一次性脚本）
