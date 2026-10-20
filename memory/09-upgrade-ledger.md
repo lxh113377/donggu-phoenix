@@ -212,3 +212,10 @@
 | U-83 | 39 | **originality_audit 从不判红**：失败只打 [WARN]，从不 sys.exit(非零)，入 CI 后必然假绿 | 补判定出口（有失败项则 RESULT: FAIL + exit 1）；反向验证注入 AI 紫后成功判红 | **已完成** | tools/originality_audit.py |
 | U-84 | 39 | originality_audit 硬编码绝对路径 `C:\Users\37533\...` + os.chdir → safe_mutation 沙箱失效、换机器跑不了 | 改为基于 `__file__` 的相对路径 | **已完成** | tools/originality_audit.py |
 | U-85 | 39 | verify_asset_is_source 依赖 `_dev/`，但该目录 0 个文件被 git 跟踪 → 加入 CI 会 SKIP，无意义 | 不加 CI；已在台账说明理由 | **已否决**（有理据） | — |
+## 轮40 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-86 | 40 | 静态扫 `exit(1)` 会误报判据的失败出口（gate_guard 用 `sys.exit(0 if ... else 1)`） | 改用「注入破坏 → 看退出码」实测法：critical_path/reduced_motion/microinteraction 破坏后均返回 1 | **已完成**（验证基础设施可靠）| — |
+| U-87 | 40 | 「构图是否平衡」只能主观判断 | 建 visual_balance_test.py：视觉重量 = 相对背景亮度对比 × (1+饱和度)；实测首屏左52.8%/右47.2%，差异5.6% 判平衡 | **已完成** | tools/visual_balance_test.py |
+| U-88 | 40 | 独立评审（codex 看图）给的 4 条建议，逐条核实后 **0 条构成真实缺陷** | 评审也会过严/不准；必须用像素数据核实再决定是否采纳 | **已完成**（含量化核实） | — |
