@@ -4,6 +4,7 @@
 
 **线上地址**：https://donggu-phoenix.pages.dev/（全球 CDN，后端同域）
 **备用地址**：https://lxh113377.github.io/donggu-phoenix/
+**管理后台**：https://donggu-phoenix.pages.dev/admin/（密钥登录，看访问数据全貌）
 **访问统计**：Cloudflare Pages Functions + D1，匿名聚合（详见下方「访问统计与隐私」）
 **交付说明**：[`docs/交付说明.md`](docs/交付说明.md) ｜ **体验与 AR 方案**：[`docs/体验设计与AR方案.md`](docs/体验设计与AR方案.md) ｜ **AR 分镜**：[`docs/ar-storyboard.md`](docs/ar-storyboard.md)
 
@@ -52,6 +53,13 @@ python tools\make_ar_assets.py
 - 图腾：代码生成的原创矢量 SVG（`tools/make_totem.py`，右半定义 + 镜像）
 - 二维码：`qrcode` 生成 + OpenCV 回读自检
 - 部署：GitHub Actions → Pages；Cloudflare Pages 备用
+
+## 管理后台
+
+- 入口：`/admin/`（仅 pages.dev 主站有效；github.io 纯静态端会显示无后端提示）
+- 登录：管理密钥存 Cloudflare Pages secret（`ADMIN_KEY`），本地开发用 `.dev.vars`（已 gitignore）；密钥只存浏览器 `sessionStorage`，关窗即退出
+- 功能：累计/今日/14 天指标卡、30 天趋势折线、今日逐时柱状、AR 场景热度、来源/国家/语言/屏幕分布、访问明细分页与过滤、CSV 一键导出
+- 防护：`_middleware` 统一鉴权（401）、同 IP 15 分钟失败 20 次限流（429）、密钥未配置时 503 显式提示
 
 ## 访问统计与隐私
 

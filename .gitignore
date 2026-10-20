@@ -8,6 +8,8 @@ __pycache__/
 *.pyc
 # 平台缓存
 .wrangler/
+# 本地开发密钥（生产走 Pages secret，绝不入库）
+.dev.vars
 # 素材原件（保留在本地，避免仓库过大；发布用 site/ 内已优化版本）
 素材/*.jpg
 素材/*.png
