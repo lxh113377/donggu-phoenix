@@ -3,7 +3,9 @@
  * 为什么需要它：站点此前只靠响应头 cache-control: max-age=600 兜底，
  * 断网超过 10 分钟再进就白屏 —— 而「现场网络不可控」是本项目的核心前提。
  *
- * 缓存策略（分层，避免首访就强拉 833KB）：
+ * 缓存策略（分层，避免首访就强拉整站）：
+ *   0) 文创 12 张实物图属重资产（合计约 450KB），一律走「访问后缓存」，
+ *      绝不进 PRECACHE —— 现场首访的瓶颈是 4G，不是第二次访问；
  *   1) 关键路径（HTML/CSS/JS/图腾 SVG/manifest）安装期预缓存，约 265KB；
  *   2) 照片与文创图等重资产走「访问后缓存」，看过才存，第二次进入即全离线；
  *   3) 导航请求 network-first、失败回落缓存的 index.html（现场断网仍可开）；
@@ -31,6 +33,8 @@ var PRECACHE = [
   'assets/fonts/cinzel.woff2',
   'assets/data/culture.js',
   'assets/data/ar-data.js',
+  'assets/data/statue-profile.js',
+  'assets/img/statue-cut.webp',
   'assets/js/phoenix.js',
   'assets/js/wood-to-statue.js',
   'assets/js/ar-scenes.js',
@@ -43,7 +47,7 @@ var PRECACHE = [
   'assets/img/qr.png'
 ];
 
-/* 重资产：不预拉，首次访问后留存 */
+/* 重资产：不预拉，首次访问后留存（文创 12 张实物图靠这里的 cacheThenStore 兜） */
 var LAZY_CACHE = 'assets';
 
 var BASE = new URL(self.scopeURL || './', self.location.href);

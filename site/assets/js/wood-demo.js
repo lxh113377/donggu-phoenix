@@ -69,13 +69,13 @@
       if (slider) { slider.value = String(Math.round(p * 1000)); }
     }
     ctx.clearRect(0, 0, W, H);
-    // 落地页取景：比 AR 叠加层更居中、更大，左下留给工序解说
+    // 落地页取景：像身要顶满画布（原来只占 60% 高，成品细节被缩没了，
+    // 「像素级复刻」在小尺寸下等于白搭）。成品图占位 = SPAN*s = 1.02s，
+    // 故 s 取画布高的 0.84 倍即可让像身高度达到约 86% 画布高。
     var wide = W >= 900;
-    // 像的总高 = 背光顶(-0.74s) → 莲座底(+0.44s) = 1.18s，按此反推安全取景
-    var sMax = Math.min(H * 0.70, W * 0.27);
     var box = wide
-      ? { cx: W * 0.64, cy: H * 0.55, s: sMax }
-      : { cx: W * 0.5, cy: H * 0.54, s: Math.min(W * 0.60, H * 0.62) };
+      ? { cx: W * 0.66, cy: H * 0.60, s: Math.min(H * 0.84 / 1.02, W * 0.42) }
+      : { cx: W * 0.5, cy: H * 0.575, s: Math.min(H * 0.84 / 1.02, W * 0.86) };
     E.draw(ctx, W, H, p, now, { box: box, moteCount: 24, backdrop: true });
     paintChrome();
     if (pct) { pct.textContent = "已成 " + Math.round(p * 100) + "%"; }

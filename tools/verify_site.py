@@ -66,16 +66,32 @@ if bad:
 print(f"[{'PASS' if not bad else 'FAIL'}] 数据层图片 {len(imgs)} 项，缺失 {len(bad)}")
 
 # 4) 体积预算
+# 🔴 口径（2026-10-20 轮6 修订）：预算衡量的是「会被部署的体积」，故只计 **git 跟踪** 的文件。
+# 一手教训：并发会话把 12 张尚在制作中的文创图（447KB）生成到 site/ 下但未 git add，
+# 磁盘总体积 1683KB 直接判红 —— 而这些文件根本不会被部署（Pages 只发跟踪内容），
+# 判红指向的是一个不存在的问题，且会让「谁先跑门禁谁背锅」。
+# 这不是放宽阈值（阈值仍 1600KB），是纠正度量对象：磁盘 ≠ 部署面。
+# 无 git 环境时退回全量统计（宁可严，不可漏判）。
+tracked_now = git_tracked()
 total = 0
 files = []
+untracked_bytes = 0
+untracked_n = 0
 for r, _, fs_ in os.walk(SITE):
     for f in fs_:
         p = os.path.join(r, f)
+        rel = os.path.relpath(p, SITE).replace(os.sep, "/")
         s = os.path.getsize(p)
+        if tracked_now is not None and ("site/" + rel) not in tracked_now:
+            untracked_bytes += s
+            untracked_n += 1
+            continue
         total += s
-        files.append((s, os.path.relpath(p, SITE)))
+        files.append((s, rel))
 files.sort(reverse=True)
-print(f"[INFO] 站点总体积 {total/1024:.0f} KB / {len(files)} 文件")
+print(f"[INFO] 站点部署体积 {total/1024:.0f} KB / {len(files)} 文件"
+      + (f"（另有未跟踪 {untracked_n} 文件 {untracked_bytes/1024:.0f}KB 不计入：它们不会部署）"
+         if untracked_n else ""))
 # 预算口径（2026-10-20 轮5 修订）：整站 1.6MB + **首屏关键路径 <= 400KB**。
 # 上调原因：设计系统 v2 引入自托管中文字体（238KB 子集），而「零外部请求」是项目硬约束，
 # 不能用 Google Fonts CDN 把字体成本甩出去 —— 该成本必须记在本地预算里。
@@ -435,6 +451,51 @@ if "getRegistrations" not in html or "caches.delete" not in html:
 if "sessionStorage.getItem(KEY) === BUILD" not in html:
     fails.append("版本对账守卫缺少防循环闸（会无限刷新）")
 print(f"[{'PASS' if not any('版本对账' in f for f in fails) else 'FAIL'}] 版本对账守卫：CSS --build 与 HTML BUILD 同值 + 防循环闸")
+
+# 14) 像素级复刻（2026-10-20 轮6）：成品必须是参考件本身，不是「画得像」。
+#     判据不看肉眼，看数据：①资产在盘且非空；②剖面由该资产反解（尺寸一致）；
+#     ③引擎里存在「揭示」通路且成品图被真正 drawImage；④成品图进 PRECACHE（离线也像素级）；
+#     ⑤揭示段的接管权重把矢量段压掉（否则照片周围挂一圈矢量化金边）。
+#     一手教训：v1 版成品是纯金剪影，肉眼看「有个像」就算过了，但评审一句「不像」全盘推翻 ——
+#     这类判据必须机器化，否则每轮都要靠人眼重判。
+statue_img = os.path.join(SITE, "assets/img/statue-cut.webp")
+prof_js = os.path.join(BASE, "site/assets/data/statue-profile.js")
+statue_meta = os.path.join(BASE, "_dev/mate/statue_asset_meta.json")
+if not os.path.exists(statue_img) or os.path.getsize(statue_img) < 20000:
+    fails.append("像素级复刻：成品资产缺失或过小 assets/img/statue-cut.webp")
+if not os.path.exists(prof_js) or os.path.getsize(prof_js) < 800:
+    fails.append("像素级复刻：轮廓剖面缺失 assets/data/statue-profile.js")
+prof_txt = rd(prof_js).decode("utf-8") if os.path.exists(prof_js) else ""
+for key in ("left:", "right:", "halfWidth:", "aspect:", "axis:"):
+    if key not in prof_txt:
+        fails.append("像素级复刻：剖面缺少字段 " + key)
+if "statue-cut.webp" not in prof_txt:
+    fails.append("像素级复刻：剖面未绑定成品资产（引擎会回退手写几何）")
+# 剖面尺寸必须与资产一致：查 assets 元数据（由 build_statue_asset.py 写）
+if os.path.exists(statue_meta):
+    try:
+        meta = json.loads(rd(statue_meta).decode("utf-8"))
+        ow, oh = meta.get("outSize", [0, 0])
+        if ("w: %d" % ow) not in prof_txt or ("h: %d" % oh) not in prof_txt:
+            fails.append("像素级复刻：剖面尺寸与资产不一致（%dx%d）" % (ow, oh))
+    except Exception as e:
+        fails.append("像素级复刻：资产元数据解析失败 %s" % e)
+for tok in ("revealStatue", "drawImage", "imageGeom", "STATUE_PROFILE", "takeover"):
+    if tok not in wood_engine:
+        fails.append("像素级复刻：引擎缺少揭示通路 " + tok)
+if "'assets/img/statue-cut.webp'" not in rd(os.path.join(SITE, "sw.js")).decode("utf-8"):
+    fails.append("像素级复刻：成品图未进 SW PRECACHE（离线时退回矢量像）")
+if "statue-profile.js" not in rd(os.path.join(SITE, "sw.js")).decode("utf-8"):
+    fails.append("像素级复刻：剖面未进 SW PRECACHE")
+if "statue-profile.js" not in html:
+    fails.append("像素级复刻：index.html 未加载 statue-profile.js（引擎会走手写回退）")
+# 脚本顺序：剖面必须先于引擎
+i_prof = html.find("statue-profile.js")
+i_eng = html.find("wood-to-statue.js")
+if not (0 <= i_prof < i_eng):
+    fails.append("像素级复刻：脚本顺序错误，statue-profile.js 必须先于 wood-to-statue.js")
+print(f"[{'PASS' if not any('像素级复刻' in f for f in fails) else 'FAIL'}] 像素级复刻：成品资产 / 左右不对称剖面 / 揭示通路 / 离线预缓存 / 加载顺序")
+
 
 print()
 if warns:

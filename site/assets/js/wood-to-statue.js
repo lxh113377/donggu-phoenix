@@ -27,22 +27,50 @@
     [0.670, 0.192], [0.740, 0.210], [0.800, 0.226], [0.845, 0.236], [0.861, 0.196],
     [0.884, 0.244], [0.918, 0.286], [0.952, 0.268], [0.982, 0.226], [1.000, 0.170]
   ];
-  function finalHW(u) {
+  /* 真实轮廓：优先用 statue-profile.js（由 tools/build_statue_asset.py 从参考成品
+   * 的 alpha 通道反解），保证「雕到一半的木头」与「成品照片」共用同一根轮廓线 ——
+   * 否则切到照片时轮廓会跳。左右分开取值：造像非镜像体（左臂外展多于右臂）。
+   * 缺省回退手写 PROFILE（左右对称）。 */
+  function interpTable(tbl, u) {
     u = clamp(u, 0, 1);
-    var i = 0;
-    while (i < PROFILE.length - 2 && PROFILE[i + 1][0] < u) { i++; }
-    var a = PROFILE[i], b = PROFILE[i + 1];
+    var lo = 0, hi = tbl.length - 1;
+    while (lo < hi - 1) { var mid = (lo + hi) >> 1; if (tbl[mid][0] <= u) { lo = mid; } else { hi = mid; } }
+    var a = tbl[lo], b = tbl[hi];
     var t = (u - a[0]) / ((b[0] - a[0]) || 1);
-    t = clamp(t, 0, 1); t = t * t * (3 - 2 * t);
-    return lerp(a[1], b[1], t);
+    return lerp(a[1], b[1], clamp(t, 0, 1));
+  }
+  function ref() {
+    var P = global.STATUE_PROFILE;
+    if (P && P.halfWidth && P.halfWidth.length > 8) { return P; }
+    return null;
+  }
+  function sideTable(side) {
+    var P = ref();
+    if (!P) { return PROFILE; }
+    var t = P[side];
+    return (t && t.length > 8) ? t : P.halfWidth;
+  }
+  function finalHW(u, side) { return interpTable(sideTable(side), u); }
+  /* 成品图几何：图高 → 引擎尺度 s 的换算系数（图高 1.0 = SPAN*s） */
+  function imageGeom(box) {
+    var P = ref();
+    if (!P || !P.image) { return null; }
+    var s = box.s;
+    var ih = P.span * s;                 // 图高（画布像素）
+    var iw = ih * P.image.aspect;        // 图宽
+    var axis = (P.axis == null ? 0.5 : P.axis);
+    return {
+      x: box.cx - iw * axis, y: box.cy + TOP * s,
+      w: iw, h: ih, src: P.image.src, ready: !!imageReady(P.image.src)
+    };
   }
   /* 开坯波前：自上而下，带跳刀抖动 */
   function revealAt(u, pc) {
     var start = u * 0.72 + rnd(Math.round(u * N)) * 0.07;
     return clamp((pc * 1.72 - start) / 0.34, 0, 1);
   }
-  function halfWidth(u, pc) {
-    var f = finalHW(u);
+  function halfWidth(u, pc, side) {
+    var f = finalHW(u, side);
     if (pc >= 1) { return f; }
     var r = revealAt(u, pc);
     var hw = lerp(BLOCK, f, r);
@@ -52,19 +80,91 @@
   }
   function waveU(pc) { return clamp((pc * 1.72 - 0.18) / 0.72, 0, 1); }
 
+  /* 左侧半宽 / 右侧半宽各自走自己的表；未开坯时左右都还是方料 BLOCK */
+  function halfWidthL(u, pc) { return halfWidth(u, pc, 'left'); }
+  function halfWidthR(u, pc) { return halfWidth(u, pc, 'right'); }
+
   function bodyPath(ctx, cx, cy, s, pc) {
     ctx.beginPath();
     var i, u, hw, y;
     for (i = 0; i <= N; i++) {
-      u = i / N; hw = halfWidth(u, pc) * s; y = cy + (TOP + u * SPAN) * s;
+      u = i / N; hw = halfWidthL(u, pc) * s; y = cy + (TOP + u * SPAN) * s;
       if (i === 0) { ctx.moveTo(cx - hw, y); } else { ctx.lineTo(cx - hw, y); }
     }
     for (i = N; i >= 0; i--) {
-      u = i / N; hw = halfWidth(u, pc) * s; y = cy + (TOP + u * SPAN) * s;
+      u = i / N; hw = halfWidthR(u, pc) * s; y = cy + (TOP + u * SPAN) * s;
       ctx.lineTo(cx + hw, y);
     }
     ctx.closePath();
   }
+  /* ---- 成品图加载：像素级复刻靠这张 RGBA 照片本身 ----
+   * 只在浏览器里创建一次 Image；加载失败不阻塞任何绘制（矢量段照常演，揭示段自动跳过）。
+   * 不 promise、不 await：缺图时 ready=false，逐帧自然重试前先标记 failed 避免死循环请求。 */
+  var IMG = {};   // src -> {img, ready, failed}
+  function imageReady(src) {
+    var slot = IMG[src];
+    if (!slot) {
+      slot = IMG[src] = { img: null, ready: false, failed: false };
+      try {
+        var im = new Image();
+        im.decoding = 'async';
+        im.onload = function () { slot.ready = true; };
+        im.onerror = function () { slot.failed = true; };
+        im.src = src;
+        slot.img = im;
+      } catch (e) { slot.failed = true; }
+    }
+    return slot.ready;
+  }
+  function imageSlot(src) { imageReady(src); return IMG[src]; }
+
+  /* 成品揭示：把抠好的照片按同一 box 贴上去，用 pGold/pOpen 做整体淡入 + 自上而下扫过。
+   * 这一步是「像素级一比一」的兑现口 —— 前面的矢量只负责过程好看，终点由这张图定义。 */
+  function revealStatue(ctx, box, p, opts, w, h) {
+    var g = imageGeom(box);
+    if (!g) { return 0; }
+    var slot = imageSlot(g.src);
+    if (!slot.ready) { return 0; }
+    var a = ease(band(p, 0.60, 0.86));
+    if (a <= 0) { return 0; }
+    // 自上而下的「上彩」扫描带：未扫到的部分还是矢量像，扫过即变成品
+    var head = lerp(-0.18, 1.06, ease(band(p, 0.60, 0.92)));
+    var cutY = g.y + g.h * clamp(head, 0, 1);
+    var padX = g.w * 0.42, padY = g.h * 0.07;
+    var rx = g.x - padX, ry = g.y - padY, rw = g.w + padX * 2, rh = cutY - ry;
+    if (rh <= 0) { return 0; }
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(rx, ry, rw, rh); ctx.clip();
+    // 关键：扫描到的区域内**先抹掉底下那层矢量像**，再贴照片。
+    // 不做这步，照片 alpha=0 的地方会透出矢量段的金色轮廓 —— 成品周围围一圈金边，
+    // 看起来像「贴上去的贴纸」，而不是「木头被雕成了这尊像」。
+    if (opts && opts.backdrop) {
+      // 用逻辑宽高重绘背景板 + 光柱：ctx.canvas.width 是 DPR 放大后的设备像素，传错会画出错位木纹。
+      // 只补背景不补光柱，会出现「照片背后一块更亮的矩形」—— 光柱被盖掉了而四周没有被盖。
+      backdrop(ctx, w, h, 0);
+      if (opts.beam !== false) { beam(ctx, w, h, box.cx, box.cy, box.s, 0.75); }
+    } else {
+      ctx.clearRect(rx, ry, rw, rh);                            // AR：叠层透明，露出摄像头画面
+    }
+    ctx.globalAlpha = a;
+    ctx.drawImage(slot.img, g.x, g.y, g.w, g.h);
+    ctx.restore();
+    // 扫描前沿的高光（贴金质感的那道亮边）
+    if (head > 0 && head < 1) {
+      var eg = ctx.createLinearGradient(0, cutY - g.h * 0.05, 0, cutY + g.h * 0.01);
+      eg.addColorStop(0, 'rgba(255,236,180,0)');
+      eg.addColorStop(0.82, 'rgba(255,236,180,.42)');
+      eg.addColorStop(1, 'rgba(255,247,220,0)');
+      ctx.save();
+      ctx.globalAlpha = a * (1 - Math.abs(head - 0.5) * 0.6);
+      ctx.fillStyle = eg;
+      ctx.fillRect(g.x - g.w * 0.1, cutY - g.h * 0.05, g.w * 1.2, g.h * 0.06);
+      ctx.restore();
+    }
+    return a;
+  }
+
   function autoBox(w, h) {
     if (w >= 900) {
       return { cx: w * 0.68, cy: h * 0.47, s: Math.min(h * 0.72, w * 0.33) };
@@ -647,12 +747,14 @@
     var pPaint = ease(band(p, 0.62, 0.80));
     var pGold = ease(band(p, 0.72, 0.86));
     var pOpen = band(p, 0.84, 1.00);
+    // 成品照片接管程度：它一上来，矢量段的背光/面相就该退场，否则两套舟形背光会叠成重影
+    var takeover = ease(band(p, 0.58, 0.88));
 
     if (opts.backdrop) { backdrop(ctx, w, h, now); }
     if (opts.beam !== false) { beam(ctx, w, h, cx, cy, s, opts.backdrop ? 0.75 : 0.9); }
 
-    // 背光（开光阶段在像后亮起）
-    if (pOpen > 0) { mandorla(ctx, cx, cy, s, ease(pOpen), now); }
+    // 背光（开光阶段在像后亮起）；照片接管后交给照片自带的舟形背光
+    if (pOpen > 0 && takeover < 0.999) { mandorla(ctx, cx, cy, s, ease(pOpen) * (1 - takeover), now); }
 
     // 落影
     ctx.save();
@@ -677,16 +779,20 @@
 
     // 彩绘 / 贴金
     if (pLacq > 0 || pPaint > 0 || pGold > 0) { painted(ctx, cx, cy, s, pLacq, pPaint, pGold, now); }
-    // 开面
-    face(ctx, cx, cy, s, band(p, 0.40, 0.56) * (0.6 + 0.4 * pSand), band(p, 0.88, 0.97));
+    // 开面：照片接管后淡出（真实五官由照片本身给出，矢量线描再叠上去就是双层）
+    face(ctx, cx, cy, s, band(p, 0.40, 0.56) * (0.6 + 0.4 * pSand) * (1 - takeover), band(p, 0.88, 0.97) * (1 - takeover));
     // 定像粉线（进入开坯即隐去）
-    layoutLines(ctx, cx, cy, s, pLine * (1 - band(p, 0.20, 0.30)), true);
+    layoutLines(ctx, cx, cy, s, pLine * (1 - band(p, 0.20, 0.30)) * (1 - takeover), true);
 
-    chips(ctx, cx, cy, s, pc, now);
-    if (opts.tools !== false) { tools(ctx, cx, cy, s, p, now); }
-    smoke(ctx, cx, cy, s, band(p, 0.88, 1), now);
+    // 木屑与器具在成品接管后收起：照片一贴上来，画面上就不该再浮着斧凿与金箔方块
+    if (takeover < 0.5) { chips(ctx, cx, cy, s, pc, now); }
+    if (opts.tools !== false && takeover < 0.5) { tools(ctx, cx, cy, s, p, now); }
+    // 成品揭示：像素级一比一的兑现口 —— 抠好的照片按同一 box 贴回，自上而下扫过
+    revealStatue(ctx, box, p, opts, w, h);
+    smoke(ctx, cx, cy, s, band(p, 0.88, 1) * (1 - takeover), now);
+    // 开光朱印：成品阶段唯一的叠加物（它是仪式符号，不属于造像本身）
     if (pOpen > 0.42) {
-      seal(ctx, cx + s * 0.34, cy + s * 0.20, s * 0.068, "开", RED, -0.12, band(pOpen, 0.42, 0.8));
+      seal(ctx, cx + s * 0.36, cy + s * 0.22, s * 0.062, "开", RED, -0.12, band(pOpen, 0.42, 0.8));
     }
     if (opts.motes !== false) { motes(ctx, w, h, now, opts.moteCount || 26); }
     if (opts.caption && opts.stageLabel) {
@@ -704,6 +810,8 @@
     bodyPath: bodyPath,
     halfWidth: halfWidth,
     finalHW: finalHW,
+    imageGeom: imageGeom,
+    isReady: function () { var g = ref(); return !!(g && g.image && imageSlot(g.image.src).ready); },
     progress: progress,
     stageOf: stageOf,
     STAGES: STAGES,
