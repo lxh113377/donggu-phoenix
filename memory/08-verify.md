@@ -1313,3 +1313,48 @@ FCP 分布：A=[152,156,156,156,156,160,160,164,216,324]
 - 线上 build=26，CI：39394747730 success
 - 干净克隆：browser_test_lint / critical_path_test / verify_site 全 PASS
 - 静态门禁 27 条
+
+## 轮35 结果（2026-10-20 · 中文排版基线核查）
+
+### 一、性能现状复核（旧记录已过时）
+10 次采样中位数：
+  resp=6ms  FP=180ms  FCP=180ms  domInteractive=149ms  DCL=248ms
+FP 与 FCP 相等 → 首屏有内容立即被绘制。
+Google「良好」阈值 1800ms，当前 180ms，已优 10 倍。
+→ 台账里 216/223ms 的旧记录已过时，不必再追。
+
+### 二、中文排版逐项核查：无缺陷
+这是中文内容站，但中文排版有自己的规则，之前从未工程化检查。
+
+| 项 | 实测证据 | 判断 |
+|---|---|---|
+| 标点行首（避头尾）| Range API 逐字符检测：**0 处** | 浏览器 line-break:auto 已应用 UAX#14 |
+| 中西文间距 text-autospace | 数据层正文混排 **0 处** | 混排都在设计性副标题，有意为之 |
+| 标点挤压 text-spacing-trim | Chrome 123+ | 本站标点不多，收益小 → 不加 |
+| .carve-lineage 77字/行 | 实为 flex 三标签并排 | 测量误报 |
+| word-break:keep-all 于标题 | 4 个标题 overflow=false | · 分隔符提供断行点 |
+
+### 三、主动否决两项（避免过度优化）
+· text-autospace：正文几乎无中西混排，加了是无效属性
+· text-spacing-trim：本站标点密度低，收益小于维护成本
+
+### 四、新增 tools/cjk_typography_test.py（4 条，接入 CI）
+1. html 必须 lang="zh-CN"
+2. 中文正文不得 word-break:break-all
+3. 长文本块必须有宽度上限（自身 max-width 或父级 grid minmax/min）
+4. text-autospace 若引入必须确有中西混排
+
+判据 3 的例外写明理由：.sec-head p 在 CSS Grid 第三列，
+已由 minmax(0, min(34em,42%)) 约束，加 max-width 冗余。
+
+反向验证：A 加 break-all → 判红；B lang 改 en → 判红。
+
+### 五、本轮踩的坑
+· 初版判据把 .carve-lineage 当连续文本，算出 77 字/行，实际是 flex 三标签
+· 初版判据要求所有长文本块自身有 max-width，漏了父级 grid 约束的情况
+→ 两次都是「判据假设与实际结构不符」，靠实测截图与 CSS 结构核对发现。
+
+### 读数
+- 线上 build=26，CI：39395799611 success
+- 干净克隆：cjk_typography_test / verify_site 全 PASS
+- 静态门禁 28 条

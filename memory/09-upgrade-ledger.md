@@ -172,3 +172,10 @@
 | U-63 | 34 | defer 改了脚本执行时机，静态判据只能证明「有 defer」不能证明「功能正常」 | 建 defer_regression_test.py 5 项运行时回归（7 全局对象/body.ready/H1/六类内容块/凤凰画布） | **已完成** | tools/defer_regression_test.py |
 | U-64 | 34 | 第 6 次「测量不可靠」：defer_regression_test 反向验证被 SW 缓存假绿（打乱脚本顺序仍全 PASS） | 固定套路：about:blank → clear_sw.js → about:blank → 唯一 URL。并建 browser_test_lint.py 检查所有浏览器测试 | **已完成** | tools/browser_test_lint.py |
 | U-65 | 34 | 3 个反向验证脚本缺防缓存（reverse_image_quality / reverse_reveal / 误报的 reverse_contrast3） | 已由 browser_test_lint 抓出并纳入警告；reverse_contrast3 经核实安全，判据改为「满足任一即可」 | **已完成** | tools/browser_test_lint.py |
+## 轮35 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-66 | 35 | 中文排版从未被工程化检查（避头尾/标点挤压/中西文间距/行长） | 逐项实测：标点行首 0 处、正文混排 0 处、keep-all 无溢出 → **无缺陷**；固化为 cjk_typography_test.py 4 条判据 | **已完成**（非缺陷） | tools/cjk_typography_test.py |
+| U-67 | 35 | text-spacing-trim / text-autospace 看似可改进 | 实测收益小（本站标点不多、正文几乎无中西混排）→ 主动不加，避免过度优化 | **已否决**（有理据） | — |
+| U-68 | 35 | 性能旧记录 216/223ms 已过时 | 实测当前 FCP 中位 180ms、domInteractive 149ms、DCL 248ms；FP=FCP 说明首屏立即绘制。Google「良好」阈值 1800ms，已优 10 倍 | **已核实无问题** | — |
