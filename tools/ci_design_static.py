@@ -140,6 +140,42 @@ def main():
         fails.append('段落顶部写死了补偿值（顶栏已由 scroll-padding-top 处理）：' + ', '.join(SEC_HARDCODED[:3]))
     print('[%s] 段落未重复补偿顶栏留白' % ('PASS' if not SEC_HARDCODED else 'FAIL'))
 
+    # H1 文案不得重复（轮16）
+    # 一手缺陷：main.js 把 hero.line2（'凤鸣东固'）与 meta.title（'畲 · 凤鸣东固'）拼接，
+    # 运行时 H1 变成 '凤鸣东固畲 · 凤鸣东固' —— 主标题出现两次，读屏念两遍。
+    H1_DUP = []
+    _mj = os.path.join(SITE, 'assets', 'js', 'main.js')
+    if os.path.exists(_mj):
+        _js = open(_mj, encoding='utf-8').read()
+        # 若同时出现 line2 与 meta.title 的拼接，判红
+        if 'C.hero.line2' in _js and 'C.meta.title' in _js:
+            H1_DUP.append('main.js 同时拼 C.hero.line2 与 C.meta.title')
+    if H1_DUP:
+        fails.append('H1 拼接可能导致标题重复：' + '; '.join(H1_DUP))
+    print('[%s] H1 文案无重复拼接' % ('PASS' if not H1_DUP else 'FAIL'))
+
+    # 商品图 max-height 不得用百分比（轮16）
+    # grid 容器未定义行高时，隐式行高被内容撑开，子项 max-height:% 的基准
+    # 变成行高而非容器高 → 图片溢出压住下方标签。
+    GRID_PCT = []
+    _mshot = re.search(r'(?:^|\n)\s*\.merch-shot\{([^}]*)\}', css)
+    if _mshot:
+        # 先剥注释再规范化空白：规则里有中文注释，直接 replace(' ','') 会把注释一起带上
+        _body = re.sub(r'/\*.*?\*/', '', _mshot.group(1), flags=re.S)
+        _body = re.sub(r'\s+', '', _body)
+        if 'grid-template-rows:100%' not in _body:
+            GRID_PCT.append('.merch-shot 是 grid 但未锁行高')
+    # 只看普通格（选择器恰为 .merch-shot img）；特写大格 .is-feature 有自己的规则，
+    # 它的百分比是相对 420px 大容器，合理。
+    for _m in re.finditer(r'(?:^|\n)\s*\.merch-shot img\{([^}]*)\}', css):
+        if re.search(r'max-height:\s*[\d.]+%', _m.group(1)):
+            GRID_PCT.append('.merch-shot img 使用百分比 max-height')
+            break
+    if GRID_PCT:
+        fails.append('商品图布局有溢出风险：' + '; '.join(GRID_PCT[:2]))
+    print('[%s] 商品图 grid 行高已锁 + max-height 非百分比' % (
+        'PASS' if not GRID_PCT else 'FAIL'))
+
     purple = [c for c in ('#667eea', '#764ba2', '#8b5cf6', '#a855f7') if c in css.lower()]
     if purple:
         fails.append('出现 AI 标配紫渐变：' + ', '.join(purple))
