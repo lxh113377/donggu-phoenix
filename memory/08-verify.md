@@ -343,3 +343,32 @@ DCL 223ms / FCP 216ms 与脚本无关（屏蔽字体后 FCP 反而变 520ms，�
 ### 读数
 - 门禁：verify_site PASS / ring_containment PASS
 - CI：39363573624 success，线上 build=12
+
+## 轮12 结果（2026-10-20 · 安全沙箱根治「测试覆盖真实文件」）
+
+### U-09 已根治
+轮11 事故根因不是某个脚本写错，而是**范式错**：破坏性测试原地改被 git 跟踪的文件。
+备份→改→还原，一旦中断还原就不执行，未提交的修复直接丢。
+
+新建 tools/safe_mutation.py：
+  1. 前置检查 git status，脏工作区**拒绝跑**（未提交 = 可能被覆盖的东西）
+  2. site/ 与 tools/ 复制到临时目录，在副本上改
+  3. try/finally 保证副本清理
+  4. 结束用 SHA256 逐个核验真实工作区**一字节未变**，变了告警
+三条保证均实测成立。16 个旧脚本已加废弃头部。
+
+### U-10 已根治：门禁不再依赖浏览器
+ring 判据原来用浏览器量 getBoundingClientRect，但 agent-browser 在本机频繁卡死
+（set viewport 可超时 90s），既不可靠也无法在沙箱里跑。
+U-07 根因完全是代码写法 → 改纯静态判据，秒出、任意环境可跑：
+  · 禁用负 inset / 禁用 >=500px 的 width 上限 / keyframes 必须保留 scale
+已并入 ci_design_static，CI 实测执行到该判据：
+  [PASS] 装饰环不溢出：无负 inset / 无超宽 width / keyframes 保留 scale
+
+### 反向验证（沙箱内，真实文件零改动）
+三种破坏全部判红：负 inset / 超宽 width / keyframes 丢 scale。
+真实 CSS sha256 全程不变。
+
+### 读数
+- CI：39364386781 success
+- 门禁：verify_site PASS / ci_design_static PASS（含 ring 判据）
