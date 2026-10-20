@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:22;
+  --build:23;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -990,6 +990,21 @@ section.foot{padding-top:var(--sec-y-loose)}
   transition:opacity .9s var(--ease-out),transform .9s var(--ease-out);
   transition-delay:calc(var(--d,0) * 80ms)}
 .reveal.in{opacity:1;transform:none}
+/* === STAGGER-TUNE：段落内入场时序（轮28） ===
+ * 实测 22 个 .reveal 里 22 个无延迟（含所有 .sec-head），
+ * 标题与内容同时淡入，缺「标题定调 → 内容跟进」的层次。
+ * 这里给标题之后的首个内容块一个基础延迟，
+ * 后续元素由现有的 --d（80ms 步进）接管。 */
+.sec-head + .reveal:not(.sec-head){transition-delay:120ms}
+.sec-head + .reveal.reveal-grid{transition-delay:120ms}
+/* 这两段的标题后面跟的不是 .reveal 容器（.reveal 在其内部），
+ * 单独补规则，保证与其余 5 段一致有 120ms 层次。 */
+.sec-head + .totem-grid > .reveal{transition-delay:120ms}
+.sec-head + .craft > .reveal{transition-delay:120ms}
+/* 段头本身最先出现，明确置零（覆盖继承来的 --d） */
+.sec-head{transition-delay:0ms}
+
+
 .reveal[data-reveal="fade"]{transform:none}
 /* 幕布揭示：用覆盖层做 wipe，而不是给本元素加 clip-path。
  * 一手踩坑：IntersectionObserver 的交叉矩形会被 clip-path 裁空（inset 100% ⇒ 矩形为空），
