@@ -148,6 +148,24 @@ def main():
     if ".ar-btn.narrate.on" not in css.replace(" ", ""):
         fails.append("旁白开关缺开启态样式（用户看不出旁白是否正在播）")
 
+    # 8b) 旁白可视态必须独立于 paintHud 同步（U-127 一手缺陷：
+    #     原先只在 paintHud 里写 aria-pressed，而 paintHud 开头 if (!state.scene) return;
+    #     ⇒ AR 未打开时点旁白，narr.on 已 true 但按钮不变、读屏也不知道。
+    #     实测证据：点击后 narr.on=true 而 aria-pressed 仍是 "false"。）
+    checked += 1
+    if "function syncNarrBtn()" not in arjs:
+        fails.append("旁白按钮状态未独立成 syncNarrBtn()（会被 paintHud 的无场景早退吞掉）")
+    checked += 1
+    n_sync = len(re.findall(r"syncNarrBtn\(\)", arjs))
+    # 定义处 1 + paintHud 1 + 点击 1 + API 1 = 4；少于 3 说明某个入口漏同步
+    if n_sync < 3:
+        fails.append("syncNarrBtn 调用点仅 %d 处（点击/API/paintHud 三处都需同步）" % n_sync)
+    checked += 1
+    # aria 同步不得写在 paintHud 的早退之后（否则等于没有）
+    hud_body = func_body(arjs, "function paintHud(now)") or ""
+    if "syncNarrBtn();" not in hud_body:
+        fails.append("paintHud 未调用 syncNarrBtn（逐帧回同步缺失）")
+
     # 9) 自动化验收面
     checked += 1
     if not re.search(r"narr: narr\.supported", arjs):
