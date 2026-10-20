@@ -133,3 +133,9 @@
 | U-48 | 28 | 22 个 .reveal 元素 transition-delay 全为 0s（含所有 .sec-head）→ 标题与内容同时淡入，无层次 | 纯 CSS 相邻兄弟选择器给标题后首块 120ms；标题置 0ms；7 个 sec-head 三类下一项全覆盖 | **已完成** | site/assets/css/main.css |
 | U-49 | 28 | stagger_test 第一版用 `if max(vals) < 60` 判定 → 两种破坏都判不出（聚合洗绿） | 改逐条校验：任何一条 <60ms 即判红。这是第 4 次同类错误（前 3 次：零样本判 PASS） | **已完成** | tools/stagger_test.py |
 | U-50 | 28 | 浏览器 daemon 被并发进程反复占用，无法跑浏览器复验 | 改用 HTTP 直接取线上 CSS 静态核对：STAGGER-TUNE 5 条规则 + RHYTHM-MAP + 留白令牌全部存在，线上 build=23 | **已完成**（替代验证） | _qa/check_live_css.py |
+## 轮29 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-51 | 29 | 4 个无限循环动画漏 reduced-motion 覆盖（spin/pulse/ringPulse）→ WCAG 2.3.3 前庭障碍风险 | 追加 media 块置 animation:none，保留静态外观；新增 reduced_motion_test.py 接入 CI | **已完成** | site/assets/css/main.css |
+| U-52 | 29 | 动效参数审查（缓动/时长/linear 用法）结论：无缺陷 | linear 用于旋转与进度条，语义正确；2 个裸 cubic-bezier 是令牌定义本身 | **已核实无问题** | — |

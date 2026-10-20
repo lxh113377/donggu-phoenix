@@ -1026,3 +1026,48 @@ CI 日志确认执行：「使用 4 种留白级别」「RESULT: PASS 留白节�
 - 线上 build=23，CI：39379404708 success
 - 干净克隆复验：verify_site / ci_design_static / stagger_test 全 PASS
 - 静态门禁 21 条
+
+## 轮29 结果（2026-10-20 · 补 4 个漏掉的 reduced-motion 覆盖）
+
+### 环境情况
+上轮欠的动效目视复验仍受阻：浏览器 daemon 被并发进程反复占用
+（最多时 50 个 chrome 进程）。中途短暂恢复过（eval 1+1 → 2），但又断。
+遂转做纯静态可验证的审查 —— 结果找到了真缺陷。
+
+### 发现：4 个无限动画没被 reduced-motion 覆盖
+全站共 5 个 reduced-motion 块，已覆盖 .hero-ring.b / .scroll-hint /
+.totem-ring / .reveal / .ar.beat 等。但静态审查发现 4 个**无限循环**漏了：
+
+| 选择器 | 动画 | 时长 | 视觉强度 |
+|---|---|---|---|
+| #boot .seal::after   | spin      | 1.5s infinite | 整圈旋转 |
+| .btn--primary::after | pulse     | 2s infinite   | opacity .4→1 + scale .8→1.25 |
+| .ar-brand .ar-dot    | pulse     | 2.4s infinite | 同上 |
+| #cam .guide::after   | ringPulse | 3s infinite   | scale 1→1.035 + opacity .35→.8 |
+
+WCAG 2.3.3（Animation from Interactions）与前庭功能障碍直接相关：
+持续脉冲/缩放会造成不适。用户开了「减少动效」却仍看到脉冲，等于偏好没被兑现。
+
+### 修法
+追加 @media (prefers-reduced-motion:reduce) 块把这 4 个 animation 置 none，
+只停动画、保留静态外观（元素不会消失）。
+
+### 新增 tools/reduced_motion_test.py（接入 CI）
+判据：凡 animation 含 infinite 的规则，其选择器必须在某个 reduced-motion 块内。
+只查 infinite —— 一次性动画播完即止，风险低，不强制覆盖。
+
+反向验证：
+· 删掉新加覆盖块 → 精确抓出全部 4 个
+· 新增 .ghost-anim::after{animation:spin 2s infinite} → 抓到
+
+当前状态：全站 7 个无限动画，7 个全部有覆盖。
+
+### 顺带核实：动效参数无缺陷
+· 缓动分布：var(--ease) 46 次 / linear 28 次 / var(--ease-out) 10 次
+· linear 28 次全部用在旋转（spin/slowSpin）与进度条（.ar-bar）—— 语义正确
+· 2 个裸 cubic-bezier 就是 --ease 与 --ease-out 的令牌定义本身
+· 无「该用缓动却用 linear」的生硬动效
+
+### 读数
+- 线上 build=24，CI：39380724683 success；Guard self-test 已含 reduced_motion
+- 静态门禁 22 条
