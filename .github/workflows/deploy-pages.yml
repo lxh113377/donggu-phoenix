@@ -70,6 +70,7 @@ jobs:
           python tools/narration_gate_test.py
           python tools/engine_polish_test.py
           python tools/dead_definition_test.py
+          python tools/ledger_id_test.py
 
   deploy:
     name: Deploy
