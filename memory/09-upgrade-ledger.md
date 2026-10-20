@@ -322,15 +322,23 @@
 
 | ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
 |---|---|---|---|---|---|
-| U-128 | 52 | 运行时健康（内存/节点累积/动画循环叠加）此前从未验证；本站是展现场景长时间开着的站 | 新增 runtime_health_test.py 4 项判据；实测 AR 开关 45 次节点 579→588→588→588 稳定、粒子恒定、60s 长跑内存非单调上升 → **无泄漏** | **已完成**（非缺陷） | tools/runtime_health_test.py |
-| U-129 | 52 | 判据若用「终值-初值」会把首轮常驻 DOM 创建误判成泄漏；内存绝对值会因 GC 时机误报 | 节点只看 `max(nodes[2:]) - nodes[1] > 2`（首轮之后）；内存判「非单调上升」而非绝对值 | **已完成**（方法论） | tools/runtime_health_test.py |
-| U-130 | 52 | **`location.reload()` 会让 SW 重新注册并用 cache-first 返回旧 JS**；带 `?cb=` 的 fetch 能取到新文件但页面里函数仍是旧版 | 只有「清 SW 后 open 全新 URL」才真正回源；反向验证 JS 行为应改用**运行时打补丁**直击判据公式 | **已完成**（方法论） | tools/reverse_runtime_health.py |
-| U-131 | 52 | rAF 帧率探针在后台标签页被浏览器节流，等 60 帧永不返回，挂死一次任务 | 不测帧率：测出来的是环境噪声不是产品问题 | **已否决**（有理据） | — |
+| U-140 | 52 | 运行时健康（内存/节点累积/动画循环叠加）此前从未验证；本站是展现场景长时间开着的站 | 新增 runtime_health_test.py 4 项判据；实测 AR 开关 45 次节点 579→588→588→588 稳定、粒子恒定、60s 长跑内存非单调上升 → **无泄漏** | **已完成**（非缺陷） | tools/runtime_health_test.py |
+| U-141 | 52 | 判据若用「终值-初值」会把首轮常驻 DOM 创建误判成泄漏；内存绝对值会因 GC 时机误报 | 节点只看 `max(nodes[2:]) - nodes[1] > 2`（首轮之后）；内存判「非单调上升」而非绝对值 | **已完成**（方法论） | tools/runtime_health_test.py |
+| U-142 | 52 | **`location.reload()` 会让 SW 重新注册并用 cache-first 返回旧 JS**；带 `?cb=` 的 fetch 能取到新文件但页面里函数仍是旧版 | 只有「清 SW 后 open 全新 URL」才真正回源；反向验证 JS 行为应改用**运行时打补丁**直击判据公式 | **已完成**（方法论） | tools/reverse_runtime_health.py |
+| U-143 | 52 | rAF 帧率探针在后台标签页被浏览器节流，等 60 帧永不返回，挂死一次任务 | 不测帧率：测出来的是环境噪声不是产品问题 | **已否决**（有理据） | — |
 ## 轮53 新增条目
 
 | ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
 |---|---|---|---|---|---|
-| U-132 | 53 | **engine_polish_test 是名字存在性判据**：把调用点 `this._densFor(` 改名后，定义仍在 → 23 项仍全 PASS。密度自适应被完全断开而门禁看不见 | 新增 dead_definition_test.py：必须「定义存在 + 至少一个调用点」；按形态区分 prototype 点调用与裸函数调用；接入 CI | **已完成** | tools/dead_definition_test.py |
-| U-133 | 53 | `safe_mutation.patch` 内部是 `replace(old,new,1)` 只替换第一处，用它做「断开全部调用点」的反向验证会漏，误判成判据失效 | 反向验证要构造「完全断开」必须全局替换；先数清调用点处数再设计用例 | **已完成**（方法论） | tools/reverse_dead_definition.py |
-| U-134 | 53 | **我的脚本把 phoenix.js 清成 0 字节**：finally 里 `open(p,'w').write(open(p).read())`，写模式先截断再读 | 绝不用 `open(p,'w')` 原地自我改写；破坏操作只在沙箱副本做（v3 已改）；已 git checkout 恢复并 node --check + 6 项门禁复验无损 | **已恢复**（教训） | — |
-| U-135 | 53 | M11「粒子数随面积变化」/ M12「HUD ≤10 写/秒」是运行时行为，全站无任何判据在运行时验证（静态判据只查名字与调用点） | 待办：浏览器稳定后跑四视口粒子数单调性 + hud.writes 每秒计数；本轮 agent-browser 卡死 4 次未完成 | **待排期**（工具不稳定） | — |
+| U-144 | 53 | **engine_polish_test 是名字存在性判据**：把调用点 `this._densFor(` 改名后，定义仍在 → 23 项仍全 PASS。密度自适应被完全断开而门禁看不见 | 新增 dead_definition_test.py：必须「定义存在 + 至少一个调用点」；按形态区分 prototype 点调用与裸函数调用；接入 CI | **已完成** | tools/dead_definition_test.py |
+| U-145 | 53 | `safe_mutation.patch` 内部是 `replace(old,new,1)` 只替换第一处，用它做「断开全部调用点」的反向验证会漏，误判成判据失效 | 反向验证要构造「完全断开」必须全局替换；先数清调用点处数再设计用例 | **已完成**（方法论） | tools/reverse_dead_definition.py |
+| U-146 | 53 | **我的脚本把 phoenix.js 清成 0 字节**：finally 里 `open(p,'w').write(open(p).read())`，写模式先截断再读 | 绝不用 `open(p,'w')` 原地自我改写；破坏操作只在沙箱副本做（v3 已改）；已 git checkout 恢复并 node --check + 6 项门禁复验无损 | **已恢复**（教训） | — |
+| U-147 | 53 | M11「粒子数随面积变化」/ M12「HUD ≤10 写/秒」是运行时行为，全站无任何判据在运行时验证（静态判据只查名字与调用点） | 待办：浏览器稳定后跑四视口粒子数单调性 + hud.writes 每秒计数；轮54 已闭合：把 _densFor 当纯函数直接喂面积（绕开 resize，agent-browser 卡死 4 次的教训），实测曲线 1319→2600 单调+夹取、HUD 203 次/秒调用挡到 10 次/秒写入 | **已完成**（轮54） | tools/engine_behavior_test.py |
+## 轮54 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-136 | 54 | 判据第三层盲区：名字在 + 调用点在，**行为**仍可能坏（M11/M12 是验收标准却无人实测） | 新增 engine_behavior_test.py 实测面积曲线与 HUD 写入速率；已接入 run_browser_suite | **已完成** | tools/engine_behavior_test.py |
+| U-137 | 54 | **判据自身漏洞**：judge_hud(9, 4) 侥幸通过 —— 帧率仅 9/s 时每帧写也才 9 次，比率判据失效，「写入少」是帧率低不是节流挡的 | 加 MIN_MEASURABLE_FPS=30 门限，低于它明确报「不可测，不得当作通过」 | **已完成** | tools/engine_behavior_test.py |
+| U-138 | 54 | 端到端反向验证（改 JS 文件再跑）不可信：注入确实到页面（fileHasMark=true、函数源码含 return 2000）但判据仍 PASS —— 实例状态是构造时算好的 + 缓存时序污染 | 判定逻辑抽成纯函数（judge_density/judge_hud），用构造数据单测；判据也因此变成可单测的（对齐 I-9） | **已完成**（方法论） | tools/reverse_engine_behavior.py |
+| U-139 | 54 | 反向验证的**期望值本身**写错两次：2514 是 2600 的 96.7% 在容差内却标成期望判红；一度把同一组数据写了相反的两个期望 | 期望值必须按判据口径算过再写；用例数据要互不相同避免自相矛盾 | **已完成**（方法论） | tools/reverse_engine_behavior.py |
