@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:28;
+  --build:29;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -748,7 +748,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 
 /* ---------- ⑫ 匠人 ---------- */
 /* 两张访谈不同权：第一张高、第二张下沉错位，避免「两栏等高卡片」的模板感 */
-.craft{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:clamp(24px,4vw,44px);
+.craft{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:clamp(24px,4vw,44px);
   align-items:start}
 .craft-card:nth-child(2){margin-top:clamp(28px,6vw,86px)}
 .craft-card{border:1px solid var(--line-soft);padding:clamp(24px,3vw,38px);position:relative;
@@ -1126,4 +1126,12 @@ section.foot{padding-top:var(--sec-y-loose)}
   .btn--primary::after,
   .ar-brand .ar-dot,
   #cam .guide::after{animation:none}
+}
+/* === SLIDER-NARROW（轮41） ===
+ * 320px 视口下 .carve-slider 右边界 336 > 320（溢出 16px）。
+ * 根因：.carve-slider-label::after 追加「· 按住画面左右拖也可」11 字，
+ * 且 white-space:nowrap，把 label 撑到 175px，挤掉 slider 的空间。
+ * 触屏用户不会「按住画面左右拖」，这条提示在窄屏是噪音，隐藏之。 */
+@media (max-width:420px){
+  .carve-slider-label::after{content:none}
 }
