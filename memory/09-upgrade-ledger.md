@@ -249,3 +249,10 @@
 | U-100 | 44 | 浏览器返回键清空 hash 后 AR 仍保持打开（hash 与状态不同步） | hashchange 处理器补「hash 为空且 AR 打开 → close()」，用 `_closingByHash` 防循环 | **已完成** | site/assets/js/ar.js |
 | U-101 | 44 | 反向验证时用非法破坏方式（`if (!id) { return;` 造成语法错误）→ 浏览器加载失败 → 判据假绿 | 破坏性测试必须保证破坏后代码仍可运行；改用 `if (false) {` 后准确判红 | **已完成**（方法论） | tools/reverse_deeplink2.py |
 | U-102 | 44 | `history.back()` 会中断 CDP async 探针（Inspected target navigated or closed） | 拆成「读状态 → 触发返回 → 重连后再读」三步 | **已完成** | tools/ar_e2e_test.py |
+## 轮45 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-103 | 45 | 错误边界/HTTP缓存/SW更新三维度此前从未验证 | 逐项实测：图片 onerror 3/3、canvas 失败页面仍可读、版本对账守卫兜底缓存、SW skipWaiting+claim 齐全 → **均无缺陷** | **已完成**（非缺陷） | tools/resilience_test.py |
+| U-104 | 45 | 容错能力无防回归判据 | 建 resilience_test.py 5 条（图片 onerror/noscript/版本对账/SW更新/try 块数），接入 CI；反向验证两种破坏均判红 | **已完成** | tools/resilience_test.py |
+| U-105 | 45 | 未加全局 `window.onerror` | 判断后**不加**：本站 17 个 try 块已覆盖关键路径，无后台上报，全局捕获收益低 | **已否决**（有理据） | — |

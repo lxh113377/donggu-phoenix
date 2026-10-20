@@ -1761,3 +1761,48 @@ DEEPLINK：深链接能直达场景 + 返回键能关闭 AR。
 - AR e2e 7 项全部 PASS
 - 干净克隆：verify_site / ci_design_static 全 PASS
 - 静态门禁 30 条
+
+## 轮45 结果（2026-10-20 · 容错/缓存/SW 三维度首查）
+
+### 一、错误边界
+| 检查项 | 结果 |
+|---|---|
+| 静态 <img> onerror | **3/3 全部有** |
+| JS 注入图片 onerror | 有 |
+| 全局异常捕获 | 无（判断后不加）|
+| try/catch 覆盖 | 17 个块，覆盖 AR 数据/hash/摄像头 |
+
+**canvas 失败实测**（mock `getContext` 返回 null 模拟 WebView 不支持）：
+  Phoenix 构造不抛异常，H1 可见，body.ready=true
+  → **页面仍完全可读**，无需额外处理。
+
+**为什么不加全局 onerror**：本站无后台上报，捕获后最多 console.error；
+而 17 个 try 块已覆盖关键路径。加了属于形式主义。
+
+### 二、HTTP 缓存
+GitHub Pages 固定 `max-age=600`（10 分钟），无自定义 header 能力。
+但站点有版本对账守卫兜底：
+  HTML 的 BUILD 与 CSS 的 --build 不等
+  → 注销 SW + 清所有 caches + reload（sessionStorage 防循环）
+覆盖了「新 HTML + 旧 CSS」这个最危险场景。
+
+### 三、SW 更新
+skipWaiting + clients.claim 齐全 → 新 SW 立即接管。
+
+### 四、新增 tools/resilience_test.py（5 条，接入 CI）
+1. 静态 <img> 必须有 onerror
+2. 必须有 <noscript> 提示
+3. 必须有版本对账守卫
+4. SW 必须有 skipWaiting + clients.claim
+5. JS 模块 try 块数 >= 10
+
+反向验证：删 noscript → 判红；删 skipWaiting → 判红。
+CI 日志确认执行：「RESULT: PASS 容错与降级基线 5 项全部成立」。
+
+### 五、能力矩阵盘点（截至本轮 18 维度）
+核心功能 4 / 设计质量 6 / 工程质量 5 / 内容质量 3 —— 均有量化证据。
+
+### 读数
+- 线上 build=33，CI：39408553979 success
+- 干净克隆：verify_site / resilience_test 全 PASS
+- 静态门禁 31 条
