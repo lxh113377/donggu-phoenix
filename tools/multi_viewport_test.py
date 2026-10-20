@@ -47,7 +47,26 @@ PROBE = '''(function(){
       wide.push({cls: String(e.className).slice(0, 24) || e.tagName, left: Math.round(r.left), right: Math.round(r.right)});
     }
   }
-  return JSON.stringify({vw: window.innerWidth, scrollW: de.scrollWidth, overflow: overflow, wide: wide});
+  // VERTICAL_CHECK：首屏关键元素是否被裁切或被固定导航遮挡
+  var nav = document.querySelector('.nav');
+  var navBottom = nav ? Math.round(nav.getBoundingClientRect().bottom) : 0;
+  var clipped = [];
+  var covered = [];
+  var KEY = ['.hero-tag', '.hero h1', '.hero-lead', '.hero-acts', '.hero-meta'];
+  for (var j = 0; j < KEY.length; j++) {
+    var ke = document.querySelector(KEY[j]);
+    if (!ke || !ke.offsetParent) continue;
+    var kr = ke.getBoundingClientRect();
+    if (kr.width === 0 && kr.height === 0) continue;
+    if (kr.top < -2 || kr.bottom > window.innerHeight + 2) {
+      clipped.push({sel: KEY[j], top: Math.round(kr.top), bottom: Math.round(kr.bottom)});
+    }
+    if (kr.top < navBottom - 2) {
+      covered.push({sel: KEY[j], top: Math.round(kr.top), navBottom: navBottom});
+    }
+  }
+  return JSON.stringify({vw: window.innerWidth, scrollW: de.scrollWidth, overflow: overflow, wide: wide,
+                         clipped: clipped, covered: covered, vh: window.innerHeight});
 })()'''
 
 
@@ -108,6 +127,11 @@ def main():
             issues.append('%dx%d 横向溢出（scrollW %d）' % (w, h, d['scrollW']))
         if d['wide']:
             issues.append('%dx%d 越界: %s' % (w, h, wide))
+        # 纵向：首屏关键元素被裁或被导航遮挡
+        for c in d.get('clipped', []):
+            issues.append('%dx%d 首屏被裁: %s (top %d, bottom %d)' % (w, h, c['sel'], c['top'], c['bottom']))
+        for c in d.get('covered', []):
+            issues.append('%dx%d 首屏被导航遮挡: %s (top %d < nav %d)' % (w, h, c['sel'], c['top'], c['navBottom']))
 
     print()
     if no_data == len(results):
