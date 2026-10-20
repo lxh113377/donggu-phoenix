@@ -407,3 +407,34 @@ agent-browser 守护进程报 "daemon configuration mismatch"，kill + 清 ~/.ag
 - CI：39365608408 / 39366095081 均 success
 - 四门禁全 PASS
 - 线上 build=14
+
+## 轮14 结果（2026-10-20 · 恢复浏览器环境 + 段落留白冗余清理）
+
+### U-14 真正的根因：我自己删掉了 Chrome 本体
+轮13 我把 agent-browser 的报错判成「环境故障」，实际是我执行了
+  Remove-Item -Recurse 用户目录下的 .agent-browser
+那个目录**不只是配置，还装着 Chrome 本体**（browsers/chrome-155.0.8059.84）。
+删掉后报 "Chrome not found"，我却归因成软件缺陷，白绕一整轮。
+处置：agent-browser install 重装（197MB），浏览器完全恢复。
+新增 tools/browser_health.py：静态区分「Chrome 本体缺失」与「进程冲突」两类不同故障。
+教训（U-17）：破坏性操作前必须确认目录语义；不确定时改名备份，不要直接删。
+
+### 段落顶部留白冗余（移动端每段多推 50~60px）
+实测 390x844：
+  .totem       padTop 136px（标准 --sec-y 是 76px）
+  .carve-sec   padTop 130px
+  .ar-gallery  padTop 126px
+根因：html 已设 scroll-padding-top:88px，锚点跳转后段落顶部精确落在 88px，
+顶栏遮挡**已解决**；这三段又各自写 padding-top:calc(...) 做第二次补偿 —— 冗余。
+处置：统一改 padding-top:var(--sec-y)。
+实测 #totem 标题从 224px 上移到 164px，仍在顶栏 82px 之下 82px，无遮挡。
+截图确认图腾/雕刻台/AR 三段排版更紧凑且不拥挤。
+
+### 门禁新增 1 条（CI 可跑）
+「段落顶部不得写死补偿值」并入 ci_design_static。
+本轮正是靠它一次性发现 .carve-sec / .ar-sec 两处同类问题（原本只发现 .totem）。
+
+### 读数
+- 线上 build=15，手机端 totemPad=76px / carvePad=76px / hero 844÷844=1.00
+- 移动端三屏截图复核：首屏一屏、图腾完整、各段标题紧跟顶栏
+- CI：39367429185 success
