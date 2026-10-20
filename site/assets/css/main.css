@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:23;
+  --build:24;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -1099,4 +1099,19 @@ section.foot{padding-top:var(--sec-y-loose)}
   .reveal,.clip-reveal{opacity:1!important;transform:none!important}
   .clip-reveal::after{display:none}
   a{color:#111}
+}
+
+/* === RM-INFINITE-FIX（轮29） ===
+ * 静态审查发现 4 个无限动画漏了 reduced-motion 覆盖：
+ *   #boot .seal::after   spin   1.5s infinite
+ *   .btn--primary::after pulse  2s infinite
+ *   .ar-brand .ar-dot    pulse  2.4s infinite
+ *   #cam .guide::after   ringPulse 3s infinite
+ * WCAG 2.3.3 与前庭障碍：用户明确要求减少动效时，
+ * 持续脉冲/整圈旋转必须停。这里只停动画，保留静态外观。 */
+@media (prefers-reduced-motion:reduce){
+  #boot .seal::after,
+  .btn--primary::after,
+  .ar-brand .ar-dot,
+  #cam .guide::after{animation:none}
 }

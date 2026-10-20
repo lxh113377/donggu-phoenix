@@ -56,6 +56,7 @@ jobs:
           python tools/prove_no_visual_change.py
           python tools/rhythm_test.py
           python tools/stagger_test.py
+          python tools/reduced_motion_test.py
 
   deploy:
     name: Deploy
