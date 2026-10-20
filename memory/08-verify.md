@@ -896,3 +896,45 @@ CI 日志确认执行：5 个 backdrop-filter 用法逐条列出并判定。
 - CI：39376452867 success
 - 静态门禁 18 条（对比度工具需浏览器，不进 CI）
 - 页面代码未改，build 保持 21
+
+
+## 轮26 结果（2026-10-20 · 补上 AR 核心功能的端到端验证）
+
+### 为什么这轮最有价值
+前二十多轮我验证的全是**静态资产与 CSS**：体积、字体子集、对比度、出处、文案对等、
+装饰环、首屏高度…… 但**AR 播放这个站点主体从未系统验过**。
+它是 3 段 / 13 章 / 152 秒的核心，如果它坏了，页面再精致也没意义。
+
+### 9 项既有门禁全过（复跑确认）
+verify_site / ci_design_static / gate_guard / dead_data / bilingual_parity /
+ring_containment / hero_height / contrast_audit(119 处 0 不达标) /
+image_quality(49 图 0 问题)
+读数：部署体积 1488KB / 1600KB；首屏传输 269KB / 400KB。
+
+### 新增 tools/ar_e2e_test.py（6 项）
+1-2. AR API 就绪（window.__ar + AR_DATA.scenes=3）
+3-5. 三段切换 craft / red / phoenix 全部成功
+6. 时间推进（t 2.1 → 4.8）
+7. 完整播放落章（stamps=['phoenix']，页面点亮 1 个章）
+结果：**RESULT: PASS  AR 核心功能 6 项全部通过**
+
+### 一个差点误判的坑
+我先用 seek(70) 把 craft 段（72 秒）推到段末，集章仍是空的，一度以为集章坏了。
+读源码发现：
+
+    if (state.playing) {
+      state.t += dt / 1000;
+      if (state.t >= state.scene.duration) { ... complete(); }
+    }
+
+complete() 只在 **playing 分支**里调用，seek() 直接跳转不经过该分支。
+设计如此，不是缺陷。正确测法：seek(duration-3) 再 play() 让它自然跑完。
+已写进工具注释，避免下次再误判。
+
+### 覆盖边界（诚实说明）
+· 不测摄像头实景叠加 —— 需真实摄像头权限，属环境缺口
+· 不测画面视觉质量 —— 只验证状态机与落章逻辑
+
+### 读数
+- 线上 build=21，CI：39377653024 success
+- 检查工具累计 10 个（静态 7 + 浏览器 3）

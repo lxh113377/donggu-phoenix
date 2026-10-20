@@ -114,3 +114,9 @@
 | U-41 | 25 | 对比度长期靠肉眼估，无量化判据 | 建 tools/contrast_audit.py：浏览器计算色 + alpha 合成，119 处全达标；反向验证可抓出 66/119 | **已完成** | tools/contrast_audit.py |
 | U-42 | 25 | 对比度测量前三次尝试（CSS 解析/像素极值/固定坐标）全部不可信 | 教训：CSS 背景要处理渐变与 alpha 合成；像素采样要绑定元素真实位置。已记入工具注释 | **已完成** | tools/contrast_audit.py |
 | U-43 | 25 | 反向验证被 HTTP 缓存误导（改 CSS 后浏览器仍加载旧文件） | 站点有版本对账守卫，但测试用唯一 URL 绕过 sessionStorage 状态；正确做法是 about:blank 重置后走正常 URL | **已完成** | tools/reverse_contrast3.py |
+## 轮26 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-44 | 26 | 前二十多轮验证全在静态资产与 CSS，**AR 播放这个站点主体从未系统验过** | 建 tools/ar_e2e_test.py：6 项端到端（API/三段切换/时间推进/落章），实测全 PASS | **已完成** | tools/ar_e2e_test.py |
+| U-45 | 26 | 用 seek() 跳到段末不落章，一度误判集章坏了 | complete() 只在 playing 分支调用，设计如此；正确测法 seek(duration-3)+play()。已写进工具注释 | **已完成** | tools/ar_e2e_test.py |
