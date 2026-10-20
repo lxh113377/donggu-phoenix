@@ -287,3 +287,10 @@
 | U-118 | 49 | 曾误判匠人头像「像同一张照片」 | 实查是两个独立文件 craft-liu.webp / craft-lei.webp；缩略图太小看错 | **已否决**（有理据） | — |
 | U-119 | 49 | 曾误判头像「缺 alt」 | 实为 `alt="" aria-hidden="true"` + 注释说明 WCAG H67（后面 h3 已有人名，避免读屏念两遍）；正则漏匹配 aria-hidden 导致误判 | **已否决**（有理据） | — |
 | U-120 | 49 | 批量补视口时正则匹配错位，把 reveal_after_jump_test.py 插成 8 空格缩进 → IndentationError | 批量改脚本后必须 `py_compile` 验证 + 实跑；已修复并复跑 8/8 PASS | **已完成** | tools/reveal_after_jump_test.py |
+## 轮50 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-121 | 50 | 判据本身有缺陷：面积填充率随视口漂移（桌面 38.5% vs 移动 24%）、对图片比例敏感（书签天然 6%），固定阈值 25% 在移动端误判 | 换 dominant 指标 = max(图宽/内框宽, 图高/内框高)：contain-fit 必有一边贴内框，健康值 ~0.88；被额外约束压小时 << 0.8。视口无关、比例无关 | **已完成** | tools/merch_image_fill_test.py |
+| U-122 | 50 | 判据只测桌面，移动端布局从未测过文创占比 | 双视口（1440×900 + 390×844）都要求 dominant >= 0.80；反向验证撤销修复后桌面 0.29 / 移动 0.60 双判红 | **已完成** | tools/merch_image_fill_test.py |
+| U-123 | 50 | 撤销测试一度「无效」——验证脚本没绕缓存 | 判据 measure() 内置 cacheBust（注入带时间戳 <link>），撤销后真实读到变化；反向验证恢复可信 | **已完成** | tools/merch_image_fill_test.py |
