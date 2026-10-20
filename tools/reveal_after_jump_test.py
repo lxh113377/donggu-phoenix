@@ -46,6 +46,7 @@ def get(sid):
     return None
 
 def main():
+    ps('agent-browser set viewport 1440 900')  # 显式视口，保证结果可复现
     ps('agent-browser open "http://127.0.0.1:8791/?jump=%d"' % int(time.time()))
     ps('agent-browser wait --load networkidle')
     time.sleep(2.0)

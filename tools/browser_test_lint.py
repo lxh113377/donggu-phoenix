@@ -93,9 +93,46 @@ def main():
         for m in hard_fail[:8]:
             print('  -', m)
         return 1
+    # viewport-lint：提示但不算失败（很多脚本是有意不设视口的）
+
+    try:
+
+        _vp_warns = check_viewport_setting(BASE)
+
+        if _vp_warns:
+
+            print()
+
+            print("[WARN] 以下脚本 open 了页面但未显式设置视口（结果可能随环境漂移）：")
+
+            for _w in _vp_warns:
+
+                print("        -", _w)
+
+    except Exception:
+
+        pass
+
     print('RESULT: PASS  %d 个浏览器测试中，反向验证脚本均已防缓存' % checked)
     return 0
 
 
 if __name__ == '__main__':
     sys.exit(main())
+# === viewport-lint（轮49）：open 页面却没设视口 → 结果可能随环境漂移 ===
+def check_viewport_setting(base):
+    import glob, os, re
+    warns = []
+    for f in sorted(glob.glob(os.path.join(base, "tools", "*_test.py"))):
+        try:
+            s = open(f, encoding="utf-8").read()
+        except Exception:
+            continue
+        if "agent-browser open" not in s:
+            continue
+        if "set viewport" in s:
+            continue
+        if "noqa: viewport" in s:
+            continue
+        warns.append(os.path.basename(f))
+    return warns
