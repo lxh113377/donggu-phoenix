@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:12;
+  --build:13;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -151,7 +151,9 @@ body::after{
   transition:background .4s var(--ease), border-color .4s;
   border-bottom:1px solid transparent;
 }
-.nav.solid{background:rgba(11,9,8,.92);border-bottom-color:var(--line-soft)}
+/* 实心态背景已不透明，blur 结果被完全盖住 —— 保留它等于滚动时一直白算模糊。
+ * 关掉 backdrop-filter：视觉零变化，省掉整个滚动过程的合成层开销。 */
+.nav.solid{background:rgba(11,9,8,.92);border-bottom-color:var(--line-soft);backdrop-filter:none;-webkit-backdrop-filter:none}
 .nav .brand{
   display:inline-flex;align-items:center;gap:10px;min-height:44px;
   font-family:var(--font-display);font-size:var(--fs-md);letter-spacing:.16em;color:var(--fg);
@@ -920,7 +922,8 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 
 .toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);
   z-index:70;padding:13px 26px;border-radius:var(--radius-pill);border:1px solid var(--line);
-  background:rgba(18,16,15,.95);backdrop-filter:blur(10px);font-family:var(--font-sans);
+  /* 背景不透明度 .95，blur 结果被完全盖住 —— 保留只白算合成层。 */
+  background:rgba(18,16,15,.95);font-family:var(--font-sans);
   font-size:var(--fs-xs);letter-spacing:.1em;color:var(--fg);opacity:0;transition:all .45s var(--ease);
   pointer-events:none;max-width:min(88vw,520px);text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}

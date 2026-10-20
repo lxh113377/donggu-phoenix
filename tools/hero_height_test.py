@@ -1,54 +1,70 @@
 # -*- coding: utf-8 -*-
-"""hero_height_test v2 —— 每个视口只用一个短命令序列，避免多次 spawn 卡死。
-读不到就报 SKIP（环境），不误判为通过也不误判为失败。
+"""tools/hero_height_test.py —— 手机首屏必须真的是一屏（U-03 长期防护）。
+
+改成纯静态的理由：轮10 用浏览器量 getBoundingClientRect 修好了「首屏被撑成 1.32~1.56 屏」，
+但 agent-browser 在本机频繁卡死，一个跑不稳的脚本防不住回退。回退根因是 CSS 写法，可静态判。
 """
-import json, subprocess, time, uuid
+import os
+import re
+import sys
 
-PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
-WD = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CSS = os.path.join(BASE, 'site', 'assets', 'css', 'main.css')
 
-def run(cmd, timeout=40):
-    try:
-        r = subprocess.run([PS, '-NoProfile', '-Command', cmd], capture_output=True, text=True,
-                           cwd=WD, timeout=timeout, encoding='utf-8', errors='replace')
-        return (r.stdout or '') + (r.stderr or '')
-    except subprocess.TimeoutExpired:
-        return 'TIMEOUT'
 
-PROBE = "JSON.stringify({h:Math.round(document.getElementById('hero').getBoundingClientRect().height),vh:innerHeight})"
+def media_blocks(css, width):
+    out = []
+    for m in re.finditer(r'@media\s*\(max-width:\s*' + str(width) + r'px\)\s*\{', css):
+        start = m.end()
+        depth, i = 1, start
+        while i < len(css) and depth > 0:
+            if css[i] == '{':
+                depth += 1
+            elif css[i] == '}':
+                depth -= 1
+            i += 1
+        out.append((m.start(), css[start:i - 1]))
+    return out
 
-results = []
-for w, h, label in [(360,780,'360x780'),(390,844,'390x844'),(430,932,'430x932')]:
-    run('agent-browser close --all')
-    time.sleep(0.8)
-    run('agent-browser set viewport %d %d' % (w, h))
-    run('agent-browser open "http://127.0.0.1:8791/?vh=%s"' % uuid.uuid4().hex[:6])
-    run('agent-browser wait --load networkidle')
-    time.sleep(1.4)
-    out = run('agent-browser eval "%s"' % PROBE.replace('"', '\\"'))
-    got = None
-    for line in reversed(out.splitlines()):
-        line = line.strip()
-        if line.startswith('"') and line.endswith('"'):
-            try:
-                got = json.loads(json.loads(line)); break
-            except Exception:
-                continue
-    if got:
-        ratio = round(got['h'] / got['vh'], 2)
-        ok = ratio <= 1.05
-        results.append(ok)
-        print('%-10s hero=%4d vh=%4d  %.2f×  %s' % (label, got['h'], got['vh'], ratio, 'OK' if ok else '撑高!'))
+
+def main():
+    css = open(CSS, encoding='utf-8').read()
+    fails = []
+    blocks = media_blocks(css, 900)
+    if not blocks:
+        print('RESULT: FAIL')
+        print('  - 找不到 @media (max-width:900px) 块')
+        return 1
+    pos, block = blocks[-1]
+
+    mh = re.search(r'\.hero\s*\{([^}]*)\}', block)
+    if not mh:
+        fails.append('手机断点里没有 .hero 规则（无法锁定一屏）')
     else:
-        print('%-10s SKIP（浏览器无响应）' % label)
+        body = mh.group(1).replace(' ', '')
+        if 'height:100svh' not in body:
+            fails.append('.hero 未设 height:100svh（首屏会被内容撑长）')
+        if 'min-height:100svh' not in body:
+            fails.append('.hero 未设 min-height:100svh')
 
-run('agent-browser set viewport 1440 900')
-print()
-if not results:
-    print('RESULT: SKIP  环境不可用')
-    raise SystemExit(0)
-if all(results):
-    print('RESULT: PASS  手机首屏均为一屏（%d 档）' % len(results))
-    raise SystemExit(0)
-print('RESULT: FAIL  %d/%d 视口首屏被撑高' % (results.count(False), len(results)))
-raise SystemExit(1)
+    mv = re.search(r'\.hero-visual\s*\{([^}]*)\}', block)
+    if not mv:
+        fails.append('手机断点里没有 .hero-visual 规则（固定 min-height 未被覆盖）')
+    elif 'min-height:0' not in mv.group(1).replace(' ', ''):
+        fails.append('.hero-visual 未设 min-height:0（clamp 会顶破一屏）')
+
+    base_pos = css.find('.hero-visual{')
+    if base_pos >= 0 and pos < base_pos:
+        fails.append('手机断点写在基础 .hero-visual 之前，会被后面的 clamp min-height 覆盖')
+
+    if fails:
+        print('RESULT: FAIL')
+        for f in fails:
+            print('  -', f)
+        return 1
+    print('RESULT: PASS  手机首屏锁定一屏（height 100svh + visual min-height 0 + 顺序正确）')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

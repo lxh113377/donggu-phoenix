@@ -65,6 +65,69 @@ def main():
     print('[%s] 装饰环不溢出：无负 inset / 无超宽 width / keyframes 保留 scale' % (
         'PASS' if not any('装饰环' in f or 'slowSpin' in f for f in fails) else 'FAIL'))
 
+    # 手机首屏必须真的是一屏（轮10 修复，轮13 静态化防回退）：
+    # 回退根因是 CSS 写法 —— 手机断点若没有「锁一屏高度 + 画布 min-height:0」，
+    # .hero{min-height:100svh} 会被 padding 与 .hero-visual{min-height:clamp(...)} 顶破，
+    # 首屏再次被撑长（实测曾到 1.32~1.56 屏）。
+    HERO_SVH = '100svh'
+    _mb = []
+    import re as _re
+    for _m in _re.finditer(r'@media\s*\(max-width:\s*900px\)\s*\{', css):
+        _start = _m.end()
+        _depth, _i = 1, _start
+        while _i < len(css) and _depth > 0:
+            if css[_i] == '{':
+                _depth += 1
+            elif css[_i] == '}':
+                _depth -= 1
+            _i += 1
+        _mb.append((_m.start(), css[_start:_i - 1]))
+    if not _mb:
+        fails.append('缺少 @media (max-width:900px) 块（手机首屏无锁定规则）')
+    else:
+        _pos, _blk = _mb[-1]
+        _mh = _re.search(r'\.hero\s*\{([^}]*)\}', _blk)
+        if not _mh:
+            fails.append('手机断点缺少 .hero 规则')
+        else:
+            _b = _mh.group(1).replace(' ', '')
+            if 'height:' + HERO_SVH not in _b:
+                fails.append('.hero 手机端未设 height:' + HERO_SVH + '（首屏会被撑长）')
+            if 'min-height:' + HERO_SVH not in _b:
+                fails.append('.hero 手机端未设 min-height:' + HERO_SVH)
+        _mv = _re.search(r'\.hero-visual\s*\{([^}]*)\}', _blk)
+        if not _mv:
+            fails.append('手机断点缺少 .hero-visual 规则')
+        elif 'min-height:0' not in _mv.group(1).replace(' ', ''):
+            fails.append('.hero-visual 手机端未设 min-height:0（clamp 会顶破一屏）')
+        _base = css.find('.hero-visual{')
+        if _base >= 0 and _pos < _base:
+            fails.append('手机断点写在基础 .hero-visual 之前，会被 clamp 覆盖')
+    print('[%s] 手机首屏锁定一屏：height/min-height 100svh + visual min-height:0 + 顺序正确' % (
+        'PASS' if not any('首屏' in f or 'hero' in f.lower() for f in fails) else 'FAIL'))
+
+    # 不透明背景 + backdrop-filter = 纯浪费合成层（轮13）
+    # 背景不透明会把模糊结果完全盖住，但浏览器仍要为它建层、每帧重算。
+    OPAQUE_BG = 0.9
+    _waste = []
+    for _m in _re.finditer(r'([^{}]+)\{([^}]*backdrop-filter[^}]*)\}', css):
+        _sel, _body = _m.group(1).strip().split('\n')[-1], _m.group(2)
+        if 'backdrop-filter:none' in _body.replace(' ', ''):
+            continue
+        # 只判「纯色 background」：渐变可能末端透明，blur 在那里是有效果的，
+        # 从渐变里抽一个 rgba 当整块背景的透明度会误报（.nav 就是这么被误伤的）。
+        _bg = _re.search(r'background\s*:\s*(rgba?\([^)]*\))', _body)
+        if _bg:
+            _rgba = _re.search(r'rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)', _bg.group(1))
+            if _rgba:
+                _alpha = float(_rgba.group(4)) if _rgba.group(4) else 1.0
+                if _alpha >= OPAQUE_BG:
+                    _waste.append(_sel[:40])
+    if _waste:
+        fails.append('不透明背景下仍保留 backdrop-filter（纯白算合成层）：' + ', '.join(_waste[:3]))
+    print('[%s] 无不透明背景 + backdrop-filter 白算组合' % (
+        'PASS' if not _waste else 'FAIL'))
+
     purple = [c for c in ('#667eea', '#764ba2', '#8b5cf6', '#a855f7') if c in css.lower()]
     if purple:
         fails.append('出现 AI 标配紫渐变：' + ', '.join(purple))
