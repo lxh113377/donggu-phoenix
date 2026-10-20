@@ -209,16 +209,37 @@
     });
   });
 
+  /* 进场观察器。
+   * 踩坑（轮6 手机端目检）：threshold 用了 0.12 —— 对「本身高 4964px 的文创网格」，
+   * 视口 844px 时交叉比最高只有 844/4964≈0.17，而用户若跳进块内（点导航直达）就再也
+   * 够不到阈值，整块内容永久 opacity:0，页面上出现一片空区。
+   * 现在：① 阈值降到 0（任何部分露出即算进场）；
+   *       ② 对高块再加一条兜底 —— 顶部已在视口上方时立即显示，不等交叉事件。 */
+  var revealEls = $$('.reveal, .ink-divider, .sec-head');
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
       });
-    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-    $$('.reveal, .ink-divider, .sec-head').forEach(function (el) { io.observe(el); });
+    }, { threshold: 0, rootMargin: '0px 0px -6% 0px' });
+    revealEls.forEach(function (el) { io.observe(el); });
   } else {
-    $$('.reveal, .ink-divider, .sec-head').forEach(function (el) { el.classList.add('in'); });
+    revealEls.forEach(function (el) { el.classList.add('in'); });
   }
+  // 兜底：高块（高于 1.4 视口）一进视口或已被滚过，立即显示
+  function revealTall() {
+    var vh = window.innerHeight;
+    revealEls.forEach(function (el) {
+      if (el.classList.contains('in')) return;
+      var r = el.getBoundingClientRect();
+      var tall = el.scrollHeight > vh * 1.4;
+      if (!tall) return;
+      if (r.top < vh * 0.92) { el.classList.add('in'); }
+    });
+  }
+  window.addEventListener('scroll', revealTall, { passive: true });
+  window.addEventListener('resize', revealTall, { passive: true });
+  revealTall();
 
   /* ---------- 移动端全屏目录 ---------- */
   var menu = $('#menu'), navToggle = $('#nav-toggle');
