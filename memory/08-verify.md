@@ -544,3 +544,13 @@ main.js 里头像 alt 直接取 p.name，而紧接的 h3 也是 p.name：
 - 干净克隆复验：verify_site PASS / ci_design_static PASS
 - 首屏传输 268KB / 400KB；字体 173KB / 260KB
 - 静态门禁 11 条
+
+
+### 轮17 附记：一次 CI 失败的真实原因（非代码问题）
+提交 b13411f（只改两个 memory/*.md）后 CI 跑了 5m38s 并失败。
+日志显示卡在 Set up job：
+  Failed to resolve action download info. Error: The HTTP request timed out after 00:01:40
+连续重试三次后放弃 —— 是 GitHub Actions 拉取 action 元数据的网络超时，
+与仓库代码无关。gh run rerun 后 32 秒成功。
+判别依据：失败点在「Set up job」且报 action download 超时，说明作业根本没进到
+checkout/verify 步骤，不可能是代码引起。
