@@ -128,6 +128,18 @@ def main():
     print('[%s] 无不透明背景 + backdrop-filter 白算组合' % (
         'PASS' if not _waste else 'FAIL'))
 
+    # 段落顶部不得额外补偿顶栏（轮14）
+    # 锚点跳转已由 html{scroll-padding-top} 处理；段落内再补一次会把内容整体推低。
+    SEC_HARDCODED = []
+    for _m in _re.finditer(r'([.#][\w-]*(?:sec|section)[\w-]*)\{([^}]*padding-top:\s*(?:calc|clamp)?\()', css):
+        _sel, _body = _m.group(1), _m.group(2)
+        if _sel.startswith('.hero'):
+            continue
+        SEC_HARDCODED.append(_sel)
+    if SEC_HARDCODED:
+        fails.append('段落顶部写死了补偿值（顶栏已由 scroll-padding-top 处理）：' + ', '.join(SEC_HARDCODED[:3]))
+    print('[%s] 段落未重复补偿顶栏留白' % ('PASS' if not SEC_HARDCODED else 'FAIL'))
+
     purple = [c for c in ('#667eea', '#764ba2', '#8b5cf6', '#a855f7') if c in css.lower()]
     if purple:
         fails.append('出现 AI 标配紫渐变：' + ', '.join(purple))

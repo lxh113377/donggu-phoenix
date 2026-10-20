@@ -24,7 +24,7 @@
  * 注意：SW 的 VERSION 只管缓存名；跨版本对账的唯一锚点是 CSS --build ⇄ HTML BUILD。 */
 /* v6：「一木成像」成品改为像素级复刻位图（assets/img/statue-cut.webp +
  * assets/data/statue-profile.js 入 PRECACHE），画布高度上限提升。清单与内容都变了。 */
-var VERSION = 'v15';
+var VERSION = 'v16';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [

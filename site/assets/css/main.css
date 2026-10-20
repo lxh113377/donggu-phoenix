@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:14;
+  --build:15;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -387,7 +387,10 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .ink-divider.in path{stroke-dashoffset:0;opacity:1}
 
 /* ---------- ⑧ 图腾 ---------- */
-.totem-sec{padding-top:calc(var(--sp-6) + 40px)}
+/* 顶部不需要额外补偿：锚点跳转已由 html{scroll-padding-top:88px} 处理，
+ * 顶栏 82px 之上留 6px。此处原为 calc(--sp-6 + 40px)=136px，
+ * 比其它段落的标准留白多 60px，把标题和图腾整体推低、首屏出现大块空白。 */
+.totem-sec{padding-top:var(--sec-y)}
 .totem-grid{display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,1.05fr);
   gap:clamp(32px,6vw,88px);align-items:center}
 @media (max-width:880px){.totem-grid{grid-template-columns:1fr}}
@@ -419,7 +422,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .btn-ask{margin-top:30px;padding:13px 28px;min-height:48px}
 
 /* ---------- ⑨ 一木成像 ---------- */
-.carve-sec{padding-top:calc(var(--sp-6) + 34px)}
+.carve-sec{padding-top:var(--sec-y)}
 .carve-shell{
   position:relative;margin-top:var(--sp-4);border:1px solid var(--line-soft);
   /* 破格：画布左右越出 wrap，视觉上更「展陈」，文字仍锁在栏内 */
@@ -531,7 +534,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   color:var(--fg-faint);max-width:46em}
 
 /* ---------- ⑩ AR 展陈馆 ---------- */
-.ar-sec{padding-top:calc(var(--sp-6) + 30px)}
+.ar-sec{padding-top:var(--sec-y)}
 .ar-route{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;
   background:var(--line-soft);border:1px solid var(--line-soft);margin-bottom:var(--sp-4)}
 .ar-route-item{background:var(--she-ink);padding:clamp(20px,2.4vw,30px);position:relative;overflow:hidden}
