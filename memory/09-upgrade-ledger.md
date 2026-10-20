@@ -139,3 +139,10 @@
 |---|---|---|---|---|---|
 | U-51 | 29 | 4 个无限循环动画漏 reduced-motion 覆盖（spin/pulse/ringPulse）→ WCAG 2.3.3 前庭障碍风险 | 追加 media 块置 animation:none，保留静态外观；新增 reduced_motion_test.py 接入 CI | **已完成** | site/assets/css/main.css |
 | U-52 | 29 | 动效参数审查（缓动/时长/linear 用法）结论：无缺陷 | linear 用于旋转与进度条，语义正确；2 个裸 cubic-bezier 是令牌定义本身 | **已核实无问题** | — |
+## 轮30 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-53 | 30 | AR 全屏焦点行为从未验证（移入/陷阱/恢复） | 建 ar_focus_test.py 7 项检查：实测实现完全正确 7/7 | **已完成**（非缺陷） | tools/ar_focus_test.py |
+| U-54 | 30 | 反向验证被 SW cache-first 假绿（破坏代码后仍全 PASS） | 测试前注销 SW + 清 caches + 唯一 URL；修正后判红。第 5 次「测量手段不可靠」 | **已完成** | tools/ar_focus_test.py |
+| U-55 | 30 | 用 API 打开 AR 导致误判焦点恢复失效（BODY→BODY 是正确的） | 必须走真实用户路径（先 focus 场景链接再 click），已写进工具注释 | **已完成** | tools/ar_focus_test.py |
