@@ -48,6 +48,17 @@ def main():
         if 'defer' not in attrs and 'async' not in attrs:
             fails.append('阻塞解析的脚本: %s' % src.group(1))
 
+    # VERSION_SYNC：改了 index.html 必须同步三处版本（CSS --build / HTML BUILD / SW VERSION）。
+    # 一手问题（轮33）：A/B 测试脚本 finally 里整体还原 index.html，把刚 bump 的 BUILD 抹掉了。
+    css_p = os.path.join(BASE, 'site', 'assets', 'css', 'main.css')
+    sw_p = os.path.join(BASE, 'site', 'sw.js')
+    if os.path.exists(css_p):
+        css_t = open(css_p, encoding='utf-8').read()
+        m_css = re.search(r'--build:(\d+);', css_t)
+        m_html = re.search(r"var BUILD = '(\d+)';", s)
+        if m_css and m_html and m_css.group(1) != m_html.group(1):
+            fails.append('版本对账不一致：CSS --build=%s ≠ HTML BUILD=%s' % (m_css.group(1), m_html.group(1)))
+
     print('检查 %d 个外部脚本（另有 %d 个 inline，豁免）' % (checked, inline))
     if checked == 0:
         print()
