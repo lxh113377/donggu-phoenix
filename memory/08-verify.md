@@ -173,3 +173,16 @@ python tools\make_ar_assets.py  # AR 分镜脚本重生成
 - 原创性 8/8 通过（无 UI 框架 / 无外链字体 / 无 AI 标配紫 / 无 emoji 堆砌）
 - SEO/PWA：manifest 4 图标含 maskable、3 shortcuts；JSON-LD hasPart 3；og 1200×630；meta 无缺失
 - CI：`39352624330` success
+
+
+### 轮7 失败记录：一次「省带宽却毁功能」的优化（已回退）
+- 动机：性能读表显示 statue-cut.webp 322KB 在首屏 85ms 就被请求（用户还没滚到雕刻台）。
+  根因确认无误：imageGeom() 每帧都调用，而它顺带调用 imageReady(src) 发起网络请求。
+- 改法：imageGeom 只算几何；加载时机收进 revealStatue，按 p<0.55 门限。
+- 结果：首屏确实不再请求（省 322KB），但成品揭示被直接跳过 ——
+  p=0.95 时画面仍是纯金剪影，isReady=false、图片从未请求。
+  原因：该函数的 p 与 carve 的 p 不同源，加门限后它在到达揭示前就被 return，
+  等于把「像素级复刻」这一核心兑现口掐掉了。
+- 处置：立即 git checkout 回退，实测恢复（req=1、isReady=true、截图雕像正常）。
+- 教训：优化必须先确认「改动前后的可见结果一致」，不能只看省了多少 KB。
+  这次是自己多看一眼截图才发现的 —— 只跑数值判据会认为「成功」。
