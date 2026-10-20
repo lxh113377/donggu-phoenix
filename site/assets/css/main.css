@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:15;
+  --build:16;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -785,14 +785,15 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
    底衬改为极淡的径向光，只为把白色物件从深色卡片里「托」出来，不是一块面板。 */
 .merch-shot{
   margin:0 0 20px;height:196px;flex:0 0 196px;position:relative;
-  display:grid;place-items:center;padding:16px 18px 10px;
+  /* grid 隐式行高被内容撑开（实测 279px > 容器 196px），子项 max-height 的百分比基准就变成行高而非容器高 → 图片溢出压住下方标签。显式锁死行高，百分比才有正确基准。 */
+  display:grid;grid-template-rows:100%;grid-template-columns:100%;place-items:center;padding:16px 18px 10px;overflow:hidden;
   background:radial-gradient(70% 62% at 50% 44%, rgba(255,246,228,.075), transparent 72%);
   transition:background .5s var(--ease);
 }
 /* 图必须 contain 且不能撑满整格：竖构图物件（笔筒/书签/扇）在 186px 里会顶到标题。
    这里用 max-height 把上限压到格高 78%，留出下缘呼吸位。 */
 .merch-shot img{
-  width:auto;height:auto;max-width:100%;max-height:78%;object-fit:contain;
+  width:auto;height:auto;max-width:100%;max-height:150px;object-fit:contain;
   filter:drop-shadow(0 10px 16px rgba(0,0,0,.55));
   transition:transform .7s var(--ease);
 }

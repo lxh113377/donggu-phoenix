@@ -37,7 +37,13 @@
     if (cta) cta.textContent = (C.hero && C.hero.cta) || FALLBACK.hero.cta;
     var t = $('#hero-title');
     if (t && C.hero && C.hero.line2) {
-      t.innerHTML = C.hero.line2.replace(/^(.)/, '$1') + '<em>' + ((C.meta && C.meta.title) || FALLBACK.meta.title) + '</em>';
+      /* 副标题只放识别性前缀 + 拉丁名，**不再拼接 meta.title**。
+       * 一手问题（轮16）：meta.title 是「畲 · 凤鸣东固」，已包含 line2「凤鸣东固」，
+       * 拼出来是「凤鸣东固畲 · 凤鸣东固」—— 主标题重复两遍，读屏会念两次。
+       * 且 <em> 用 Cinzel（0 个汉字字形），中文全部回退系统字体、字形不一致。
+       * 改为纯拉丁副标题，正好落在 Cinzel 的覆盖范围内。 */
+      var sub = (C.meta && C.meta.short) || '畲 · SHE PHOENIX';
+      t.innerHTML = C.hero.line2 + '<em>' + sub + '</em>';
     }
   })();
 
