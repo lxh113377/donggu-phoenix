@@ -26,6 +26,8 @@ def rd(p):
 
 # 1) HTML 引用的本地资源全部存在
 html = rd(os.path.join(SITE, "index.html")).decode("utf-8")
+culture_js = rd(os.path.join(SITE, "assets/data/culture.js")).decode("utf-8")
+main_js = rd(os.path.join(SITE, "assets/js/main.js")).decode("utf-8")
 refs = set()
 for m in re.finditer(r'(?:src|href)="([^"#]+)"', html):
     u = m.group(1)
@@ -452,6 +454,35 @@ if "sessionStorage.getItem(KEY) === BUILD" not in html:
     fails.append("版本对账守卫缺少防循环闸（会无限刷新）")
 print(f"[{'PASS' if not any('版本对账' in f for f in fails) else 'FAIL'}] 版本对账守卫：CSS --build 与 HTML BUILD 同值 + 防循环闸")
 
+# 15) 进场动画：阈值必须可达（超高块回归锁）
+#     一手事故：threshold:0.12 遇上高 4964px 的文创网格（视口 844px）⇒ 交叉比最高 0.17，
+#     跳进块内就永远够不到阈值，整块保持 opacity:0，手机端出现一大片空白。
+m_thr = re.search(r"threshold:\s*([\d.]+)", main_js)
+if not m_thr:
+    fails.append("进场动画：未找到 IntersectionObserver threshold（判据失配）")
+elif float(m_thr.group(1)) > 0.02:
+    fails.append("进场动画阈值不可达风险：threshold=%s（超高块上永远触发不了）" % m_thr.group(1))
+# 兜底必须真的被调用（只定义不调用 = 没有兜底，反向验证时这条会放水）
+if not re.search(r"\brevealTall\(\);", main_js):
+    fails.append("进场动画缺少高块兜底调用（函数定义了但没执行）")
+if "scrollHeight > vh" not in main_js.replace(" ", "").replace("vh*1.4", "vh"):
+    if "scrollHeight" not in main_js:
+        fails.append("进场动画兜底未判元素高度（无法识别超高块）")
+print("[%s] 进场动画：阈值可达 + 高块兜底（防整块空白）" % ('PASS' if not any('进场动画' in f for f in fails) else 'FAIL'))
+
+# 14) 文创实物图：12 件必须件件有图（此前 6 件只有占位图腾也能过闸）
+merch_pairs = re.findall("id: '([a-z-]+)',\\s*image: '([^']+)'", culture_js)
+if len(merch_pairs) < 12:
+    fails.append("文创少于 12 件或缺 image 字段（实得 %d）" % len(merch_pairs))
+for _mid, _rel in merch_pairs:
+    if not os.path.exists(os.path.join(SITE, _rel)):
+        fails.append("文创图不存在: %s -> %s" % (_mid, _rel))
+    elif os.path.getsize(os.path.join(SITE, _rel)) > 120 * 1024:
+        fails.append("文创图过大(>120KB): %s" % _mid)
+print("[%s] 文创实物图 %d/12 件件有图且不超 120KB" % (
+    'PASS' if not any('文创图' in f or '文创少于' in f for f in fails) else 'FAIL', len(merch_pairs)))
+
+
 # 14) 像素级复刻（2026-10-20 轮6）：成品必须是参考件本身，不是「画得像」。
 #     判据不看肉眼，看数据：①资产在盘且非空；②剖面由该资产反解（尺寸一致）；
 #     ③引擎里存在「揭示」通路且成品图被真正 drawImage；④成品图进 PRECACHE（离线也像素级）；
@@ -495,6 +526,44 @@ i_eng = html.find("wood-to-statue.js")
 if not (0 <= i_prof < i_eng):
     fails.append("像素级复刻：脚本顺序错误，statue-profile.js 必须先于 wood-to-statue.js")
 print(f"[{'PASS' if not any('像素级复刻' in f for f in fails) else 'FAIL'}] 像素级复刻：成品资产 / 左右不对称剖面 / 揭示通路 / 离线预缓存 / 加载顺序")
+
+# 14b) 像素级复刻的「数值判据」：交给 tools/verify_pixel_exact.py。
+#      上面 14) 只查结构（文件在、通路在），查不出「图有损」「渲染错位」「资产被换掉」——
+#      那些必须逐像素比。子进程调用而非 import：把 Playwright/OpenCV 的依赖与失败模式隔离开，
+#      且让本脚本在 CI（无浏览器）上仍能跑。
+#      三态口径（SKIP 不算 PASS，但也不硬判红）：
+#        - 缺素材原件（素材/*.jpg 被 .gitignore 排除）⇒ L1 SKIP，CI 上必然如此；
+#        - 缺渲染取证（_dev/ 被 .gitignore 排除）      ⇒ L4 SKIP；
+#        两者都有「可提交的静态替身」（L1' 资产 SHA256 锁 / L4' 引擎通路特征），
+#        所以「有人换图或拆掉通路」在 CI 上照样会红 —— SKIP 不等于放水。
+PIXEL_TOOL = os.path.join(BASE, "tools", "verify_pixel_exact.py")
+if not os.path.exists(PIXEL_TOOL):
+    fails.append("像素级复刻数值判据：缺少 tools/verify_pixel_exact.py")
+else:
+    pixel_out, pixel_rc = "", None
+    try:
+        pr = subprocess.run([sys.executable, PIXEL_TOOL], capture_output=True, text=True,
+                            cwd=BASE, timeout=300)
+        pixel_out, pixel_rc = (pr.stdout or ""), pr.returncode
+    except Exception as e:
+        pixel_out = "子进程调用失败：%s" % e
+    lines = [ln for ln in pixel_out.splitlines() if ln.startswith("[PASS]") or ln.startswith("[SKIP]")]
+    n_pass = sum(1 for ln in lines if ln.startswith("[PASS]"))
+    n_skip = sum(1 for ln in lines if ln.startswith("[SKIP]"))
+    if pixel_rc == 0:
+        if n_skip:
+            warns.append("像素级数值判据：%d 层因缺件未取证（%s）"
+                         % (n_skip, "；".join(ln.split("：")[0].replace("[SKIP] ", "")
+                                             for ln in lines if ln.startswith("[SKIP]"))))
+            print("[PASS] 像素级数值判据：%d 层取证通过 / %d 层未取证（缺件已在 WARNINGS 列明）"
+                  % (n_pass, n_skip))
+        else:
+            print("[PASS] 像素级数值判据：%d 层全部成立（L1 资产==素材 / L1' SHA256 锁 / "
+                  "L2 无损编码 / L3 剖面绑定 / L4 1:1 渲染 / L4' 引擎通路）" % n_pass)
+    else:
+        hard = [ln for ln in pixel_out.splitlines() if ln.startswith("[FAIL]")]
+        fails.append("像素级数值判据未通过：" + ("; ".join(x.strip() for x in hard[:3]) or "未知原因"))
+        print("[FAIL] 像素级数值判据：%s" % ("; ".join(x.strip() for x in hard[:3]) or "未知原因"))
 
 
 print()
