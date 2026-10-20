@@ -204,3 +204,11 @@
 | U-79 | 38 | 改名引入 3 个新汉字（桌/送/互）不在字体子集内 | 重建子集（853 字符/725 汉字，171.9KB） | **已完成** | site/assets/fonts/zcool-display.woff2 |
 | U-80 | 38 | **CI 环境没装 fontTools，字体完整性判据被 SKIP** → 缺字会静默上线 | CI 依赖加 `fonttools brotli`；CI 日志确认 [PASS] 字体完整性（缺 0）真正执行 | **已完成** | .github/workflows/deploy-pages.yml |
 | U-81 | 38 | 文创图片全是渲染图（make_merch_renders.py 生成），非实拍 | 评审指出这会削弱可信度（已印证 U-02）；需实物打样后实拍替换 | 待排期（需实物） | — |
+## 轮39 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-82 | 39 | CI 只跑 13 个工具，漏了 bilingual_parity_test 与 originality_audit（两者的依赖都在 git 里） | 两个加入 CI（现 15 个）；干净克隆验证均 PASS | **已完成** | .github/workflows/deploy-pages.yml |
+| U-83 | 39 | **originality_audit 从不判红**：失败只打 [WARN]，从不 sys.exit(非零)，入 CI 后必然假绿 | 补判定出口（有失败项则 RESULT: FAIL + exit 1）；反向验证注入 AI 紫后成功判红 | **已完成** | tools/originality_audit.py |
+| U-84 | 39 | originality_audit 硬编码绝对路径 `C:\Users\37533\...` + os.chdir → safe_mutation 沙箱失效、换机器跑不了 | 改为基于 `__file__` 的相对路径 | **已完成** | tools/originality_audit.py |
+| U-85 | 39 | verify_asset_is_source 依赖 `_dev/`，但该目录 0 个文件被 git 跟踪 → 加入 CI 会 SKIP，无意义 | 不加 CI；已在台账说明理由 | **已否决**（有理据） | — |
