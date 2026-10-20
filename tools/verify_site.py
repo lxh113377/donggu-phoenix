@@ -105,16 +105,72 @@ elif total > BUDGET_KB * 1024 * 0.8:
     warns.append(f"体积已用预算 80% 以上: {total/1024:.0f}KB / {BUDGET_KB}KB")
 print("  最大 5 个文件:", ", ".join(f"{n}({s//1024}KB)" for s, n in files[:5]))
 
-# 4b) 首屏关键路径：HTML + CSS + 首屏字体 + 首屏必执行脚本
-critical = ["index.html", "assets/css/main.css",
-            "assets/fonts/zcool-display.woff2", "assets/fonts/cinzel.woff2",
-            "assets/data/culture.js", "assets/data/ar-data.js",
-            "assets/js/phoenix.js", "assets/js/main.js"]
-crit_bytes = sum(os.path.getsize(os.path.join(SITE, c)) for c in critical if os.path.exists(os.path.join(SITE, c)))
+# 4b) 首屏关键路径：**按 index.html 实际引用自动推导**，不再手写固定清单。
+#     一手问题（2026-10-20 轮8）：旧清单只列 8 个文件，漏掉 5 个必执行脚本
+#     （statue-profile / wood-to-statue / ar-scenes / ar / wood-demo）和 2 张首屏 SVG。
+#     判据报 381KB，真实冷启动 545KB —— 漏算 162KB 的仪表等于永远绿。
+#     一条体积门禁若漏算实际会下载的东西，就无法在体积失控时报警。
+#     推导规则：<head> 的 stylesheet/preload + 全部 <script src>（都是同步标签，会阻塞到 load）
+#     + 首屏可见图（logo 在 header、图腾在 #totem 首屏下沿）。
+critical = ["index.html"]
+for _m in re.finditer(r'<link[^>]+rel="(?:stylesheet|preload)"[^>]+href="([^"]+)"', html):
+    critical.append(_m.group(1))
+for _m in re.finditer(r'<script[^>]+src="([^"]+)"', html):
+    critical.append(_m.group(1))
+for _m in re.finditer(r'<img[^>]+src="([^"]+)"', html):
+    if any(k in _m.group(1) for k in ('phoenix-mark', 'phoenix-totem')):
+        critical.append(_m.group(1))
+_seen = set()
+critical = [c for c in critical
+            if not c.startswith(('http://', 'https://', 'data:'))
+            and not (c in _seen or _seen.add(c))]
+crit_bytes = 0
+crit_missing = []
+for _c in critical:
+    _fp = os.path.join(SITE, _c.lstrip('./'))
+    if os.path.exists(_fp):
+        crit_bytes += os.path.getsize(_fp)
+    else:
+        crit_missing.append(_c)
+if crit_missing:
+    fails.append("首屏引用缺失文件：" + ", ".join(crit_missing[:3]))
+
+# 首屏按**真实传输量**判：GitHub Pages 对 html/css/js/svg 默认 gzip，woff2 本身已压缩。
+# 只报磁盘体积会把预算读成一个和用户无关的数字。
+import gzip as _gzip
+crit_raw = crit_bytes
+crit_gz = 0
+crit_gz_unknown = []
+for _c in critical:
+    _fp = os.path.join(SITE, _c.lstrip('./'))
+    if not os.path.exists(_fp):
+        continue
+    _b = open(_fp, 'rb').read()
+    _low = _c.lower()
+    if _low.endswith(('.woff2', '.webp', '.png', '.jpg', '.jpeg', '.gif', '.avif')):
+        crit_gz += len(_b)          # 已是压缩格式，原样传输
+    else:
+        try:
+            crit_gz += len(_gzip.compress(_b, 9))
+        except Exception:
+            crit_gz += len(_b)
+            crit_gz_unknown.append(_c)
+crit_xfer_kb = crit_gz / 1024
+crit_raw_kb = crit_raw / 1024
+
+# 字体单独设险：自托管中文子集是「零外部请求」硬约束下的必要成本，但也不能无限长
+_font_kb = sum(os.path.getsize(os.path.join(SITE, c.lstrip('./'))) / 1024
+               for c in critical if c.lower().endswith('.woff2')
+               and os.path.exists(os.path.join(SITE, c.lstrip('./'))))
+FONT_KB = 260
+if _font_kb > FONT_KB:
+    fails.append("首屏字体超险 %dKB: %.0fKB（自托管中文子集应有上限）" % (FONT_KB, _font_kb))
 CRIT_KB = 400
-if crit_bytes / 1024 > CRIT_KB:
-    fails.append("首屏关键路径超预算 %dKB: %.0fKB" % (CRIT_KB, crit_bytes / 1024))
-print(f"[{'PASS' if crit_bytes / 1024 <= CRIT_KB else 'FAIL'}] 首屏关键路径 {crit_bytes/1024:.0f} KB / 预算 {CRIT_KB} KB（HTML+CSS+字体+首屏脚本）")
+if crit_xfer_kb > CRIT_KB:
+    fails.append("首屏关键路径超预算 %dKB: 传输 %.0fKB / 原始 %.0fKB" % (CRIT_KB, crit_xfer_kb, crit_raw_kb))
+print(f"[{'PASS' if crit_xfer_kb <= CRIT_KB else 'FAIL'}] 首屏关键路径 传输 {crit_xfer_kb:.0f} KB / 预算 {CRIT_KB} KB"
+      f"（原始 {crit_raw_kb:.0f} KB；{len(critical)} 文件；字体 {_font_kb:.0f} KB / {FONT_KB} KB）")
+
 
 # 5) 编码：所有文本文件 UTF-8 无 BOM
 enc_bad = []
@@ -518,6 +574,60 @@ if 'hero-word' in html and 'data-decorative' not in html:
     fails.append("装饰水印缺少 data-decorative 语义（会被对比度判据误判为正文）")
 print("[%s] 装饰元素语义：%d 处已标注 data-decorative" % ('PASS' if not any('装饰水印' in f for f in fails) else 'FAIL', n_deco))
 
+# 20) 字体完整性：页面会渲染的汉字必须都在自托管子集内。
+#     一手问题（2026-10-20 轮8）：旧子集漏了 35 个渲染字（防/输/显/退/额…），
+#     这些字会在标题里回退到系统字体，出现「同一行一半字形不同」的割裂。
+try:
+    from fontTools.ttLib import TTFont as _TTFont
+    import glob as _glob, html as _html
+    _chars = set()
+    for _p in _glob.glob(os.path.join(SITE, '**', '*.html'), recursive=True):
+        _s = open(_p, encoding='utf-8', errors='ignore').read()
+        _s = re.sub(r'<(script|style)[^>]*>.*?</\1>', ' ', _s, flags=re.S | re.I)
+        _chars |= set(_html.unescape(re.sub(r'<[^>]+>', ' ', _s)))
+    for _p in _glob.glob(os.path.join(SITE, 'assets', 'data', '*.js')):
+        _s = open(_p, encoding='utf-8', errors='ignore').read()
+        for _m in re.finditer(r"['\"\x60]([^'\"\x60]{1,500})['\"\x60]", _s):
+            _chars |= set(_m.group(1))
+    for _p in _glob.glob(os.path.join(SITE, 'assets', 'js', '*.js')):
+        _s = open(_p, encoding='utf-8', errors='ignore').read()
+        for _m in re.finditer(r"['\"\x60]([^'\"\x60]{1,400})['\"\x60]", _s):
+            _t = _m.group(1)
+            if re.search('[\u4e00-\u9fff]', _t) or len(_t) <= 40:
+                _chars |= set(_t)
+    _fontp = os.path.join(SITE, 'assets', 'fonts', 'zcool-display.woff2')
+    _cmap = set(chr(c) for c in _TTFont(_fontp).getBestCmap())
+    _miss_zh = sorted(c for c in _chars if '\u4e00' <= c <= '\u9fff' and c not in _cmap)
+    if _miss_zh:
+        fails.append("字体子集缺 %d 个渲染汉字：%s" % (len(_miss_zh), ''.join(_miss_zh[:12])))
+    print("[%s] 字体完整性：渲染汉字全部在子集内（缺 %d）" % (
+        'PASS' if not _miss_zh else 'FAIL', len(_miss_zh)))
+except ImportError:
+    warns.append('fontTools 未安装，跳过字体完整性判据')
+
+# 21) 首屏口径必须**语义正确**，不能只检查变量名存在。
+#     一手教训：第一版只判 'crit_xfer_kb' 是否出现，把赋值改成 0 仍然 PASS —— 检查了名字没检查行为。
+#     正确判法：在本脚本内独立重算一遍 gzip 传输量，与门禁自己报的数对照；
+#     差值超过 2KB 说明口径被改坏（写死/换了单位/换回磁盘体积）。
+_gzip2 = __import__('gzip')
+_indep = 0
+for _c in critical:
+    _fp = os.path.join(SITE, _c.lstrip('./'))
+    if not os.path.exists(_fp):
+        continue
+    _b = open(_fp, 'rb').read()
+    _indep += len(_b) if _c.lower().endswith(('.woff2', '.webp', '.png', '.jpg', '.gif')) else len(_gzip2.compress(_b, 9))
+_indep_kb = _indep / 1024
+if abs(_indep_kb - crit_xfer_kb) > 2:
+    fails.append("首屏传输量口径异常：判据报 %.0fKB，独立复算 %.0fKB" % (crit_xfer_kb, _indep_kb))
+if crit_xfer_kb >= crit_raw_kb:
+    fails.append("首屏传输量 >= 原始量（%.0f/%.0fKB），压缩口径失效" % (crit_xfer_kb, crit_raw_kb))
+_src21 = open(__file__, encoding='utf-8').read()
+if 'crit_raw_kb' not in _src21:
+    fails.append("首屏未报告原始体积（无法发现未压缩资源异常膨胀）")
+print("[%s] 首屏口径：传输 %.0fKB 经独立复算一致（原始 %.0fKB）" % (
+    'PASS' if abs(_indep_kb - crit_xfer_kb) <= 2 and crit_xfer_kb < crit_raw_kb else 'FAIL',
+    crit_xfer_kb, crit_raw_kb))
 # 14) 文创实物图：12 件必须件件有图（此前 6 件只有占位图腾也能过闸）
 merch_pairs = re.findall("id: '([a-z-]+)',\\s*image: '([^']+)'", culture_js)
 if len(merch_pairs) < 12:

@@ -235,8 +235,8 @@
         <span class="ar-sep" aria-hidden="true">/</span>
         <span id="ar-kicker"></span>
       </div>
-      <button class="ar-icon" id="ar-cam-toggle" type="button" aria-label="切换实景叠加 / 展柜模式" title="切换实景叠加 / 展柜模式">◎</button>
-      <button class="ar-icon" id="ar-close" type="button" aria-label="关闭 AR 展陈" title="关闭">✕</button>
+      <button class="ar-icon" id="ar-cam-toggle" type="button" aria-label="切换实景叠加 / 展柜模式" title="切换实景叠加 / 展柜模式"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/></svg></button>
+      <button class="ar-icon" id="ar-close" type="button" aria-label="关闭 AR 展陈" title="关闭"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </header>
 
     <div class="ar-dots" id="ar-dots" role="tablist" aria-label="选择场景"></div>
@@ -371,7 +371,7 @@
   <video id="cam-video" playsinline muted></video>
   <div class="guide"></div>
   <p class="hint" id="cam-hint">把图腾放进取景框中央</p>
-  <button class="close" id="cam-close" type="button" aria-label="关闭">✕</button>
+  <button class="close" id="cam-close" type="button" aria-label="关闭"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
 </div>
 
 <script src="assets/data/culture.js"></script>
@@ -390,7 +390,7 @@
  * 比白屏更难看，而且看起来像「网站坏了」。VERSION bump 只能保证下次访问正常，
  * 救不了这一次。故用 CSS 里的 --build 与本文常量对账：不等则清缓存重载一次（有防循环闸）。 */
 (function () {
-  var BUILD = '8';
+  var BUILD = '9';
   var KEY = 'dg-build-fix';
   var got = '';
   try { got = (getComputedStyle(document.documentElement).getPropertyValue('--build') || '').trim(); } catch (e) {}

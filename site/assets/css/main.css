@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:8;
+  --build:9;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -856,6 +856,11 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   transform:rotate(-6deg);opacity:.9;letter-spacing:.1em;pointer-events:none}
 @media (max-width:720px){.seal-mark{top:6px;right:50%;transform:translateX(50%) rotate(-6deg);
   width:58px;height:58px;font-size:var(--fs-xl)}}
+
+/* 图标按钮内的内联 SVG：不再依赖字体渲染图标（字体图标在不同系统上会走形） */
+.ar-icon svg,.ar-btn svg{display:block;pointer-events:none}
+.ar-icon{display:grid;place-items:center}
+
 
 /* ---------- ⑮b 按下态（:active） ----------
  * 触屏没有 hover，若只有 hover 过渡，按下去是「零反馈」。
