@@ -45,6 +45,26 @@ def main():
         fails.append('出现 Google Fonts 外链（违反零外部请求）')
     print('[%s] 字体自托管（无 Google Fonts 外链）' % ('PASS' if not ext_font else 'FAIL'))
 
+
+    # 装饰环不得用会扩大布局盒的写法（轮11 U-07）：
+    # 负 inset 会向外扩、超宽 width 会撑大盒子，两者都会让页面出现横向溢出，
+    # 只是常被祖先 overflow 裁切掩盖。正解是 transform:scale（不参与布局盒计算）。
+    for _sel in ('.hero-ring{', '.hero-ring.b{', '.totem-ring{', '.totem-ring.b{'):
+        _i = css.find(_sel)
+        if _i < 0:
+            continue
+        _rule = css[_i: css.find('}', _i)]
+        if re.search(r'inset:\s*-', _rule):
+            fails.append('装饰环 %s 使用负 inset（会扩大布局盒）' % _sel.rstrip('{'))
+        _mw = re.search(r'width:\s*min\(\s*\d+%\s*,\s*(\d+)px\s*\)', _rule)
+        if _mw and int(_mw.group(1)) >= 500:
+            fails.append('装饰环 %s 的 width 上限 %spx 过大' % (_sel.rstrip('{'), _mw.group(1)))
+    _ks = re.search(r'@keyframes slowSpin\{(.*?)\}\}', css, re.S)
+    if _ks and 'scale' not in _ks.group(1):
+        fails.append('@keyframes slowSpin 未保留 scale（动画会覆盖静态缩放）')
+    print('[%s] 装饰环不溢出：无负 inset / 无超宽 width / keyframes 保留 scale' % (
+        'PASS' if not any('装饰环' in f or 'slowSpin' in f for f in fails) else 'FAIL'))
+
     purple = [c for c in ('#667eea', '#764ba2', '#8b5cf6', '#a855f7') if c in css.lower()]
     if purple:
         fails.append('出现 AI 标配紫渐变：' + ', '.join(purple))
