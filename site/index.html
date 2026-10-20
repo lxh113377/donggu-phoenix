@@ -56,6 +56,18 @@
 </head>
 <body>
 
+
+  <!-- 无 JS 降级提示（轮43）：主体内容由 JS 渲染，禁 JS 时会有空白区域。
+       首屏 H1/导语/CTA 是静态的，故仍能看到标题与入口。 -->
+  <noscript>
+    <p style="margin:0;padding:14px 18px;background:#7A1420;color:#F6F1E7;
+              font-family:system-ui,sans-serif;font-size:14px;line-height:1.7;
+              text-align:center;letter-spacing:.02em">
+      本页的文创、文化、AR 等段落需要 JavaScript 渲染。
+      请在浏览器设置中启用 JavaScript 后刷新；
+      若为微信内打开，可点右上角「···」选择「在浏览器中打开」。
+    </p>
+  </noscript>
 <a class="skip-link" href="#main">跳到正文</a>
 
 <div id="boot"><div class="seal"><span>畲</span></div></div>
@@ -389,7 +401,7 @@
  * 比白屏更难看，而且看起来像「网站坏了」。VERSION bump 只能保证下次访问正常，
  * 救不了这一次。故用 CSS 里的 --build 与本文常量对账：不等则清缓存重载一次（有防循环闸）。 */
 (function () {
-  var BUILD = '31';
+  var BUILD = '32';
   var KEY = 'dg-build-fix';
   var got = '';
   try { got = (getComputedStyle(document.documentElement).getPropertyValue('--build') || '').trim(); } catch (e) {}
