@@ -153,3 +153,9 @@
 | U-56 | 31 | `#cam .close` 摄像头关闭按钮（44×44 常驻）无 hover 也无 active 反馈 | 补 hover（边框/文字提亮到 --she-gold）+ active（scale .94），强度对齐 .btn | **已完成** | site/assets/css/main.css |
 | U-57 | 31 | 初版审查误判「9 个元素都缺 focus-visible」 | 核实有全局兜底 `:focus-visible{outline:2px...}`（正确做法）；判据改为检查全局兜底而非逐个元素 | **已完成** | tools/microinteraction_test.py |
 | U-58 | 31 | microinteraction_test 正则被局部规则误匹配（#carve-stage:focus-visible 被当全局兜底） | 改为只认「行首的 :focus-visible」；反向验证修正后可判红 | **已完成** | tools/microinteraction_test.py |
+## 轮32 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-59 | 32 | 新增的 safe_script_test 自身判红：反向验证脚本里的**字符串字面量**被当成真实写入 | 豁免 reverse_safe_script.py 并写明理由；改用干净克隆验证（本地 484 个脚本 vs 克隆 82 个） | **已完成** | tools/safe_script_test.py |
+| U-60 | 32 | 「本地绿 CI 红」：本地跑时临时脚本也在，误以为 FAIL 来自临时脚本 | 新增判据后必须用干净克隆复验，不能只看本地 | **已完成** | — |
