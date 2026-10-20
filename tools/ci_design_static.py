@@ -217,6 +217,19 @@ def main():
         fails.append('文案写死了会随时间失效的相对时间：' + ', '.join(sorted(set(RELATIVE_TIME))[:3]))
     print('[%s] 无写死的相对时间表述（N 年党龄等）' % ('PASS' if not RELATIVE_TIME else 'FAIL'))
 
+    # 出处数据必须渲染给用户，不能只显示数量（轮21）
+    # 一手问题：ar-data.js 有完整 sources，ar.js 只渲染「素材出处 N 条」，
+    # 读者点不开、看不到具体是什么 —— 数据齐全但体验是空的。
+    SRC_RENDER = []
+    _arjs = os.path.join(SITE, 'assets', 'js', 'ar.js')
+    if os.path.exists(_arjs):
+        _a = open(_arjs, encoding='utf-8').read()
+        if 's.sources' in _a and 'src.label' not in _a and 'label' not in _a.split('s.sources')[1][:600]:
+            SRC_RENDER.append('ar.js 引用 s.sources 但未渲染 label（只显示数量）')
+    if SRC_RENDER:
+        fails.append('出处未渲染给用户：' + '; '.join(SRC_RENDER))
+    print('[%s] 出处数据已渲染给用户（非仅数量）' % ('PASS' if not SRC_RENDER else 'FAIL'))
+
     purple = [c for c in ('#667eea', '#764ba2', '#8b5cf6', '#a855f7') if c in css.lower()]
     if purple:
         fails.append('出现 AI 标配紫渐变：' + ', '.join(purple))
