@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """原创性/反模板自检：扫常见「通用 AI 页」特征。"""
 import os, re
-BASE = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(BASE)
 import sys as _sys; _sys.path.insert(0, 'tools')
 from source_scan import stripped as _strip_css, strip_html_comments as _strip_html
@@ -32,3 +32,15 @@ print('repeat(3,1fr) 次数:', css.count('repeat(3,1fr)'))
 print('emoji 数:', len(re.findall(r'[\U0001F300-\U0001FAFF]', html + js)))
 print('外部 URL 请求（应仅 og/canonical 元数据）:',
       len([m for m in re.findall(r'(?:src|href)="(https?://[^"]+)"', html)]))
+
+# ==== 判定出口（轮39 补）：此前只打印 [WARN] 但从不返回非零，CI 必然假绿 ====
+_failed = [k for k, v in checks.items() if not v]
+if _failed:
+    print()
+    print('RESULT: FAIL')
+    for k in _failed:
+        print('  -', k)
+    _sys.exit(1)
+print()
+print('RESULT: PASS  %d 项原创性判据全部通过' % len(checks))
+_sys.exit(0)

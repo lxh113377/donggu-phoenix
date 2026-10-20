@@ -62,6 +62,8 @@ jobs:
           python tools/critical_path_test.py
           python tools/browser_test_lint.py
           python tools/cjk_typography_test.py
+          python tools/bilingual_parity_test.py
+          python tools/originality_audit.py
 
   deploy:
     name: Deploy
