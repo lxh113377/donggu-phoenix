@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:7;
+  --build:8;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -856,6 +856,50 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   transform:rotate(-6deg);opacity:.9;letter-spacing:.1em;pointer-events:none}
 @media (max-width:720px){.seal-mark{top:6px;right:50%;transform:translateX(50%) rotate(-6deg);
   width:58px;height:58px;font-size:var(--fs-xl)}}
+
+/* ---------- ⑮b 按下态（:active） ----------
+ * 触屏没有 hover，若只有 hover 过渡，按下去是「零反馈」。
+ * 统一给所有可点元素一个轻微下压 + 收窄阴影的按压感，时长 ≤120ms（按下要跟手，不能慢）。 */
+.btn:active,.hero-cta:active,.btn-ask:active,
+.ar-card .go:active,.merch-tabs button:active,.carve-play:active,
+.ar-btn:active,.ar-icon:active,.ar-dots button:active,
+.nav-toggle:active,.totem-hit:active,.carve-slider:active{
+  transform:scale(.975);
+  transition-duration:.12s;
+}
+.btn--primary:active,.hero-cta.primary:active{
+  box-shadow:0 4px 14px -8px rgba(217,79,43,.9), inset 0 2px 6px rgba(90,30,10,.35);
+  transform:scale(.975) translateY(1px);
+}
+.btn--outline:active,.btn-ask:active,.ar-card .go:active,
+.merch-tabs button:active,.carve-play:active,.ar-btn:active{
+  background:rgba(212,162,76,.24);
+  border-color:var(--she-gold);
+}
+.merch-tabs button:active,.ar-dots button:active{transform:scale(.97)}
+.nav a:active{color:var(--she-gold-light)}
+.totem-hit:active{transform:scale(.985)}
+/* 滑杆按下时滑块放大 —— 与 :active 同源，但用自身选择器（控件在 label 内） */
+.carve-slider:active::-webkit-slider-thumb{transform:scale(1.22)}
+.carve-slider:active::-moz-range-thumb{transform:scale(1.22)}
+@media (prefers-reduced-motion:reduce){
+  .btn:active,.hero-cta:active,.btn-ask:active,.ar-card .go:active,
+  .merch-tabs button:active,.carve-play:active,.ar-btn:active,.ar-icon:active,
+  .ar-dots button:active,.nav-toggle:active,.totem-hit:active{transform:none}
+}
+
+/* 二维码失败态：连卡纸一起收起，只留一条可操作的提示（不留空白色块） */
+.qr-box.failed{display:none}
+.qr-fallback{
+  margin:0;padding:22px 26px;border:1px dashed var(--line);border-radius:10px;
+  background:rgba(212,162,76,.07);
+  font-family:var(--font-sans);font-size:var(--fs-sm);line-height:1.9;color:var(--fg-dim);
+  max-width:26em;
+}
+.qr-fallback[hidden]{display:none}
+.qr-fallback b{display:block;margin-bottom:8px;color:var(--she-gold);font-weight:400;font-size:var(--fs-md)}
+.qr-fallback strong{font-family:var(--font-latin);font-weight:400;letter-spacing:.03em;
+  color:var(--she-gold-light);word-break:break-all;font-size:var(--fs-base)}
 
 /* ---------- ⑯ 覆盖层 ---------- */
 #summon-veil{position:fixed;inset:0;z-index:55;pointer-events:none;opacity:0;

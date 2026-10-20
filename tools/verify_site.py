@@ -490,6 +490,28 @@ if bad_ch:
 print("[%s] 行长约束：长文本块有 max-width 且未误用 ch" % ('PASS' if not any('行长' in f for f in fails) else 'FAIL'))
 
 # 17) 装饰元素语义：肉眼可见但非内容的元素（水印/纹样字）必须显式标 data-decorative，
+
+
+# 18) 按下态：触屏没有 hover，只有 hover 过渡 = 按下去零反馈（微交互完整性）
+n_active = len(re.findall(r":active", css_txt))
+if n_active < 5:
+    fails.append("按下态不足：CSS 里 :active 规则仅 %d 条（触屏点击会没有反馈）" % n_active)
+print("[%s] 按下态：%d 条 :active 规则" % ('PASS' if not any('按下态' in f for f in fails) else 'FAIL', n_active))
+
+# 19) 关键图降级：二维码与图腾必须有 onerror 替代路径
+#     一手缺口：qr.png 曾是 17 张图里 3 张没 onerror 的之一 —— 它挂了现场就扫不了码，
+#     页面却只显示一个破图，属功能性静默失败。
+for token, label in (('id="qr-img"', '二维码'), ('phoenix-totem.svg', '图腾')):
+    j = html.find(token)
+    if j < 0:
+        continue
+    seg = html[max(0, j - 260): j + 420]
+    if 'onerror' not in seg:
+        fails.append("%s缺少加载失败降级（onerror）" % label)
+if 'qr-fallback' not in html:
+    fails.append("二维码失败降级未实现（应给出可手输的替代地址）")
+print("[%s] 关键图降级：二维码 / 图腾均有 onerror 替代路径" % (
+    'PASS' if not any('降级' in f for f in fails) else 'FAIL'))
 #     否则对比度审计会把它当正文判（本轮：240px 水印「畲」对比度 1.04:1 被判不达标）。
 n_deco = len(re.findall(r'data-decorative=', html))
 if 'hero-word' in html and 'data-decorative' not in html:

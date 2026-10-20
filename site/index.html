@@ -61,7 +61,7 @@
 <div id="boot"><div class="seal"><span>畲</span></div></div>
 
 <header class="nav" id="nav">
-  <a class="brand" href="#main"><img src="assets/img/phoenix-mark.svg" alt="" width="26" height="26">畲 · 凤鸣东固</a>
+  <a class="brand" href="#main"><img src="assets/img/phoenix-mark.svg" alt="" width="26" height="26" onerror="this.style.display='none'">畲 · 凤鸣东固</a>
   <nav aria-label="主导航">
     <ul>
       <li><a href="#totem">图腾</a></li>
@@ -140,7 +140,7 @@
           <span class="totem-ring" aria-hidden="true"></span>
           <span class="totem-ring b" aria-hidden="true"></span>
           <button class="totem-hit" id="totem-hit" type="button" aria-label="轻触图腾，唤出凤凰">
-            <img src="assets/img/phoenix-totem.svg" alt="畲族凤凰图腾：凤凰展翅于圆光之中，外环为织带纹" width="520" height="520" fetchpriority="high">
+            <img src="assets/img/phoenix-totem.svg" alt="畲族凤凰图腾：凤凰展翅于圆光之中，外环为织带纹" width="520" height="520" fetchpriority="high" onerror="this.onerror=null;this.src='assets/img/phoenix-mark.svg'">
           </button>
         </div>
 
@@ -336,7 +336,14 @@
     <span class="seal-mark" aria-hidden="true">凤鸣</span>
     <div class="wrap">
       <div class="foot-grid reveal">
-        <div class="qr-box"><img id="qr-img" src="assets/img/qr.png" alt="本站二维码" width="512" height="512"></div>
+        <div class="qr-box" id="qr-box"><img id="qr-img" src="assets/img/qr.png" alt="本站二维码" width="512" height="512"
+             onerror="var b=document.getElementById('qr-box');if(b){b.classList.add('failed');}
+                      var f=document.getElementById('qr-fallback');if(f){f.hidden=false;}"></div>
+        <!-- 二维码加载失败时的降级：整块换成可手输/复制的地址。
+             不「只隐藏破图」—— 那会在页面上留一块空白卡纸，且用户不明所以；
+             也不静默失败 —— 现场扫不了码是功能性事故，必须给出替代路径。 -->
+        <p class="qr-fallback" id="qr-fallback" hidden><b>二维码未加载</b>　请直接在浏览器地址栏输入：
+          <strong>lxh113377.github.io/donggu-phoenix</strong></p>
         <div class="foot-copy">
           <h2>扫它，凤凰就飞起来</h2>
           <p>用手机相机或微信扫一扫对准二维码，即可打开本页；在页首轻触图腾，看凤凰自圆心振翅。</p>
@@ -383,7 +390,7 @@
  * 比白屏更难看，而且看起来像「网站坏了」。VERSION bump 只能保证下次访问正常，
  * 救不了这一次。故用 CSS 里的 --build 与本文常量对账：不等则清缓存重载一次（有防循环闸）。 */
 (function () {
-  var BUILD = '7';
+  var BUILD = '8';
   var KEY = 'dg-build-fix';
   var got = '';
   try { got = (getComputedStyle(document.documentElement).getPropertyValue('--build') || '').trim(); } catch (e) {}
