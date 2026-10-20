@@ -583,6 +583,9 @@ try:
     _chars = set()
     for _p in _glob.glob(os.path.join(SITE, '**', '*.html'), recursive=True):
         _s = open(_p, encoding='utf-8', errors='ignore').read()
+        # 先剥 HTML 注释：注释里的字永远不会渲染。
+        # 不剥会把 <!-- 声明 ... --> 当文本，误报缺字（轮17 实测缺「声念确」）。
+        _s = re.sub(r'<!--.*?-->', ' ', _s, flags=re.S)
         _s = re.sub(r'<(script|style)[^>]*>.*?</\1>', ' ', _s, flags=re.S | re.I)
         _chars |= set(_html.unescape(re.sub(r'<[^>]+>', ' ', _s)))
     for _p in _glob.glob(os.path.join(SITE, 'assets', 'data', '*.js')):
@@ -591,6 +594,11 @@ try:
             _chars |= set(_m.group(1))
     for _p in _glob.glob(os.path.join(SITE, 'assets', 'js', '*.js')):
         _s = open(_p, encoding='utf-8', errors='ignore').read()
+        # 先剥 JS 注释：注释里可能含引号（如 alt=""），
+        # 不剥会被字符串正则切成「字符串」，把注释文字误当渲染内容
+        # （轮17 实测误报缺「声念确」）。
+        _s = re.sub(r'/\*.*?\*/', ' ', _s, flags=re.S)
+        _s = re.sub(r'//[^\n]*', ' ', _s)
         for _m in re.finditer(r"['\"\x60]([^'\"\x60]{1,400})['\"\x60]", _s):
             _t = _m.group(1)
             if re.search('[\u4e00-\u9fff]', _t) or len(_t) <= 40:
