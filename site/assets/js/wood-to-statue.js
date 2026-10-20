@@ -59,9 +59,14 @@
     var ih = P.span * s;                 // 图高（画布像素）
     var iw = ih * P.image.aspect;        // 图宽
     var axis = (P.axis == null ? 0.5 : P.axis);
+    /* 对齐到整像素：box 来自视口百分比，边几乎必然是 660.66 这种小数。
+     * 半像素落点会让整张图被二次重采样一遍 —— 那不是「复刻不像」，是白白糊一层。
+     * 取整后再按整数宽高绘制，源图像素才能 1:1 落到画布像素上。 */
+    var x = Math.round(box.cx - iw * axis);
+    var y = Math.round(box.cy + TOP * s);
+    var w = Math.round(iw), h = Math.round(ih);
     return {
-      x: box.cx - iw * axis, y: box.cy + TOP * s,
-      w: iw, h: ih, src: P.image.src, ready: !!imageReady(P.image.src)
+      x: x, y: y, w: w, h: h, src: P.image.src, ready: !!imageReady(P.image.src)
     };
   }
   /* 开坯波前：自上而下，带跳刀抖动 */
@@ -148,7 +153,12 @@
       ctx.clearRect(rx, ry, rw, rh);                            // AR：叠层透明，露出摄像头画面
     }
     ctx.globalAlpha = a;
+    // 高质量重采样：浏览器默认 imageSmoothingQuality 是 'low'，缩到一半以下会出现明显振铃/模糊，
+    // 那属于「渲染损失」而不是「复刻不像」。这里显式拉到 high（Safari 不支持该属性时静默忽略）。
+    var prevQ = ctx.imageSmoothingQuality;
+    try { ctx.imageSmoothingQuality = 'high'; } catch (e) {}
     ctx.drawImage(slot.img, g.x, g.y, g.w, g.h);
+    try { ctx.imageSmoothingQuality = prevQ || 'low'; } catch (e) {}
     ctx.restore();
     // 扫描前沿的高光（贴金质感的那道亮边）
     if (head > 0 && head < 1) {
@@ -787,14 +797,18 @@
     // 木屑与器具在成品接管后收起：照片一贴上来，画面上就不该再浮着斧凿与金箔方块
     if (takeover < 0.5) { chips(ctx, cx, cy, s, pc, now); }
     if (opts.tools !== false && takeover < 0.5) { tools(ctx, cx, cy, s, p, now); }
+    /* 大气层（浮尘）必须画在成品**之前**。
+     * 一手实测（2026-10-20 轮6）：motes 写在 revealStatue 之后时，26 粒金点直接落在像身像素上，
+     * 成品区与「只 drawImage」样本的差达到平均 6.40 / 最大 91 —— 照片本身没问题，
+     * 是这层雾把「像素级复刻」的判据糊掉了。移到前面后，不透明像身自然遮住落在它身上的浮尘。 */
+    if (opts.motes !== false) { motes(ctx, w, h, now, opts.moteCount || 26); }
     // 成品揭示：像素级一比一的兑现口 —— 抠好的照片按同一 box 贴回，自上而下扫过
     revealStatue(ctx, box, p, opts, w, h);
     smoke(ctx, cx, cy, s, band(p, 0.88, 1) * (1 - takeover), now);
-    // 开光朱印：成品阶段唯一的叠加物（它是仪式符号，不属于造像本身）
+    // 开光朱印：仪式符号，不属于造像本体，故在照片之后单独成层（位置在像身右侧外沿，不压像素）
     if (pOpen > 0.42) {
       seal(ctx, cx + s * 0.36, cy + s * 0.22, s * 0.062, "开", RED, -0.12, band(pOpen, 0.42, 0.8));
     }
-    if (opts.motes !== false) { motes(ctx, w, h, now, opts.moteCount || 26); }
     if (opts.caption && opts.stageLabel) {
       ctx.save();
       ctx.font = "600 12px " + FONT_SANS; ctx.textAlign = "left"; ctx.textBaseline = "top";

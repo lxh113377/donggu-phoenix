@@ -187,19 +187,30 @@ def main():
     crop = rgba[y0:y1 + 1, x0:x1 + 1].copy()
     cv2.imwrite(os.path.join(DEV, "step2_rgba.png"), crop)
 
-    # --- 6) 输出 WebP ---
+    # --- 6) 输出 WebP（无损）---
+    # 🔴 必须无损。一手实测（2026-10-20 轮6）：q90 有损编码在成品内部造成
+    #   平均 2.21 / P99 6 / 最大 14 的 RGB 误差 —— alpha 通道是完好的（cv2 单独无损存 alpha），
+    #   所以 v1 那句「alpha 偏差 0」给了我假的安心，真正被压坏的是颜色。
+    #   目标就是「像素级一比一」，任何有损档都在判据上直接出局：
+    #   q90=96KB(误差2.21) / q98=160KB(2.2) / q100=173KB(2.1) / 无损=398KB(0.00)。
+    #   站点部署体积 1135KB / 预算 1600KB，余量足够，选 0 误差。
+    #   编码器选型（同为无损，实测体积）：OpenCV(quality=101) 342KB / Pillow method=3 338KB
+    #   / Pillow method=6 330KB。差 3.5%，在「站点预算只剩 50KB 余量」的处境下不是噪音。
     os.makedirs(os.path.dirname(OUT_IMG), exist_ok=True)
-    if not cv2.imwrite(OUT_IMG, crop, [int(cv2.IMWRITE_WEBP_QUALITY), 90]):
-        raise SystemExit("WebP 写入失败: " + OUT_IMG)
+    _write_lossless_webp(crop, OUT_IMG)
     size = os.path.getsize(OUT_IMG)
     cov = float((crop[:, :, 3] > 127).sum()) / float(crop.shape[0] * crop.shape[1])
 
-    # 回读校验：写盘后 alpha 必须与内存一致（有损 WebP 会破坏 alpha 的假设在这里被证伪/证实）
+    # 回读校验：alpha 与 RGB 都必须逐像素相等（无损编码时两者都应为 0）
     back = cv2.imread(OUT_IMG, cv2.IMREAD_UNCHANGED)
     if back is None or back.shape[2] != 4:
         raise SystemExit("回读失败或丢 alpha 通道")
     a_diff = int(np.abs(back[:, :, 3].astype(np.int16) - crop[:, :, 3].astype(np.int16)).max())
-    print("alpha 回读最大偏差 %d（0=无损）" % a_diff)
+    # RGB 只在 alpha>0 处有意义：完全透明的像素不显示，其 RGB 被编码器清零是合法的
+    # （v1 这里直接全图比，得到假红 255 —— 判据踩了「拿不可见像素当证据」的坑）
+    vis = (crop[:, :, 3] > 0) | (back[:, :, 3] > 0)
+    rgb_diff = int(np.abs(back[:, :, :3].astype(np.int16) - crop[:, :, :3].astype(np.int16)).max(axis=2)[vis].max()) if vis.any() else 0
+    print("回读最大偏差：alpha %d / RGB(可见区) %d（均须为 0）" % (a_diff, rgb_diff))
 
     meta = {
         "src": os.path.relpath(SRC, BASE).replace("\\", "/"),
@@ -210,6 +221,8 @@ def main():
         "bytes": size,
         "alphaCoverage": round(cov, 4),
         "alphaMaxDiffAfterEncode": a_diff,
+        "rgbMaxDiffAfterEncode": rgb_diff,
+        "lossless": True,
     }
     with open(os.path.join(DEV, "statue_asset_meta.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
@@ -219,8 +232,10 @@ def main():
         raise SystemExit("alpha 覆盖率过低(%.3f)，抠图失败" % cov)
     if size < 20000:
         raise SystemExit("输出体积异常(%d B)" % size)
-    if a_diff > 2:
-        raise SystemExit("编码后 alpha 偏差过大(%d)，成品会有前色透出" % a_diff)
+    if a_diff > 0:
+        raise SystemExit("编码后 alpha 有偏差(%d)，成品会有前色透出" % a_diff)
+    if rgb_diff > 0:
+        raise SystemExit("编码后 RGB 有偏差(%d)，不是像素级复刻（应使用无损 WebP）" % rgb_diff)
 
     write_profile(crop)
 
@@ -299,6 +314,23 @@ def write_profile(crop):
     print("剖面已写", os.path.relpath(OUT_PROFILE, BASE), "点数", len(left),
           "中轴占比 %.4f" % (axis_px / w_img),
           "左最大 %.4f 右最大 %.4f" % (max(p[1] for p in left), max(p[1] for p in right)))
+
+
+def _write_lossless_webp(bgra, path):
+    """无损写 WebP，优先 Pillow（method=6 压缩率最好），退回 OpenCV。
+
+    Pillow 未安装时不能让整个构建失败（它只是可选优化），故捕获 ImportError 后退回。
+    两条路径都必须无损 —— 调用方随后会回读校验 RGB/alpha 逐像素相等。
+    """
+    try:
+        from PIL import Image
+        Image.fromarray(cv2.cvtColor(bgra, cv2.COLOR_BGRA2RGBA), "RGBA").save(
+            path, "WEBP", lossless=True, quality=100, method=6, exact=False)
+        return "pillow-method6"
+    except ImportError:
+        if not cv2.imwrite(path, bgra, [int(cv2.IMWRITE_WEBP_QUALITY), 101]):
+            raise SystemExit("WebP 写入失败: " + path)
+        return "opencv-lossless"
 
 
 def guided_filter(guide_u8, src, radius, eps):
