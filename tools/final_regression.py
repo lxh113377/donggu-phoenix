@@ -3,7 +3,7 @@ import json, subprocess, time
 WD = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
 PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 
-def ps(cmd, timeout=240):
+def ps(cmd, timeout=90):
     r = subprocess.run([PS, '-NoProfile', '-Command', cmd], capture_output=True, text=True,
                        cwd=WD, timeout=timeout, encoding='utf-8', errors='replace')
     return (r.stdout or '').strip()
@@ -16,6 +16,10 @@ def ev_file(path):
             try: return json.loads(json.loads(line))
             except Exception: continue
     return out
+
+# 0) 先关掉可能残留的调试会话：agent-browser 是常驻 daemon，
+#    上一次异常退出留下的会话会让后续 set viewport 卡到超时（本轮实测踩到）。
+ps('agent-browser close --all', timeout=40)
 
 # 1) 门禁
 r = subprocess.run([PS, '-NoProfile', '-Command', 'python tools/verify_site.py'], capture_output=True, text=True, cwd=WD, encoding='utf-8', errors='replace')
