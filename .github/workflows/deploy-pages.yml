@@ -59,6 +59,7 @@ jobs:
           python tools/reduced_motion_test.py
           python tools/microinteraction_test.py
           python tools/safe_script_test.py
+          python tools/critical_path_test.py
 
   deploy:
     name: Deploy
