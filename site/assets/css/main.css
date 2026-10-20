@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:38;
+  --build:39;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -805,7 +805,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .merch-item.is-feature .merch-shot::after{content:none}
 .merch-item.is-feature .merch-shot img{
   position:relative;z-index:1;object-fit:contain;
-  width:auto;height:auto;max-width:76%;max-height:76%;object-fit:contain;
+  width:auto;height:auto;max-width:76%;max-height:76%;
   filter:drop-shadow(0 26px 38px rgba(0,0,0,.62)) drop-shadow(0 4px 10px rgba(0,0,0,.5));
   transition:transform .8s var(--ease),filter .8s var(--ease);
 }
@@ -923,7 +923,7 @@ section.foot{padding-top:var(--sec-y-loose)}
 
 /* 图标按钮内的内联 SVG：不再依赖字体渲染图标（字体图标在不同系统上会走形） */
 .ar-icon svg,.ar-btn svg{display:block;pointer-events:none}
-.ar-icon{display:grid;place-items:center}
+/* .ar-icon 的 display:grid 与 place-items:center 已在上方主块声明，不重复 */
 
 
 /* ---------- ⑮b 按下态（:active） ----------
@@ -1165,9 +1165,6 @@ section.foot{padding-top:var(--sec-y-loose)}
   .hero-grid{align-items:start;align-content:start;height:auto;min-height:0}
   .hero-inner{margin:0}
   .hero h1 em{display:none}
-  .hero-grid{align-items:start;align-content:start;height:auto;min-height:0}
-  .hero-inner{margin:0}
-  .hero h1 em{display:none}
 }
 /* === MOBILE-TOPALIGN（轮42） ===
  * 375x667（iPhone SE 竖屏）下 .hero-inner top -8，眉题顶部被裁。
@@ -1196,8 +1193,9 @@ section.foot{padding-top:var(--sec-y-loose)}
 .merch-item.is-feature .merch-shot{
   height:auto;flex:1 1 auto;aspect-ratio:4/3;min-height:300px;
 }
+/* width/height:auto 已由上方原块给出，这里只放宽上限，避免同值重复 */
 .merch-item.is-feature .merch-shot img{
-  max-height:88%;max-width:88%;width:auto;height:auto;
+  max-height:88%;max-width:88%;
 }
 /* === TOUCH-SLIDER-FIX（轮51） ===
  * 390×844 实测 .carve-slider 命中区 195×3px、thumb 22px，
