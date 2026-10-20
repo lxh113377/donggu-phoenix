@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:40;
+  --build:41;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -239,7 +239,9 @@ body::after{
 @media (max-width:900px){.hero-inner{text-align:center;margin-bottom:-2vh}}
 .hero-tag{
   display:flex;align-items:center;gap:14px;margin:0;
-  font-family:var(--font-latin);font-size:var(--fs-xs);letter-spacing:.42em;color:var(--she-gold);
+  font-family:var(--font-latin);font-size:var(--fs-xs);letter-spacing:.42em;
+  /* 居中补偿（轮60）：移动端 .hero-tag 用 justify-content:center，末字字距会让墨迹左偏 2.52px */
+  margin-right:-.42em;color:var(--she-gold);
   text-transform:uppercase;
   opacity:0;animation:rise .9s var(--ease) .2s forwards;
 }
@@ -250,6 +252,10 @@ body::after{
 .hero h1{
   margin:clamp(20px,3vw,30px) 0 0;font-family:var(--font-display);font-weight:400;
   font-size:var(--fs-hero);line-height:1.04;letter-spacing:.09em;
+  /* 居中补偿（轮60）：移动端随 .hero-inner 居中，末字字距会让墨迹左偏 2.16px。
+     必须与下方 .hero h1 em 的补偿配套 —— 只修一行会让相邻两行居中文字互相错位。
+     渐变角度 176deg 近乎垂直，横向改盒子宽度不影响观感。 */
+  margin-right:-.09em;
   background:linear-gradient(176deg,#FFF6E6 4%,var(--she-gold-light) 42%,var(--she-vermilion) 82%,var(--she-red) 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 8px 22px rgba(212,162,76,.18));
@@ -259,7 +265,10 @@ body::after{
 }
 .hero h1 em{
   font-style:normal;display:block;font-size:.185em;line-height:1;margin-top:1.05em;
-  letter-spacing:.62em;font-family:var(--font-latin);
+  letter-spacing:.62em;
+  /* 居中补偿：letter-spacing 会给末字也加空间，居中时视觉中心左偏 ls/2（实测 5.96px = 0.31 字符宽）。
+     收回一个字距让盒子宽度等于墨迹宽度；左对齐时不影响。 */
+  margin-right:-.62em;font-family:var(--font-latin);
   background:none;-webkit-text-fill-color:var(--fg-faint);color:var(--fg-faint);
   filter:none;
 }
