@@ -92,3 +92,21 @@ python tools\make_ar_assets.py  # AR 分镜脚本重生成
 - 线上（GitHub Pages）：index.html 22210B、main.css 54406B、两份字体 200、sw.js v4；
   浏览器实开 --build=3、realOverflow=false、minTap=44、H1=ZCOOL XiaoWei 104px
 - CI：Deploy to GitHub Pages run `39343397913`（设计系统 v2）、`39344491268`（版本对账守卫）均 success
+
+## 轮6 结果（2026-10-20 08:06 · 社区 PR + 门禁假绿修复）
+- **社区协作达成**：向 `UniversalViewer/universalviewer` 提 PR **#1898**（base=dev，1 file +1−1，README License 段 blob/master → blob/main）。
+  提单前 7 个候选中 6 个被自己的证据推翻（Travis 徽章已被注释不渲染 / jsDelivr @1.2.x 实测 200 / 组件属性确实存在 /
+  README 已自我说明 @latest / Mirador #4223 经 MUI 9.5.0 源码证伪 / #3904 维护者本人 PR #4464 在跑且 issue 方案已被 #4379 证明错误）。
+  详见 docs/对标分析报告.md §10.2。
+- **CI 现状如实记录**：两个 workflow 为 action_required（首次贡献者审批门，非缺陷）；不谎报为绿。
+- **抓出并修复我自己门禁的假绿**：PRECACHE 正则缺 woff2 ⇒ 字体条目完全不在对账面内，
+  注入指向不存在字体仍 exit 0 且把 16 项报成 14 项。修法＝补扩展名 + **计数一致性守卫**
+  （数组条目数 ≠ 正则解析数即判红，防同类失效复发）。
+  反向验证：A 字体指向不存在 → 判红 ✅；B 未知扩展名 → 守卫报「20 vs 19」✅；
+  干净克隆（含 .git，等价 actions/checkout）→ 全绿 ✅
+- **CHANGELOG 陈述与代码不符已修**：仍写「收紧到 1200KB」而实际 BUDGET_KB=1600。
+  补双判据说明（整站 1600 + 首屏关键路径 ≤400）。实测注入 +300KB CSS ⇒
+  关键路径 675KB 判红、整站 1516KB 未触 1600，两条独立生效，属真权衡非放水。
+- CI run 39345640497（sha 3141982）：Verify site success → Deploy success；
+  日志显示 PRECACHE 17 项（修复生效）、关键路径 375/400KB、跟踪面 22 项。
+- 提交：c0a5dab（报告 §10）→ 3141982（门禁修复 + CHANGELOG 修正），origin/main 同步 0/0

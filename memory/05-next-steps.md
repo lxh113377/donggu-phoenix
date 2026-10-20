@@ -27,3 +27,9 @@
       AR.js 的「ar.lean.min.js 与 ar.min.js 同为 895,576B 无效产物」在活跃后继仓
       AR-js-org/AR.js 中**不存在**（three/build 目录已重构为 404，aframe/build 无 lean 档），
       拿旧仓缺陷给新仓提单是错的。提单前必须在**现役仓**复现。
+
+- [ ] **并发进程新增的字体版本控制检查缺「无 git 环境」守卫**：git archive 场景（无 .git）
+      会直接判红「字体未入版本控制」，而本仓 verify 其余项一律走 SKIP + WARNING
+      （「未取证不等于通过」）。CI 用 actions/checkout 带 .git 故不受影响，
+      但本地/离线校验会误红。请补 `if tracked is not None` 条件。
+- [ ] 跟踪 **PR #1898** 维护者反馈（若被要求改 base 到 main 或补 docs/index.html 一并处理）
