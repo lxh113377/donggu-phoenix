@@ -372,3 +372,38 @@ U-07 根因完全是代码写法 → 改纯静态判据，秒出、任意环境�
 ### 读数
 - CI：39364386781 success
 - 门禁：verify_site PASS / ci_design_static PASS（含 ring 判据）
+
+## 轮13 结果（2026-10-20 · backdrop-filter 白算清理 + 三条静态门禁）
+
+### 找到的浪费
+backdrop-filter 的结果绘制在元素背景**之下**，背景不透明时被完全盖住但仍在计算。
+实测两处：
+  .nav.solid   rgba(11,9,8,.92)  + blur(8px)   —— position:fixed 全宽，滚动时一直白算
+  .toast       rgba(18,16,15,.95) + blur(10px)
+基础态 .nav 是渐变背景（末端透明），blur 那里有效果，保留。
+
+### 一个必须先承认的错误
+我最初写的是「去掉 blur 视觉零变化」。核算后发现 0.92/0.95 并非完全不透明：
+透出的 8%/5% 会从「模糊」变「清晰」。量级极小但「零影响」站不住。
+规范做法：把背景提到 alpha=1（#0B0908 / #12100F），此时关 blur 才是**严格**零影响。
+
+### 新增 tools/prove_no_visual_change.py
+可复跑核查 backdrop-filter 用法与背景不透明度是否自洽：
+  当前全部 OK：.nav/.menu 渐变（blur 有效）、.carve-hint/.ar-dots alpha=.55（有效）、
+  .nav.solid 不透明且无 blur。
+
+### 静态门禁增至 4 条（全并入 ci_design_static，CI 可跑，无浏览器依赖）
+1. 手机首屏锁定一屏（height/min-height 100svh + visual min-height:0 + 源序正确）
+2. 装饰环不溢出（无负 inset / 无超宽 width / keyframes 保留 scale）
+3. 不透明背景不得保留 backdrop-filter
+4. 原有：按下态 / 行长 em / 零框架 / 字体自托管 / 无 AI 紫
+反向验证：加回 toast 的 blur → 判红；改回 visual min-height:58svh → 判红。
+
+### 环境限制（如实记录）
+agent-browser 守护进程报 "daemon configuration mismatch"，kill + 清 ~/.agent-browser 后仍复现，
+本轮无法取帧读数或截图。性能判断改由 CSS 合成语义确定性推导，防护由静态门禁承担。
+
+### 读数
+- CI：39365608408 / 39366095081 均 success
+- 四门禁全 PASS
+- 线上 build=14
