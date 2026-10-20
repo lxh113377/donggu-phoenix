@@ -737,38 +737,46 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
  * 处理成「样品台」——底衬浅纸色、图片压暗一档并与页面暖调统一，
  * 让它读作展陈台上的一件实物，而不是一个突兀的白块。 */
 .merch-item.is-feature .merch-shot{
-  height:clamp(300px,38vw,460px);flex:0 0 auto;
-  background:
-    radial-gradient(120% 90% at 50% 8%, rgba(246,241,231,.14), transparent 60%),
-    linear-gradient(180deg,#151110,#0E0B0A);
-  display:grid;place-items:center;padding:clamp(14px,2vw,26px);
+  height:clamp(320px,34vw,420px);flex:0 0 auto;
+  padding:clamp(24px,3.4vw,48px);
+  background:radial-gradient(62% 58% at 50% 44%, rgba(255,246,228,.10), transparent 74%);
+  display:grid;place-items:center;
 }
-.merch-item.is-feature .merch-shot::after{content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(90% 70% at 50% 46%, transparent 40%, rgba(8,7,6,.55) 100%)}
+.merch-item.is-feature .merch-shot::after{content:none}
 .merch-item.is-feature .merch-shot img{
-  position:relative;z-index:1;object-fit:cover;
-  filter:brightness(.9) saturate(1.02) sepia(.06);
-  width:min(70%,380px);height:min(76%,380px);border-radius:1px;
-  box-shadow:0 0 0 1px rgba(212,162,76,.34), 0 22px 48px -26px rgba(0,0,0,.9);
-  transition:transform .8s var(--ease),filter .8s var(--ease),box-shadow .8s var(--ease);
+  position:relative;z-index:1;object-fit:contain;
+  width:auto;height:auto;max-width:76%;max-height:76%;object-fit:contain;
+  filter:drop-shadow(0 26px 38px rgba(0,0,0,.62)) drop-shadow(0 4px 10px rgba(0,0,0,.5));
+  transition:transform .8s var(--ease),filter .8s var(--ease);
 }
-/* 展签：特写格右下角一行小字，把「一张图」变成「陈列中的一件实物」 */
-.merch-item.is-feature .merch-shot::before{
-  content:"01 / 12 · 凤凰徽章 · Ø58mm";
-  position:absolute;right:clamp(14px,2vw,26px);bottom:clamp(12px,1.6vw,20px);z-index:2;
-  font-family:var(--font-latin);font-size:var(--fs-2xs);letter-spacing:.18em;
-  color:rgba(212,162,76,.62);text-transform:uppercase;
+.merch-item.is-feature:hover .merch-shot img{
+  transform:translateY(-4px) scale(1.015);
+  filter:drop-shadow(0 34px 46px rgba(0,0,0,.68)) drop-shadow(0 6px 12px rgba(0,0,0,.55));
 }
-.merch-item.is-feature:hover .merch-shot img{transform:scale(1.015);filter:brightness(1) saturate(1.06) sepia(.01);box-shadow:0 0 0 1px rgba(212,162,76,.55), 0 26px 56px -26px rgba(0,0,0,.95)}
 .merch-item.is-feature h3{font-size:clamp(1.5rem,2.6vw,2.1rem);margin-top:18px}
 .merch-item.is-feature .tier{color:var(--she-vermilion)}
 .merch-item.is-feature > p{max-width:34em;padding-bottom:26px}
 .merch-item{padding:0 0 30px;background:var(--she-ink);transition:background .45s var(--ease);
   overflow:hidden;display:flex;flex-direction:column;height:100%}
 .merch-item > .tier,.merch-item > h3,.merch-item > .spec,.merch-item > p{margin-left:24px;margin-right:24px}
-.merch-shot{margin:0 0 22px;height:186px;flex:0 0 186px;overflow:hidden;background:#151110;position:relative}
-.merch-shot img{width:100%;height:100%;object-fit:cover;transition:transform .7s var(--ease)}
-.merch-item:hover .merch-shot img{transform:scale(1.045)}
+/* 产品图展示位：图是透明底实物图（tools/make_merch_renders.py 产出），
+   必须 contain 并给内边距 —— 用 cover 会把物体裁边，铺深底会多出一块方块。
+   底衬改为极淡的径向光，只为把白色物件从深色卡片里「托」出来，不是一块面板。 */
+.merch-shot{
+  margin:0 0 20px;height:196px;flex:0 0 196px;position:relative;
+  display:grid;place-items:center;padding:16px 18px 10px;
+  background:radial-gradient(70% 62% at 50% 44%, rgba(255,246,228,.075), transparent 72%);
+  transition:background .5s var(--ease);
+}
+/* 图必须 contain 且不能撑满整格：竖构图物件（笔筒/书签/扇）在 186px 里会顶到标题。
+   这里用 max-height 把上限压到格高 78%，留出下缘呼吸位。 */
+.merch-shot img{
+  width:auto;height:auto;max-width:100%;max-height:78%;object-fit:contain;
+  filter:drop-shadow(0 10px 16px rgba(0,0,0,.55));
+  transition:transform .7s var(--ease);
+}
+.merch-item:hover .merch-shot img{transform:scale(1.035) translateY(-2px)}
+.merch-item:hover .merch-shot{background:radial-gradient(70% 62% at 50% 42%, rgba(255,246,228,.12), transparent 74%)}
 .merch-shot.placeholder{display:grid;place-items:center;
   background:radial-gradient(circle at 50% 42%, rgba(179,32,44,.20), rgba(21,17,16,1) 68%)}
 .merch-shot.placeholder img{width:104px;height:104px;object-fit:contain;opacity:.34}
