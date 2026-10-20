@@ -125,8 +125,11 @@ def main():
     if n_lazy < 3:
         fails.append("全站 loading=lazy 仅 %d 处（懒加载未铺开）" % n_lazy)
     checked += 1
-    if "-340." not in mj:
-        fails.append("main.js 未见 -340 候选名推导（srcset 生成通路丢失）")
+    # 候选名是前端用 replace() 拼出来的，必须与 SMALL_SUFFIX 约定一致；
+    # 只查 "-340." 不够（注释里也有这三个字符），要查带引号的完整推导串。
+    expect_derive = "'" + SMALL_SUFFIX + ".$1'"
+    if expect_derive not in mj:
+        fails.append("main.js 未见 srcset 候选名推导 %s（改坏即线上 404）" % expect_derive)
 
     print("部署面文本 %d 文件；位图 %d 个（其中 srcset 派生档 %d）；文创 %d 件" % (
         len(files), len(rows), len(derived), len(merch_imgs)))

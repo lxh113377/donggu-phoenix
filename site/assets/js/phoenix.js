@@ -30,8 +30,34 @@
     var _cores = global.navigator && global.navigator.hardwareConcurrency;
     var _mem = global.navigator && global.navigator.deviceMemory;
     this.lowEnd = !!((_cores && _cores <= 4) || (_mem && _mem <= 4));
-    if (this.lowEnd && !opts.maxParticles) { this.maxParticles = 900; }
-    this.maxParticles = opts.maxParticles || (this.isMobile ? 1500 : 2600);
+    /* I-7 粒子密度按面积自适应（对标 particles.js number.density.value_area）。
+     * 旧口径 isMobile ? 1500 : 2600 只有两档，问题在中间地带：
+     *   平板（768~900px）拿 2600，但图腾绘制面积只有桌面的 ~75% → 同面积密度偏高、
+     *   帧成本按粒子数线性（perf_anim 实测 _targets 41µs@2600 粒），白贵一截。
+     *
+     * 标定方法（面积是**浏览器实测值**，不是 CSS 推导值）：
+     * 第一版我用 CSS 推导 anchor 尺寸，实测后两个假设都被推翻 ——
+     *   · 以为平板画布比桌面小 → 实测 768x1024 的 anchor 面积 367,733px²，比桌面还大；
+     *   · 以为手机 anchor 高 ≈370px → 实测 .hero-grid 的 minmax(150px,1fr) 在矮屏被压到 150px，
+     *     390x844 实际只有 53,100px²。
+     * 教训：几何类参数一律实测取值，别从 CSS 脑补（已入台账 U-124）。
+     * 取两个「旧档位已验证可接受」的实测锚点做两点式线性拟合：
+     *   手机 390x844 → anchor 实测 53,100px² → 旧档 1500 粒
+     *   桌面 1440x900 → anchor 实测 288,829px² → 旧档 2600 粒
+     *   => 粒子数 = 1252.2 + 0.004666 x 面积
+     * 校核结果（全部实测面积）：两个锚点逐字复现（390→1500、1440→2600），
+     * 且**没有任何一档比旧口径更密** —— 自适应只省不涨：
+     *   320/360 → 1451（旧 1500）；1024x768 → 2256（旧 2600）；768/1920 → 2600（同旧）
+     * 上下限：2600（大屏不再无限加钱）、520（再稀就看不出是凤凰）。 */
+    this.DENS_BASE = 1252.2;              /* 两点式拟合截距 */
+    this.DENS_SLOPE = 0.004666;           /* 每 px² 新增粒子数 */
+    this.DENS_MAX = 2600;
+    this.DENS_MIN = 520;
+    var _area = this._sampleArea();
+    this._area = _area;
+    var _byArea = this._densFor(_area);
+    if (this.lowEnd && !opts.maxParticles) { _byArea = Math.min(_byArea, 900); }
+    this.maxParticles = opts.maxParticles || _byArea;
     this.particles = [];
     this._raf = null;
     this._last = 0;
@@ -40,6 +66,27 @@
     this._tick = this._tick.bind(this);
     this._visible = true;
   }
+
+  /* 采样面积：anchor（若提供且已有尺寸）优先，否则退到画布可视区。
+   * 用 anchor 是因为凤凰实际只画在图腾区里，画布可能整屏大但图腾只占一角 ——
+   * 按画布算会把粒子摊到空区域，视觉上变稀。取不到尺寸（未布局）时按视口估算。 */
+  Phoenix.prototype._sampleArea = function () {
+    var a = this.anchor;
+    if (a) {
+      var ar = a.getBoundingClientRect ? a.getBoundingClientRect() : null;
+      if (ar && ar.width > 8 && ar.height > 8) { return ar.width * ar.height; }
+    }
+    var c = this.canvas;
+    var cw = (c && c.clientWidth) || global.innerWidth || 1024;
+    var ch = (c && c.clientHeight) || global.innerHeight || 768;
+    return cw * ch;
+  };
+
+  /* 两点式拟合的密度律；resize 时按新面积重算（_resize 里 20% 节流） */
+  Phoenix.prototype._densFor = function (area) {
+    var n = Math.round(this.DENS_BASE + this.DENS_SLOPE * (area || 0));
+    return Math.max(this.DENS_MIN, Math.min(this.DENS_MAX, n));
+  };
 
   Phoenix.prototype.load = function () {
     var self = this;
@@ -90,7 +137,10 @@
     }
     var n = cand.length / 2;
     if (n < 300) { this._fallback(); return; }
-    var step = Math.max(1, Math.floor(n / this.maxParticles));
+    /* 采样档位恒按上限采（DENS_MAX），实际用多少由 _build 的 want 决定。
+     * 这样 resize 需要「变密」时 _ptsFull 里还有富余目标点可用，
+     * 不必重新采样（重采样 = 重新解码 SVG + 逐像素扫描，代价高且会闪一帧）。 */
+    var step = Math.max(1, Math.floor(n / (this.DENS_MAX || this.maxParticles)));
     var pts = [], cols = [];
     for (var k = 0; k < n; k += step) {
       var px = cand[k * 2], py = cand[k * 2 + 1];
@@ -138,6 +188,20 @@
   };
 
   Phoenix.prototype._build = function (pts, cols, step) {
+    /* 采样给的是「最大档」的点集（见 _sample 注释），这里按当前 maxParticles 裁切。
+     * 不裁切的话密度自适应就是假的 —— 平板照样拿到 2600 个粒子。
+     * 等间隔抽稀（不是随机丢）：随机丢会让某几段翼/尾突然变稀，等间隔保持轮廓均匀。 */
+    if (pts.length / 2 > this.maxParticles) {
+      var _keep = [], _keepC = [], _step2 = (pts.length / 2) / this.maxParticles;
+      for (var _i = 0; _i < this.maxParticles; _i++) {
+        var _pi = Math.floor(_i * _step2) * 2;
+        if (_pi + 1 >= pts.length) { break; }
+        _keep.push(pts[_pi], pts[_pi + 1]);
+        if (cols && cols.length > _pi + 2) { _keepC.push(cols[_pi], cols[_pi + 1], cols[_pi + 2]); }
+      }
+      pts = _keep;
+      cols = _keepC.length === _keep.length / 2 * 3 ? _keepC : null;
+    }
     var count = pts.length / 2;
     var arr = new Array(count);
     for (var i = 0; i < count; i++) {
@@ -192,6 +256,58 @@
       }
     }
     if (this.isMobile && !this.anchor) this.oy = h * 0.42;
+
+    /* I-7：面积变了且跨过 20% → 重算密度（resize 上节流，不在每次 resize 立刻重建） */
+    var _ar = this._sampleArea();
+    if (this._area && Math.abs(_ar - this._area) / this._area > 0.2 && this.particles.length) {
+      this._area = _ar;
+      this._densTimer = this._densTimer || null;
+      var self = this;
+      if (this._densTimer) { clearTimeout(this._densTimer); }
+      this._densTimer = setTimeout(function () { self._densTimer = null; self._resampleDensity(); }, 260);
+    } else if (!this._area) {
+      this._area = _ar;
+    }
+  };
+
+  /* 按当前面积重取目标点数，从 _ptsFull（最大档点集）等间隔抽稀重建。
+   * 保留既有粒子的 x/y/vx/vy（只换目标点），所以画面是「逐渐变密/变稀」，
+   * 不是炸开重来 —— 与 _rebuildLite 的取舍一致。 */
+  Phoenix.prototype._resampleDensity = function () {
+    var src = this._ptsFull;
+    if (!src || src.length < 8 || !this.particles.length) { return; }
+    var want = this._densFor(this._area || this._sampleArea());
+    if (this.lowEnd) { want = Math.min(want, 900); }
+    if (this._degraded) { want = Math.min(want, 900); }
+    if (want === this.maxParticles) { return; }
+    this.maxParticles = want;
+    var total = src.length / 2;
+    var step = total / want;
+    var kept = [];
+    for (var i = 0; i < want; i++) {
+      var pi = Math.min(total - 1, Math.floor(i * step));
+      var p = this.particles[pi] || this.particles[this.particles.length - 1];
+      if (!p) { break; }
+      var k = pi * 2;
+      if (k + 1 < src.length) { p.tx = src[k]; p.ty = src[k + 1]; }
+      kept.push(p);
+    }
+    /* 变密时 kept 会比 want 少（对象不够）→ 用已有对象补齐新目标点，
+     * 否则 resize 到大屏反而拿不到新增的密度。 */
+    var proto = this.particles[0];
+    while (kept.length < want && proto) {
+      var idx = kept.length % total;
+      var kk = idx * 2;
+      kept.push({
+        tx: src[kk], ty: src[kk + 1],
+        x: 0.5 + (Math.random() - 0.5) * 1.6, y: 0.5 + (Math.random() - 0.5) * 1.6,
+        vx: 0, vy: 0, r: proto.r, g: proto.g, b: proto.b,
+        size: 0.9 + Math.random() * 1.5, ph: Math.random() * Math.PI * 2,
+        k: 0.055 + Math.random() * 0.05, damp: 0.86 + Math.random() * 0.05
+      });
+    }
+    this.particles = kept;
+    this.count = kept.length;
   };
 
   Phoenix.prototype._start = function () {

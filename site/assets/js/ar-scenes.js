@@ -17,6 +17,47 @@
   function rgba(c, a) { return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
   var GOLD = [212, 162, 76], GOLD_L = [232, 183, 97], RED = [179, 32, 44];
 
+  /* ================= 场景注册表（I-8，2026-10-20 轮50）=================
+   * 一手问题（对标报告 §3.2 / 改进项 I-8）：加一个场景要改 3 处人工代码 ——
+   *   ① ar-scenes.js 的 create() if 链  ② verify_site.py 的场景 id 白名单 (craft|red|phoenix)
+   *   ③ verify_site.py 的渲染器名白名单 CraftScene/RedScene/PhoenixScene
+   *   （外加 qr/make_qr.py 的直连码循环）—— 漏一处就是「本地能跑、门禁判红」或反过来
+   *   「门禁绿、线上 create() 返回 null 白屏」。这是隐式耦合，不是工作量问题。
+   * 学 aframevr/aframe 的 registerSystem/registerComponent（一手读过 src/core/system.js）：
+   *   · 名字 -> 构造器 的单一字典；
+   *   · 重复注册直接抛错，且错误文案写「怎么排查」而不是只说失败了；
+   *   · 查不到时抛可读错误，而不是 return null 让调用方自己猜。
+   * create() 保留旧签名（返回实例），未知 id 由 return null 改为抛错 ——
+   * ar.js 的调用点都在 open()/loadScene() 内有 try/catch 或 toast 兜底，见 ar.js。
+   * verify_site.py 第 9 项改为由这份注册表 + ar-data.js 的 id 列表**数据驱动**对账。 */
+  var SCENE_REGISTRY = Object.create(null);
+
+  function register(name, ctor) {
+    if (typeof name !== 'string' || !name) {
+      throw new TypeError('AR_SCENES.register: 场景名必须是非空字符串（收到 ' + String(name) + '）');
+    }
+    if (typeof ctor !== 'function') {
+      throw new TypeError('AR_SCENES.register: 场景 ' + name + ' 的构造器必须是 function（收到 ' +
+        (ctor === undefined ? 'undefined —— 常见原因是 register() 写在了构造器定义之前' : typeof ctor) + '）');
+    }
+    if (SCENE_REGISTRY[name]) {
+      throw new Error('AR_SCENES.register: 场景「' + name + '」已注册，重复注册会被静默覆盖。'
+        + '排查方向：全局搜 register 加场景名，看是否复制旧场景忘了改名。');
+    }
+    SCENE_REGISTRY[name] = ctor;
+    return ctor;
+  }
+
+  function create(id, data) {
+    var Ctor = SCENE_REGISTRY[id];
+    if (!Ctor) {
+      throw new Error('AR_SCENES.create: 未知场景「' + id + '」。已注册：[' +
+        Object.keys(SCENE_REGISTRY).join(', ') + ']。'
+        + '排查方向：① ar-data.js 里该场景 id 的拼写；② 新场景忘了 register()；③ ar-scenes.js 未加载。');
+    }
+    return new Ctor(data);
+  }
+
   /* 画面安全区：宽屏铺满（解说在左侧留白处），窄屏只占上半屏，下半留给解说 */
   function visualBox(w, h) {
     if (w >= 900) {
@@ -830,16 +871,16 @@
     chapterRail(ctx, w, h, this.chapters, idx);
   };
 
-  /* ================= 工厂与导出 ================= */
-  function create(id, data) {
-    if (id === "craft") { return new CraftScene(data); }
-    if (id === "red") { return new RedScene(data); }
-    if (id === "phoenix") { return new PhoenixScene(data); }
-    return null;
-  }
+  /* ================= 注册（唯一真源：加场景只改这里 + ar-data.js）================= */
+  register("craft", CraftScene);
+  register("red", RedScene);
+  register("phoenix", PhoenixScene);
 
   global.AR_SCENES = {
     create: create,
+    register: register,
+    /* 注册表只读快照：verify_site.py 第 9 项据此做数据驱动对账（不再写死白名单） */
+    sceneNames: function () { return Object.keys(SCENE_REGISTRY); },
     CraftScene: CraftScene,
     RedScene: RedScene,
     PhoenixScene: PhoenixScene,

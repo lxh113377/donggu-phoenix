@@ -67,6 +67,8 @@ jobs:
           python tools/bilingual_parity_test.py
           python tools/originality_audit.py
           python tools/orphan_asset_test.py
+          python tools/narration_gate_test.py
+          python tools/engine_polish_test.py
 
   deploy:
     name: Deploy

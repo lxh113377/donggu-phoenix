@@ -233,24 +233,50 @@ for f in ("assets/data/ar-data.js", "assets/js/ar-scenes.js", "assets/js/ar.js")
     p = os.path.join(SITE, f)
     if not os.path.exists(p) or os.path.getsize(p) < 800:
         fails.append("AR 文件缺失或过小: " + f)
-ar_scene_ids = re.findall(r"\n\s*id: '(craft|red|phoenix)'", ar_data)
-if len(set(ar_scene_ids)) != 3:
-    fails.append("AR 场景不完整（需 craft/red/phoenix 三个）: " + ",".join(ar_scene_ids))
+# I-8（2026-10-20 轮50）：本项原先把「场景 id」与「渲染器类名」写成两处硬编码白名单，
+# 加一段场景就得同步改门禁。后果是双向的：要么「门禁绿、线上 create() 找不到渲染器」，
+# 要么「代码没错但门禁判红」。现改为两侧各自发现再对账（数据驱动）：
+#   ar-data.js 声明的 id  ⇄  ar-scenes.js register() 注册的 id  必须一一对应。
+data_scene_ids = re.findall(r"^\s+id: '([a-z][a-z0-9_-]*)',", ar_data, re.M)
+reg_scene_ids = re.findall(r'register\(\s*["\x27]([a-z][a-z0-9_-]*)["\x27]', ar_scenes)
+ar_scene_ids = data_scene_ids
+missing_reg = [i for i in data_scene_ids if i not in reg_scene_ids]
+extra_reg = [i for i in reg_scene_ids if i not in data_scene_ids]
+if len(set(data_scene_ids)) != len(data_scene_ids):
+    fails.append("ar-data.js 场景 id 有重复: " + ",".join(data_scene_ids))
+if missing_reg:
+    fails.append("有数据但未注册渲染器（点开演会抛错）: " + ",".join(missing_reg))
+if extra_reg:
+    fails.append("注册了渲染器但数据层无对应场景（死代码）: " + ",".join(extra_reg))
+# 数量下限 3：交付口径就是三段，注册表机制不能把「少交付一段」洗成通过
+if len(data_scene_ids) < 3:
+    fails.append("AR 场景少于 3 段（交付口径）: " + ",".join(data_scene_ids))
 for key in ("选木", "定像", "开坯", "修光", "开光"):
     if key not in ar_data:
         fails.append("AR 造像工序缺失: " + key)
 for key in ("东固会师", "龙冈", "白云山", "六渡坳"):
     if key not in ar_data:
         fails.append("AR 红色史实缺失: " + key)
-for fn in ("CraftScene", "RedScene", "PhoenixScene", "create"):
+# 工厂与注册机制必须在（I-8 判据）；类名不再写死，加场景不必改门禁
+for fn in ("function register(", "function create(", "SCENE_REGISTRY", "sceneNames"):
     if fn not in ar_scenes:
-        fails.append("AR 渲染器缺少: " + fn)
+        fails.append("AR 场景注册表机制缺少: " + fn)
+# create() 必须查表，不能退化回 if 链硬编码
+if re.search(r'if \(id === ["\x27][a-z]+["\x27]\)', ar_scenes):
+    fails.append("AR create() 仍是 if 链硬编码（应查 SCENE_REGISTRY）")
+# 未知 id 必须抛可排查错误（学 aframe registerSystem：文案写「往哪查」而不只说失败）
+if "SCENE_REGISTRY[id]" not in ar_scenes or "未知场景" not in ar_scenes:
+    fails.append("AR create() 未对未知场景抛可排查错误")
+# ar.js 必须接住该错误：否则「有数据没注册」在页面上表现为点开演毫无反应
+if "AR_SCENES.create(id, data)" not in ar_ctrl or "未接入播放层" not in ar_ctrl:
+    fails.append("ar.js 未接住 create() 抛错（未知场景会静默失败）")
 # 三段时长合计应等于文档口径 152 秒
 durs = [int(x) for x in re.findall(r"duration: (\d+)", ar_data)]
 if sum(durs) != 152:
     fails.append("AR 三段时长合计应为 152s，实际 %d" % sum(durs))
 # 场景直连码必须生成且非空
-for sid in ("craft", "red", "phoenix"):
+# 直连码清单同样由数据层驱动（新场景不必再来改这里）
+for sid in (data_scene_ids or ["craft", "red", "phoenix"]):
     qp = os.path.join(BASE, "qr", "qr-ar-%s.png" % sid)
     if not os.path.exists(qp) or os.path.getsize(qp) < 500:
         fails.append("场景直连码缺失或过小: qr/qr-ar-%s.png" % sid)
@@ -259,9 +285,13 @@ if os.path.exists(meta_p):
     try:
         meta = json.loads(rd(meta_p).decode("utf-8"))
         links = meta.get("sceneDeepLinks") or {}
-        for sid in ("craft", "red", "phoenix"):
+        for sid in (data_scene_ids or ["craft", "red", "phoenix"]):
             if "#ar=" + sid not in (links.get(sid) or ""):
                 fails.append("sceneDeepLinks 缺少 %s" % sid)
+        # meta.json 里多出来的深链（数据层已删场景但码还在）也要报，防死链
+        stale = [k for k in links if k not in (data_scene_ids or [])]
+        if stale:
+            fails.append("sceneDeepLinks 有数据层已不存在的场景: " + ",".join(stale))
     except Exception as e:
         fails.append("qr/meta.json 解析失败: %s" % e)
 print(f"[{'PASS' if not any('场景直连码' in f or 'sceneDeepLinks' in f for f in fails) else 'FAIL'}] 场景直连码 3 枚 + meta.json 深链")

@@ -29,7 +29,13 @@
  * PRECACHE 清单未变但 index.html / main.css / ar.js 内容变了 —— 不 bump 则已装 SW 的访客
  * 对 JS/CSS 走 cache-first，永远拿不到旁白开关（本项目第 4 次踩同一坑，写进注释）。
  * 跨版本对账锚点仍是 CSS --build(36) ⇄ HTML BUILD(36)。 */
-var VERSION = 'v39';
+/* v40（2026-10-20 轮50 · I-7/I-8）：ar.js（旁白 + HUD 节流 + create 接错）、
+ * ar-scenes.js（场景注册表）、phoenix.js（面积自适应密度）三个 JS 内容变了。
+ * PRECACHE 清单未变，但 JS 走 cache-first —— 不 bump 则已装 SW 的访客永远拿不到，
+ * 这是本项目第 4 次踩同一坑（前三次见 v2/v4/v6/v37 注释），因此把 bump 写进判据：
+ * tools/verify_site.py 的版本对账只保证 CSS⇄HTML 同值，SW VERSION 由人工随内容变更 bump。
+ * 跨版本对账锚点仍是 CSS --build(38) ⇄ HTML BUILD(38)。 */
+var VERSION = 'v40';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [

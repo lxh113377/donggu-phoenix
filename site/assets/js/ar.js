@@ -219,7 +219,8 @@
       fpsFrames = 0;
       fpsT = now;
     }
-    paintHud();
+    /* I-7：把 rAF 的 now 交给节流器，节流与渲染共用同一时基 */
+    paintHud(now);
   }
 
   function chapterIndex() {
@@ -230,7 +231,51 @@
   }
 
   var lastChapter = -1;
-  function paintHud() {
+  /* 旁白开关的可视态单独成函数：
+   * 一手缺陷（轮50 实测发现）—— 原先只在 paintHud 里同步 aria-pressed，
+   * 而 paintHud 开头 if (!state.scene) return; ⇒ AR 播放层没打开时点旁白，
+   * narr.on 已经 true 但按钮不变、读屏也不知道，看起来像"按了没反应"。
+   * 实测证据：点击后 narr.on=true 而 aria-pressed 仍 "false"、.on class 未加。
+   * 值比较保留（逐帧调用不产生多余写入）。 */
+  function syncNarrBtn() {
+    if (!el.narrate || !narr.supported) { return; }
+    var want = narr.on ? "true" : "false";
+    if (el.narrate.getAttribute("aria-pressed") !== want) {
+      el.narrate.setAttribute("aria-pressed", want);
+      el.narrate.classList.toggle("on", narr.on);
+    }
+  }
+
+  /* I-7 HUD 写入节流 —— 借 aframe 的 throttleLeadingAndTrailing 语义（learned from
+   * aframevr/aframe src/core/utils/throttle-animframe.js 的 leading + trailing 成对实现）。
+   * 一手实测：frame() 每帧调 paintHud()，桌面 224fps ⇒ 约 224 次/秒写 style.width，
+   * 而进度条只需 2px 高、肉眼分辨不出 10 次/秒以上的更新；
+   * 每秒 224 次 style 写入 = 224 次强制布局，是 Cycles 之外白付的 CPU。
+   * 三条硬约束：
+   *   1) leading 必写 —— 章节标题/旁白切换不能被延迟（切章要立刻有反馈）；
+   *   2) trailing 必写 —— 段尾与暂停瞬间也要落最后一次值，否则进度条停在 99.6%；
+   *   3) 纯节流会吞掉段尾最后一笔（frame() 在 t>=duration 时先 seek 到 100% 再 complete()，
+   *      若被节流挡掉，重播后 250ms 内进度条一直显示 100% —— 这是写注释时才发现的真问题，
+   *      所以额外用 hud.force：凡 lastChapter 被重置（切场景/步进/重播/seek）强制绕过节流。 */
+  var hud = { period: 100, last: 0, pending: null, timer: null, force: false, writes: 0, calls: 0 };
+  function paintHud(now) {
+    hud.calls++;
+    var _t = (typeof now === "number" && now > 0) ? now : (global.performance && performance.now ? performance.now() : Date.now());
+    var _due = (_t - hud.last) >= hud.period;
+    if (!hud.force && !_due) {
+      /* trailing：补一次到点写入，保证停在最终值而不是上一次节流边界 */
+      if (!hud.pending) {
+        hud.pending = setTimeout(function () {
+          hud.pending = null;
+          paintHud();
+        }, hud.period - (_t - hud.last));
+      }
+      return;
+    }
+    if (hud.pending) { clearTimeout(hud.pending); hud.pending = null; }
+    hud.last = _t;
+    hud.force = false;
+    hud.writes++;
     var s = state.scene;
     if (!s) { return; }
     var ci = chapterIndex();
@@ -246,6 +291,8 @@
       void el.root.offsetWidth;
       el.root.classList.add("beat");
     }
+    /* 进度条视觉平滑交给 CSS transition:width .18s linear（已存在），
+     * 所以 100ms 一次写入不会看到阶梯 —— 节流不靠牺牲观感换性能。 */
     if (el.bar) { el.bar.style.width = (state.t / s.duration * 100).toFixed(2) + "%"; }
     if (el.time) { el.time.textContent = fmt(state.t) + " / " + fmt(s.duration); }
     if (el.dwell) { el.dwell.textContent = fmt(state.dwell); }
@@ -253,14 +300,7 @@
       var label = state.playing ? (D.ui.pause || "暂停") : (D.ui.play || "继续");
       if (el.play.textContent !== label) { el.play.textContent = label; }
     }
-    if (el.narrate && narr.supported) {
-      /* 只在状态真的变了才写 DOM：本函数是逐帧调用的（见 paintHud 节流说明） */
-      var want = narr.on ? "true" : "false";
-      if (el.narrate.getAttribute("aria-pressed") !== want) {
-        el.narrate.setAttribute("aria-pressed", want);
-        el.narrate.classList.toggle("on", narr.on);
-      }
-    }
+    syncNarrBtn();
   }
 
   function fmt(sec) {
@@ -302,10 +342,39 @@
     var data = sceneData(id);
     if (!data) { return; }
     state.sceneIdx = D.scenes.indexOf(data);
-    state.scene = global.AR_SCENES.create(id, data);
+    /* I-8：create() 现在对未知 id 抛可读错误（学 aframe registerSystem 的排查型文案）。
+     * 这里必须接住：ar-data.js 有该场景但 ar-scenes.js 没注册时，不接就是
+     * 「点开演没反应 + 控制台一条红字」。接住后明确告知是哪一段坏了，其余两段照常。
+     * 细节（已注册清单 + 排查方向）进 console，页面上只给场景名，避免刷屏。 */
+    try {
+      state.scene = global.AR_SCENES.create(id, data);
+    } catch (err) {
+      if (global.console && console.error) { console.error(err); }
+      toast((data.name || id) + ' 未接入播放层，其余场景照常可看', 3400);
+      state.sceneIdx = -1;
+      /* 不能停在「已打开但没有场景」的空舞台上：那是白屏，比报错更难解释。
+       * 依次回落：数据层里其他已注册场景 → 都没有就关掉播放层。 */
+      for (var i = 0; i < D.scenes.length; i++) {
+        var alt = D.scenes[i];
+        if (alt.id === id) { continue; }
+        try {
+          state.scene = global.AR_SCENES.create(alt.id, alt);
+          state.sceneIdx = i;
+          state.t = 0;
+          lastChapter = -1; hud.force = true;
+          if (el.title) { el.title.textContent = alt.name; }
+          if (el.en) { el.en.textContent = alt.en; }
+          if (el.kicker) { el.kicker.textContent = alt.kicker; }
+          paintDots();
+          paintHud();
+          return;
+        } catch (e2) { /* 试下一个 */ }
+      }
+      close();
+    }
     narr.cancel();
     state.t = 0;
-    lastChapter = -1;
+    lastChapter = -1; hud.force = true; /* 绕过节流，标题/进度立刻对齐 */
     state.chapterDone = [];
     if (el.title) { el.title.textContent = data.name; }
     if (el.en) { el.en.textContent = data.en; }
@@ -317,7 +386,7 @@
     if (reduced && state.playing) {
       state.playing = false;
       state.t = typeof data.poster === "number" ? data.poster : 0;
-      lastChapter = -1;
+      lastChapter = -1; hud.force = true; /* 绕过节流，标题/进度立刻对齐 */
     }
     if (el.play) { el.play.textContent = state.playing ? (D.ui.pause || "暂停") : (D.ui.play || "继续"); }
     try { global.location.hash = "ar=" + id; } catch (e) { /* 某些内置浏览器限制 */ }
@@ -485,6 +554,7 @@
     state.open = false;
     state.playing = false;
     narr.cancel();
+    if (hud.pending) { clearTimeout(hud.pending); hud.pending = null; }
     if (el.root) {
       el.root.classList.remove("on");
       el.root.setAttribute("aria-hidden", "true");
@@ -568,7 +638,7 @@
     if (el.restart) {
       el.restart.addEventListener("click", function () {
         narr.cancel();
-        state.t = 0; lastChapter = -1; state.playing = true;
+        state.t = 0; lastChapter = -1; hud.force = true; /* 绕过节流，标题/进度立刻对齐 */ state.playing = true;
       });
     }
     function step(dir) {
@@ -577,7 +647,7 @@
       var n = s.chapters.length, len = s.duration / n;
       var ci = U.clamp(chapterIndex() + dir, 0, n - 1);
       state.t = ci * len + 0.001;
-      lastChapter = -1;
+      lastChapter = -1; hud.force = true; /* 绕过节流，标题/进度立刻对齐 */
     }
     if (el.prev) { el.prev.addEventListener("click", function () { step(-1); }); }
     if (el.next) { el.next.addEventListener("click", function () { step(1); }); }
@@ -599,7 +669,7 @@
         } else {
           toast("旁白已关闭", 1800);
         }
-        paintHud();
+        syncNarrBtn();
       });
     }
     if (el.dots) {
@@ -666,12 +736,12 @@
     open: open,
     close: close,
     goto: function (id) { if (!state.open) { open(id); } else { loadScene(id, true); } },
-    seek: function (sec) { state.t = sec; lastChapter = -1; },
+    seek: function (sec) { state.t = sec; lastChapter = -1; hud.force = true; /* 绕过节流，标题/进度立刻对齐 */ },
     narrate: function (v) {
       if (!narr.set(v)) { return false; }
       var s = state.scene;
       if (v !== false && s) { narr.chapter(s.chapters[chapterIndex()]); }
-      paintHud();
+      syncNarrBtn();
       return narr.on;
     },
     play: function (v) { state.playing = v !== false; },
@@ -684,10 +754,12 @@
         stamps: state.stamps.slice(), visits: state.visits,
         narr: narr.supported ? { on: narr.on, speaking: narr.speaking, lastText: narr.lastText, voice: narr.voiceName } : null,
         dwell: Math.round(state.dwell), fps: state.fps,
-        canvas: W + "x" + H
+        canvas: W + "x" + H, hud: { calls: hud.calls, writes: hud.writes, periodMs: hud.period }
       };
     },
-    scenes: D.scenes.map(function (s) { return { id: s.id, name: s.name, duration: s.duration, chapters: s.chapters.length }; })
+    scenes: D.scenes.map(function (s) { return { id: s.id, name: s.name, duration: s.duration, chapters: s.chapters.length }; }),
+    /* I-8 验收用：注册表实际注册了哪些场景（对照 scenes 数据即可发现「有数据没注册」） */
+    registered: (global.AR_SCENES && global.AR_SCENES.sceneNames) ? global.AR_SCENES.sceneNames() : []
   };
 
   if (document.readyState === "loading") {

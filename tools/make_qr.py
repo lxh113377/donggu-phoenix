@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """二维码生成 + 强制回读自检（qrcode 生成 -> OpenCV 解码，逐字节比对）。"""
-import os, sys, json, argparse
+import os, sys, json, re, argparse
 import qrcode
 from qrcode.constants import ERROR_CORRECT_H, ERROR_CORRECT_Q
 import cv2
@@ -27,6 +27,27 @@ def verify(path, expect):
         big = cv2.resize(arr, None, fx=2, fy=2, interpolation=cv2.INTER_NEAREST)
         data, pts, _ = det.detectAndDecode(big)
     return (data == expect), data
+
+# 场景清单由唯一内容源 ar-data.js 派生（I-8，2026-10-20 轮50）。
+# 原先此处把 ("craft","red","phoenix") 写死两处，加一段场景就要同时改生成器与门禁；
+# 忘改的后果是「新场景上线但没有直连码」或反过来「二维码指向不存在的场景」。
+def scene_list():
+    """从 ar-data.js 取 [(id, 场景名)]，顺序即数据层顺序。取不到就直接失败（不静默降级）。"""
+    ap = os.path.join(BASE, "site", "assets", "data", "ar-data.js")
+    s = open(ap, encoding="utf-8").read()
+    ids = re.findall(r"^\s+id: '([a-z][a-z0-9_-]*)',", s, re.M)
+    names = re.findall(r"^\s+name: '([^']+)',", s, re.M)
+    if not ids:
+        raise SystemExit("ar-data.js 未解析到任何场景 id（生成器不能对着空清单出码）")
+    out = []
+    for i, sid in enumerate(ids):
+        # scenes 之前还有 meta.name / route.title 等 name 字段，故用「同场景块内」的启发式：
+        # id 出现位置之后的第一个 name 就是该场景名。
+        pos = s.find("id: '" + sid + "'")
+        m = re.search(r"^\s+name: '([^']+)',", s[pos:], re.M)
+        out.append((sid, m.group(1) if m else sid))
+    return out
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -59,7 +80,7 @@ def main():
 
     # 场景直连二维码：现场展签/文创上贴「直接开演第 N 段」，省一次点击，减少中途退出
     scene_variants = []
-    for sid, label in (("craft", "造像"), ("red", "红色地标"), ("phoenix", "凤凰图腾")):
+    for sid, label in scene_list():
         p = os.path.join(BASE, "qr", "qr-ar-%s.png" % sid)
         target = url.rstrip("/") + "/#ar=" + sid
         make(target, p, box=12)
@@ -71,7 +92,7 @@ def main():
     # 元数据落盘，供站点/文档引用
     meta = {"url": url, "generated": targets[0][0],
             "variants": [os.path.relpath(t[0], BASE) for t in targets] + ["qr/qr-poster.png"] + scene_variants,
-            "sceneDeepLinks": {sid: url.rstrip("/") + "/#ar=" + sid for sid in ("craft", "red", "phoenix")}}
+            "sceneDeepLinks": {sid: url.rstrip("/") + "/#ar=" + sid for sid, _ in scene_list()}}
     with open(os.path.join(BASE, "qr", "meta.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
     print("URL:", url)
