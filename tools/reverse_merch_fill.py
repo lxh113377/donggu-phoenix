@@ -1,45 +1,49 @@
 # -*- coding: utf-8 -*-
-'''反向验证 merch_image_fill_test（修正版）。
+"""反向验证 merch_image_fill_test（dominant 版）。
 
-## 上一次的错误
-破坏点在「旧的」.merch-item.is-feature .merch-shot img 规则块（文件中部），
-但文件**末尾的修复块**优先级更高（同特异性、后写者胜），把破坏覆盖了。
-→ 不是缓存问题，是选错了破坏位置。
+## 破坏点必须打在「最终生效」的规则上（轮48 教训）
+文件末尾 MERCH-FEATURE-FIX 里有 .merch-item.is-feature .merch-shot img{...}，
+它覆盖了中部旧规则。破坏要打在最后这一块。
 
-## 正确做法
-破坏**最后一块**（末尾 MERCH-FEATURE-FIX 里那条）。
-'''
-import hashlib, subprocess, sys
+## 新判据自带 cacheBust
+measure() 里注入带时间戳的 <link>，绕开 HTTP/SW 缓存，
+所以撤销 CSS 后能读到真实变化（轮48 曾因缓存误判）。
+"""
+import hashlib
+import subprocess
+import sys
 
 WD = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
 CSS = WD + r'\site\assets\css\main.css'
 
-def sha(): return hashlib.sha256(open(CSS,'rb').read()).hexdigest()
+
+def sha():
+    return hashlib.sha256(open(CSS, 'rb').read()).hexdigest()
+
 
 orig = open(CSS, encoding='utf-8', newline='').read()
 b0 = sha()
 
-# 定位最后一个 .merch-item.is-feature .merch-shot img{ 块
 marker = '.merch-item.is-feature .merch-shot img{'
 idx = orig.rfind(marker)
-print('最后一块位置:', idx)
 
 try:
     if idx < 0:
-        print('未找到')
+        print('未找到末块，判据可能已改名')
     else:
         j = orig.find('}', idx)
-        broken = orig[:j] + '  max-height:150px;max-width:76%;\n' + orig[j:]
-        assert broken != orig, '替换未产生变化'
+        # 把末块内容替换成旧的 150px 约束（合法 CSS，但禁用放大）
+        broken = orig[:idx] + marker + '\n  width:auto;height:auto;max-width:76%;max-height:150px;\n' + orig[j:]
+        assert broken != orig
         open(CSS, 'w', encoding='utf-8', newline='').write(broken)
-        print('已破坏最后一块（图片高度压回 150px）')
+        print('已把末块压回 max-height:150px')
         r = subprocess.run([sys.executable, 'tools/merch_image_fill_test.py'], cwd=WD,
-                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=200)
         out = (r.stdout or '') + (r.stderr or '')
         print('退出码:', r.returncode)
         for l in out.splitlines():
-            if 'RESULT' in l or '填充率' in l or l.strip().startswith('- '):
-                print('  ', l.strip()[:90])
+            if 'dominant' in l or 'RESULT' in l or l.strip().startswith('- '):
+                print('  ', l.strip()[:95])
 finally:
     open(CSS, 'w', encoding='utf-8', newline='').write(orig)
     print()

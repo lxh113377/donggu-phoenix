@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
-"""tools/merch_image_fill_test.py —— 文创卡片图片填充率（需浏览器）。
+"""tools/merch_image_fill_test.py —— 文创卡片图片占比（双视口 + dominant 指标）。
 
-## 为什么需要它
-文创区是「产品感」的承担者。图片在卡片里占比过小，
-视觉上会读成「一块空白里放了个小图标」，产品就失去了存在感。
+## 为什么改判据（轮50）
+旧版用「图片面积 / 卡片面积」固定阈值 25%%，只在桌面测。
+实测移动端 390×844 下 feature 卡该值只有 24%%——因为移动端卡片本身更矮，
+百分比随视口漂移，固定阈值会在移动端误判。
 
-## 轮48 发现的缺陷
-主推卡片 541×846，图片却只有 214×246 —— **填充率 11.5%**。
-根因是两层高度限制叠加：
-  · .merch-item.is-feature .merch-shot{height:clamp(320px,34vw,420px)} 锁死 420px
-  · .merch-shot img{max-height:150px} 是给普通卡片（196px 容器）设的，
-    is-feature 大容器没有覆盖它 → 图片被压到 150px 上限
-修复后：容器 420→623px，图片 214×246→391×450，填充率 11.5%→38.5%。
+## 新指标：dominant（视口无关、图片比例无关）
+dominant = max(图片宽/容器内框宽, 图片高/容器内框高)
+contain-fit 的图片必有一边贴到容器内框 -> 健康值 ~0.88（88%% 上限）。
+若被「不该适用的额外约束」压小（如轮48 的 max-height:150 bug），
+则连限制边都贴不满 -> dominant 明显 < 0.8。
 
-## 判据
-· 主推卡片图片填充率 >= 25%（低于此产品细节看不清）
-· 任何卡片填充率不得 < 5%（否则等于没图）
-· 图片不得溢出卡片边界
+书签(细长 235×620)：高度贴满 -> dominant ~0.88，不误伤（旧面积指标会误报 6%%）。
+feature 修复前：宽高都被 150px 压 -> dominant << 0.8，判红。
+
+## 双视口
+桌面 1440×900 + 移动 390×844 各测一遍，两视口都要 dominant >= 0.8。
 """
 import json
 import os
@@ -27,26 +27,30 @@ import time
 PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-PROBE = '''(function(){
-  var grid = document.getElementById('merch-grid') || document.querySelector('.merch-grid');
-  if (!grid) return JSON.stringify({missing: 1});
+PROBE = """(function(){
+  var grid = document.querySelector('.merch-grid');
+  if (!grid) return JSON.stringify({missing:1});
   var cards = [].slice.call(grid.children);
-  if (!cards.length) return JSON.stringify({empty: 1});
   var out = cards.map(function(c){
-    var r = c.getBoundingClientRect();
     var img = c.querySelector('img');
-    var ir = img ? img.getBoundingClientRect() : null;
-    return {
-      feat: c.classList.contains('is-feature'),
-      cardW: Math.round(r.width), cardH: Math.round(r.height),
-      imgW: ir ? Math.round(ir.width) : 0,
-      imgH: ir ? Math.round(ir.height) : 0,
-      fill: (ir && r.width * r.height > 0) ? +(ir.width * ir.height / (r.width * r.height) * 100).toFixed(1) : null,
-      overflow: ir ? (ir.bottom > r.bottom + 2 || ir.top < r.top - 2 || ir.right > r.right + 2) : false
-    };
-  });
-  return JSON.stringify({total: out.length, cards: out});
-})()'''
+    var shot = c.querySelector('.merch-shot');
+    if (!img || !shot || !img.naturalWidth) return null;
+    var cs = getComputedStyle(shot);
+    var padL = parseFloat(cs.paddingLeft)||0, padR = parseFloat(cs.paddingRight)||0;
+    var padT = parseFloat(cs.paddingTop)||0, padB = parseFloat(cs.paddingBottom)||0;
+    var sr = shot.getBoundingClientRect();
+    var innerW = sr.width - padL - padR, innerH = sr.height - padT - padB;
+    var ir = img.getBoundingClientRect();
+    var fillW = innerW>0? ir.width/innerW : 0;
+    var fillH = innerH>0? ir.height/innerH : 0;
+    var dom = +Math.max(fillW,fillH).toFixed(2);
+    return {feat:c.classList.contains('is-feature'), dominant:dom,
+            overflow: (ir.bottom > sr.bottom+2 || ir.top < sr.top-2 || ir.right > sr.right+2 || ir.left < sr.left-2)};
+  }).filter(function(x){return x;});
+  return JSON.stringify({iw:innerWidth, cards:out});
+})()"""
+
+DOM_THRESHOLD = 0.80
 
 
 def ps(cmd, timeout=90):
@@ -58,8 +62,33 @@ def ps(cmd, timeout=90):
         return 'TIMEOUT'
 
 
+def measure(vw, vh, probe_rel):
+    ps('agent-browser set viewport %d %d' % (vw, vh))
+    time.sleep(0.6)
+    ps('agent-browser open "http://127.0.0.1:8791/?mf=%d"' % int(time.time() * 1000))
+    ps('agent-browser wait --load networkidle')
+    time.sleep(2.0)
+    # cacheBust：注入带时间戳的 CSS，绕开 HTTP/SW 缓存
+    bust = ("(function(){var l=document.createElement('link');"
+            "l.rel='stylesheet';l.href='/assets/css/main.css?cb='+Date.now();"
+            "document.head.appendChild(l);return 1})()")
+    ps('agent-browser eval "%s"' % bust)
+    time.sleep(1.2)
+    ps("agent-browser eval \"document.getElementById('merch').scrollIntoView();1\"")
+    time.sleep(1.4)
+    out = ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "%s")' % probe_rel)
+    for line in reversed(out.splitlines()):
+        line = line.strip()
+        if line.startswith('"') and line.endswith('"'):
+            try:
+                return json.loads(json.loads(line))
+            except Exception:
+                continue
+    return None
+
+
 def main():
-    tmp = os.path.join(BASE, '_qa', '_merchfill.js')
+    tmp = os.path.join(BASE, '_qa', '_merchdom.js')
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     open(tmp, 'w', encoding='utf-8').write(PROBE)
 
@@ -70,65 +99,41 @@ def main():
         ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "_qa/clear_sw.js")')
         time.sleep(1.0)
 
-    ps('agent-browser set viewport 1440 900')
-    time.sleep(0.4)
-    # cacheBust：不仅清 SW，还要绕开 HTTP 缓存（max-age=600）
-    ps('agent-browser open "http://127.0.0.1:8791/?mf=%d"' % int(time.time() * 1000))
-    # 强制重新拉 CSS（加时间戳，绕开 HTTP 缓存）
-    ps('agent-browser eval "(function(){var l=document.createElement(\'link\');l.rel=\'stylesheet\';l.href=\'/assets/css/main.css?cb=\'+Date.now();document.head.appendChild(l);return 1})()"')
-    time.sleep(1.2)
-    ps('agent-browser wait --load networkidle')
-    time.sleep(2.0)
-    ps('agent-browser eval "document.getElementById(\'merch\').scrollIntoView();1"')
-    time.sleep(1.6)
-
-    out = ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "_qa/_merchfill.js")')
-    d = None
-    for line in reversed(out.splitlines()):
-        line = line.strip()
-        if line.startswith('"') and line.endswith('"'):
-            try:
-                d = json.loads(json.loads(line))
-                break
-            except Exception:
-                continue
-
-    if not d:
-        print('RESULT: SKIP  未取到数据（浏览器或探针异常）')
-        return 0
-    if d.get('missing') or d.get('empty'):
-        print('RESULT: SKIP  找不到文创网格或网格为空')
-        return 0
-
-    cards = d['cards']
     fails = []
-    feat = [c for c in cards if c['feat']]
-    if feat:
-        f = feat[0]
-        print('主推卡片 %dx%d，图片 %dx%d，填充率 %.1f%%' % (
-            f['cardW'], f['cardH'], f['imgW'], f['imgH'], f['fill'] or 0))
-        if f['fill'] is not None and f['fill'] < 25:
-            fails.append('主推卡片图片填充率仅 %.1f%%（应 >= 25%%）' % f['fill'])
-    else:
-        print('[WARN] 没有 is-feature 卡片')
+    any_data = False
+    for w, h, label in [(1440, 900, '桌面'), (390, 844, '移动')]:
+        d = measure(w, h, '_qa/_merchdom.js')
+        if not d or d.get('missing'):
+            print('[%s %dx%d] 无数据（跳过，不改判 PASS）' % (label, w, h))
+            continue
+        cards = d.get('cards') or []
+        if not cards:
+            print('[%s] 网格为空，跳过' % label)
+            continue
+        any_data = True
+        doms = [c['dominant'] for c in cards]
+        feat = [c for c in cards if c['feat']]
+        mn = min(doms)
+        feat_str = ('，feature %.2f' % feat[0]['dominant']) if feat else ''
+        print('[%s %dx%d] %d 张卡，dominant 最小 %.2f%s' % (label, w, h, len(cards), mn, feat_str))
+        if mn < DOM_THRESHOLD:
+            worst = [c for c in cards if c['dominant'] < DOM_THRESHOLD]
+            fails.append('%s %dx%d：%d 张卡 dominant < %.2f（图片被压小，最低 %.2f）' % (
+                label, w, h, len(worst), DOM_THRESHOLD, mn))
+        ovf = [c for c in cards if c['overflow']]
+        if ovf:
+            fails.append('%s %dx%d：%d 张卡图片溢出容器' % (label, w, h, len(ovf)))
 
-    low = [c for c in cards if c['fill'] is not None and c['fill'] < 5 and c['cardH'] > 100]
-    if low:
-        fails.append('%d 张卡片图片填充率 < 5%%（等于没图）' % len(low))
-
-    ovf = [c for c in cards if c['overflow']]
-    if ovf:
-        fails.append('%d 张卡片图片溢出边界' % len(ovf))
-
-    avg = sum((c['fill'] or 0) for c in cards) / len(cards)
-    print('%d 张卡片，平均填充率 %.1f%%，溢出 %d 张' % (len(cards), avg, len(ovf)))
     print()
+    if not any_data:
+        print('RESULT: SKIP  两视口均无数据')
+        return 0
     if fails:
         print('RESULT: FAIL')
         for f in fails:
             print('  -', f)
         return 1
-    print('RESULT: PASS  文创卡片图片占比正常（%d 张）' % len(cards))
+    print('RESULT: PASS  双视口文创图片占比正常（dominant >= %.2f）' % DOM_THRESHOLD)
     return 0
 
 
