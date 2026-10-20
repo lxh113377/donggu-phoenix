@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:39;
+  --build:40;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -909,6 +909,9 @@ section.foot{padding-top:var(--sec-y-loose)}
 .foot-copy p{margin:0 0 10px;color:var(--fg-dim);font-size:var(--fs-base);max-width:30em}
 .foot-copy .url{font-family:var(--font-latin);font-size:var(--fs-xs);letter-spacing:.04em;color:var(--she-gold);
   word-break:break-all}
+/* 访问计数（后端 /api/stats 聚合回填；无后端时整行隐藏） */
+.visit-stats{margin:6px 0 0;font-family:var(--font-latin);font-size:var(--fs-2xs);
+  letter-spacing:.08em;color:var(--fg-faint)}
 .foot-acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px;justify-content:inherit}
 .foot-meta{margin-top:var(--sp-5);padding-top:var(--sp-3);border-top:1px solid var(--line-soft);
   display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between;

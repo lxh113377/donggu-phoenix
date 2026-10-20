@@ -54,6 +54,7 @@ var PRECACHE = [
   'assets/js/ar.js',
   'assets/js/wood-demo.js',
   'assets/js/main.js',
+  'assets/js/analytics.js',
   'assets/img/phoenix-totem.svg',
   'assets/img/phoenix-mark.svg',
   'assets/img/phoenix-particle.svg',
@@ -105,6 +106,8 @@ self.addEventListener('fetch', function (event) {
   if (u.origin !== BASE.origin) { return; }
   // 绝不缓存 sw.js 自身，否则新版本永远拉不下来
   if (u.pathname === new URL('sw.js', BASE).pathname) { return; }
+  // API 路径（/api/track、/api/stats）一律直连，不进缓存：统计要的是新鲜值
+  if (u.pathname.indexOf('/api/') !== -1) { return; }
 
   var mode = req.mode;
   var dest = req.destination;

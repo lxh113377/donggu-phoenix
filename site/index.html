@@ -364,6 +364,8 @@
           <h2>扫它，凤凰就飞起来</h2>
           <p>用手机相机或微信扫一扫对准二维码，即可打开本页；在页首轻触图腾，看凤凰自圆心振翅。</p>
           <p class="url" id="site-url">…</p>
+          <!-- 访问计数：由后端 D1 聚合回填；无后端或断网时整行保持隐藏 -->
+          <p class="visit-stats" id="visit-stats" hidden></p>
           <div class="foot-acts">
             <a class="btn btn--primary" data-ar="craft" href="#ar-gallery">立即开演 · 三段 AR</a>
             <a class="btn btn--outline" href="#carve-sec">先看一木成像</a>
@@ -399,6 +401,7 @@
 <script src="assets/js/ar.js" defer></script>
 <script src="assets/js/wood-demo.js" defer></script>
 <script src="assets/js/main.js" defer></script>
+<script src="assets/js/analytics.js" defer></script>
 <script>
 /* 版本对账守卫（2026-10-20 轮5 新增）
  * 背景：站点注册了 Service Worker，静态资源走 cache-first。改版后老访客第一次进来时，
@@ -406,7 +409,7 @@
  * 比白屏更难看，而且看起来像「网站坏了」。VERSION bump 只能保证下次访问正常，
  * 救不了这一次。故用 CSS 里的 --build 与本文常量对账：不等则清缓存重载一次（有防循环闸）。 */
 (function () {
-  var BUILD = '39';
+  var BUILD = '40';
   var KEY = 'dg-build-fix';
   var got = '';
   try { got = (getComputedStyle(document.documentElement).getPropertyValue('--build') || '').trim(); } catch (e) {}

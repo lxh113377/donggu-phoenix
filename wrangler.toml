@@ -1,0 +1,12 @@
+name = "donggu-phoenix"
+compatibility_date = "2025-06-01"
+pages_build_output_dir = "site"
+
+# 访问统计后端（2026-10-20 新增）
+# 部署：npx wrangler pages deploy site --project-name=donggu-phoenix --commit-dirty=true
+# 迁移：npx wrangler d1 migrations apply donggu-analytics --remote
+# 本地：npx wrangler pages dev site（Functions 与 D1 本地模拟一并起在 8788）
+[[d1_databases]]
+binding = "DB"
+database_name = "donggu-analytics"
+database_id = "bf5b1d01-e011-4f2f-973d-97c129ba4f45"

@@ -2,8 +2,9 @@
 
 > 扫描二维码进入轻量化 AR 展陈馆：**一木成像**（一段樟木在同一条进度轴上被雕成神像：选木 → 定像 → 开坯 → 修光 → 彩绘贴金 → 开光，可拖动）、**红色地标历史场景复原**（1929 东固会师 / 1930 龙冈大捷 / 1931 白云山首战 / 1931 六渡坳）、**畲族凤凰图腾动态演绎**，另附畲族文化、田野人物与配套文创。
 
-**线上地址**：https://lxh113377.github.io/donggu-phoenix/
-**备用地址**：https://donggu-phoenix.pages.dev/
+**线上地址**：https://donggu-phoenix.pages.dev/（全球 CDN，后端同域）
+**备用地址**：https://lxh113377.github.io/donggu-phoenix/
+**访问统计**：Cloudflare Pages Functions + D1，匿名聚合（详见下方「访问统计与隐私」）
 **交付说明**：[`docs/交付说明.md`](docs/交付说明.md) ｜ **体验与 AR 方案**：[`docs/体验设计与AR方案.md`](docs/体验设计与AR方案.md) ｜ **AR 分镜**：[`docs/ar-storyboard.md`](docs/ar-storyboard.md)
 
 ---
@@ -42,7 +43,8 @@ python tools\make_ar_assets.py
 
 ## 技术
 
-- 纯静态：HTML + CSS + 原生 JS，零依赖、零构建
+- 前端：HTML + CSS + 原生 JS，零依赖、零构建；后端：Cloudflare Pages Functions + D1（SQLite）
+- 访问统计：`functions/api/` 下两个端点 —— `POST /api/track` 匿名写入、`GET /api/stats` 聚合读出；页脚实时显示「开馆至今 N 位访客 · M 次到访」
 - 凤凰动画：Canvas 2D 粒子系统（2600 粒子，桌面 200+ fps）
 - AR 展陈：三段共 152 秒，全部 Canvas 2D 实时绘制；零 3D 模型、零第三方库、零外部请求
 - 一木成像：造像轮廓由参数化剖面 `halfWidth(u, 进度)` 定义，开坯是沿像身推进的波前，木料与神像**同一条进度轴**；工序器具（斧 / 凿槌 / 毛笔 / 金箔镊）与年轮、木屑、背光全部代码绘制
@@ -50,6 +52,13 @@ python tools\make_ar_assets.py
 - 图腾：代码生成的原创矢量 SVG（`tools/make_totem.py`，右半定义 + 镜像）
 - 二维码：`qrcode` 生成 + OpenCV 回读自检
 - 部署：GitHub Actions → Pages；Cloudflare Pages 备用
+
+## 访问统计与隐私
+
+- **采集范围**：事件名（进页 / AR 场景 / 唤凤）、路径、随机访客号（`localStorage` 的 `dg-vid`，16 位随机十六进制，可随时清除）、语言、屏幕档；地理（国家 / 城市 / 时区）与 UA 由 Cloudflare 边缘按请求头记录。**不含**任何可输入内容、姓名、联系方式，无跨站跟踪、无 Cookie。
+- **部署面边界**：统计仅在 `*.pages.dev` 域名生效；GitHub Pages 备用端无 Functions，前端探测后整段休眠，一个请求都不发。
+- **接口边界**：`POST /api/track` 白名单字段 + 长度截断 + 同源校验 + 批量上限 20 条；任何异常都静默降级（`ok:false`），绝不影响访客浏览。
+- **数据查看**：`GET /api/stats` 返回累计 / 今日 / 近 14 天序列 / 场景热度 / 热门路径的匿名聚合；明细可经 `wrangler d1 execute donggu-analytics --remote --command "SELECT ..."` 查询。
 
 ## 降级链
 
