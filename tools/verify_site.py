@@ -470,6 +470,32 @@ if "scrollHeight > vh" not in main_js.replace(" ", "").replace("vh*1.4", "vh"):
         fails.append("进场动画兜底未判元素高度（无法识别超高块）")
 print("[%s] 进场动画：阈值可达 + 高块兜底（防整块空白）" % ('PASS' if not any('进场动画' in f for f in fails) else 'FAIL'))
 
+
+# 16) 行长（measure）：中文正文舒适区约 20-40 字/行。
+#     本轮实测：.ar-note p 曾 77 字/行、.carve-note 98.5 字/行 —— 视线回扫成本高、易串行。
+#     静态判据：这几个长文本块必须有 max-width，且单位必须是 em（中文 1 字≈1em）。
+#     一手坑：用 ch 会砍半（ch 按 "0" 宽算，中文 1 字≈2ch），实测把 77 字/行 砍到 18.9 字/行。
+measure_checks = ['.ar-note p{', '.foot-copy p{']
+for sel in measure_checks:
+    j = css_txt.find(sel)
+    if j < 0:
+        fails.append("行长判据：找不到规则 " + sel)
+        continue
+    rule = css_txt[j: css_txt.find('}', j)]
+    if 'max-width' not in rule:
+        fails.append("行长：%s 缺少 max-width（长行难读）" % sel.rstrip('{'))
+bad_ch = re.findall(r"max-width:\s*\d+(?:\.\d+)?ch", css_txt)
+if bad_ch:
+    fails.append("行长：使用 ch 单位 %s（中文下会把行宽砍半，应用 em）" % ", ".join(bad_ch[:3]))
+print("[%s] 行长约束：长文本块有 max-width 且未误用 ch" % ('PASS' if not any('行长' in f for f in fails) else 'FAIL'))
+
+# 17) 装饰元素语义：肉眼可见但非内容的元素（水印/纹样字）必须显式标 data-decorative，
+#     否则对比度审计会把它当正文判（本轮：240px 水印「畲」对比度 1.04:1 被判不达标）。
+n_deco = len(re.findall(r'data-decorative=', html))
+if 'hero-word' in html and 'data-decorative' not in html:
+    fails.append("装饰水印缺少 data-decorative 语义（会被对比度判据误判为正文）")
+print("[%s] 装饰元素语义：%d 处已标注 data-decorative" % ('PASS' if not any('装饰水印' in f for f in fails) else 'FAIL', n_deco))
+
 # 14) 文创实物图：12 件必须件件有图（此前 6 件只有占位图腾也能过闸）
 merch_pairs = re.findall("id: '([a-z-]+)',\\s*image: '([^']+)'", culture_js)
 if len(merch_pairs) < 12:

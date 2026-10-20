@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:6;
+  --build:7;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -327,7 +327,11 @@ a.btn-ask{margin-left:12px}
 .hero-word{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   font-family:var(--font-display);font-size:min(30vw,15rem);line-height:1;
-  color:rgba(212,162,76,.04);user-select:none;
+  /* 装饰水印：按「肉眼可见的装饰」定位，不是正文。
+     对比度从 .04（约 1.04:1，几乎看不见）提到 .085（约 1.6:1）——
+     水印要能被感知到「这里有个字」，但必须远低于正文以免抢视线。
+     机器判据：data-decorative 元素不进 AA 对比度清单（见 verify_site.py 第 16 条）。 */
+  color:rgba(212,162,76,.085);user-select:none;
 }
 
 .scroll-hint{
@@ -512,7 +516,9 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .carve-lineage{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0;padding:0}
 .carve-lineage span{font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.14em;color:var(--she-gold);
   border:1px solid var(--line-soft);border-radius:var(--radius-pill);padding:6px 13px;background:rgba(212,162,76,.06)}
-.carve-note{margin:18px 0 0;font-family:var(--font-sans);font-size:var(--fs-2xs);line-height:1.9;color:var(--fg-faint)}
+/* 11px 小字注释：原 98.5 字/行，视线回扫成本过高；小字允许比正文长，但给 52ch 上限。 */
+.carve-note{margin:18px 0 0;font-family:var(--font-sans);font-size:var(--fs-2xs);line-height:1.9;
+  color:var(--fg-faint);max-width:46em}
 
 /* ---------- ⑩ AR 展陈馆 ---------- */
 .ar-sec{padding-top:calc(var(--sp-6) + 30px)}
@@ -553,9 +559,11 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .ar-card .go::after{content:"→";font-family:var(--font-sans)}
 
 .ar-note{border-top:1px solid var(--line-soft);padding-top:var(--sp-3)}
-.ar-note p{margin:0 0 8px;font-size:var(--fs-base);color:var(--fg-dim);line-height:2}
+/* 行长：中文舒适区约 20-40 字/行；此处原为 77 字/行，读起来会串行。
+   用 ch 作单位（相对当前字号），换字号时限制自动跟随。 */
+.ar-note p{margin:0 0 10px;font-size:var(--fs-base);color:var(--fg-dim);line-height:2;max-width:32em}
 .ar-note b{color:var(--she-gold);font-weight:400}
-.ar-note .ar-stats{font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.1em;color:var(--fg-faint)}
+.ar-note .ar-stats{font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.1em;color:var(--fg-faint);max-width:52em}
 
 /* ---------- 全屏播放层 ---------- */
 .ar{position:fixed;inset:0;z-index:90;display:none;overflow:hidden;background:#08070A}
@@ -834,7 +842,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .qr-box img{width:100%;height:auto;border-radius:4px}
 .foot-copy h2{margin:0 0 16px;font-family:var(--font-display);font-weight:400;
   font-size:clamp(1.5rem,3.4vw,2.5rem);letter-spacing:.12em;text-wrap:balance}
-.foot-copy p{margin:0 0 10px;color:var(--fg-dim);font-size:var(--fs-base)}
+.foot-copy p{margin:0 0 10px;color:var(--fg-dim);font-size:var(--fs-base);max-width:30em}
 .foot-copy .url{font-family:var(--font-latin);font-size:var(--fs-xs);letter-spacing:.04em;color:var(--she-gold);
   word-break:break-all}
 .foot-acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px;justify-content:inherit}

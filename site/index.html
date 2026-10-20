@@ -118,7 +118,7 @@
       <div class="hero-visual" aria-hidden="true">
         <span class="hero-ring"></span>
         <span class="hero-ring b"></span>
-        <span class="hero-word">畲</span>
+        <span class="hero-word" data-decorative="watermark">畲</span>
       </div>
     </div>
     <div class="scroll-hint" aria-hidden="true">SCROLL</div>
@@ -383,7 +383,7 @@
  * 比白屏更难看，而且看起来像「网站坏了」。VERSION bump 只能保证下次访问正常，
  * 救不了这一次。故用 CSS 里的 --build 与本文常量对账：不等则清缓存重载一次（有防循环闸）。 */
 (function () {
-  var BUILD = '6';
+  var BUILD = '7';
   var KEY = 'dg-build-fix';
   var got = '';
   try { got = (getComputedStyle(document.documentElement).getPropertyValue('--build') || '').trim(); } catch (e) {}
