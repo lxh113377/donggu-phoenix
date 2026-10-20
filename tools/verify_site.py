@@ -742,10 +742,12 @@ if not os.path.exists(PIXEL_TOOL):
     fails.append("像素级复刻数值判据：缺少 tools/verify_pixel_exact.py")
 else:
     pixel_out, pixel_rc = "", None
+    pixel_err = ""
     try:
         pr = subprocess.run([sys.executable, PIXEL_TOOL], capture_output=True, text=True,
                             cwd=BASE, timeout=300)
         pixel_out, pixel_rc = (pr.stdout or ""), pr.returncode
+        pixel_err = (pr.stderr or "")
     except Exception as e:
         pixel_out = "子进程调用失败：%s" % e
     lines = [ln for ln in pixel_out.splitlines() if ln.startswith("[PASS]") or ln.startswith("[SKIP]")]
@@ -763,6 +765,12 @@ else:
                   "L2 无损编码 / L3 剖面绑定 / L4 1:1 渲染 / L4' 引擎通路）" % n_pass)
     else:
         hard = [ln for ln in pixel_out.splitlines() if ln.startswith("[FAIL]")]
+        # 一手教训（轮51）：判据只读 stdout，缺依赖时报错走 stderr（纯文本 Traceback），
+        # 于是父门禁只能写「未知原因」——把一个可归因的环境问题伪装成谜团。
+        # 缺库与判据不通过是两件事，但都必须说清是哪一件。
+        if not hard and pixel_rc == 2 and pixel_err:
+            hint = [ln for ln in pixel_err.splitlines() if "Error" in ln or "请先运行" in ln]
+            hard.append("子进程 rc=2（依赖/环境）: " + (" | ".join(hint[:2]) or pixel_err.strip()[:120]))
         fails.append("像素级数值判据未通过：" + ("; ".join(x.strip() for x in hard[:3]) or "未知原因"))
         print("[FAIL] 像素级数值判据：%s" % ("; ".join(x.strip() for x in hard[:3]) or "未知原因"))
 

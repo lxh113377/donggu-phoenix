@@ -117,3 +117,60 @@ IntersectionObserver 用 `threshold:0.12` ⇒ 交叉比最高只有 0.17，用�
 - `6fd751c` fix(reveal)：超高块进场阈值不可达
 - 线上 12/12 图 200（合计 230KB），0 占位，build=6
 - CI run `39349470978` success
+
+
+## 轮51 · 对标改进 I-5/I-6/I-7/I-8 落实（2026-10-20 20:00–21:00）
+
+**性质**：按 docs/对标分析报告.md §4 的优先级，继续落实 I-1..I-4（轮5 已完成）之后的四项。
+
+### I-5 旁白音道（报告缺口 1：speechSynthesis=0 / <track>=0 / 音视频字幕 0）
+- ar.js 新增 narr 模块：浏览器内置 speechSynthesis，零音频文件、零外部请求；
+  切章即念「章名：正文」，切场景/暂停/关闭一律 cancel；不支持则按钮 disabled +「旁白 不可用」。
+- 播放层新增 #ar-narrate 开关（aria-pressed 随状态同步 + .on 实心金底 + 念读脉动点）。
+- 实测：narrate(true) → speechSynthesis.speaking=true、utterLen=53、
+  voice=Microsoft Huihui - Chinese (Simplified, PRC)；暂停后 speaking=false。
+
+### I-6 响应式图片（报告缺口 4：srcset=0、lazy 仅 1 处）
+- tools/make_srcset.py 生成 12 件文创 -340 小档；main.js 写 srcset + sizes + decoding=async；
+  匠人头像与页尾二维码补 loading=lazy。
+- **清退 322KB 部署面零引用的孤儿位图**（merch-sketch / scene-interview-1/2 / merch-badge / icon-180），
+  归档 _dev/orphan-rasters-2026-10-20；素材原件仍在 素材/ 且 optimize_assets.py 已停出。
+- 新判据 tools/orphan_asset_test.py（零孤儿 / srcset 候选档存在且入版本控制 / 响应式基线成规模），50 项 PASS。
+- 整站 1524KB → 1323KB。
+
+### I-7 引擎打磨
+- 粒子密度按面积自适应。**标定方法**：两点式线性拟合，锚在两个已验证的历史档位上
+  （手机 390x844 实测 anchor 53,100px² → 旧档 1500；桌面 1440x900 实测 288,829px² → 旧档 2600），
+  得 粒子数 = 1252.2 + 0.004666 × 面积。第一版用 CSS 推导面积，被浏览器实测推翻两条假设（U-124）。
+- 实测 7 视口：320/360→1451、390→1500、1024x768→2256、768x1024/1440/1920→2600；
+  **两锚点逐字复现且无一处比旧口径更密**（只省不涨）。
+- HUD 借 aframe throttleLeadingAndTrailing 语义：leading 立写 + trailing 补写 + hud.force 旁路。
+  实测调用 193.7 次/秒 → 写入 9.9 次/秒（判据 ≤10），fps 223 不退化；进度条平滑靠既有 CSS transition。
+
+### I-8 场景注册表
+- SCENE_REGISTRY + register()/create() 查表；重复注册与未知 id 抛「往哪查」的错误（学 registerSystem）。
+- verify_site 第 9 项改**数据驱动**：ar-data.js 的 id ⇄ register() 的 id 双向对账（缺/多都判红），
+  场景直连码与 qr/meta.json 深链同样由数据层派生；make_qr.py 新增 scene_list() 从 ar-data 取。
+- 实测 __ar.registered = [craft, red, phoenix] 与数据层一致；create(未知) 抛错含已注册清单。
+
+### 本轮实测发现并修掉的真缺陷
+| # | 缺陷 | 证据 | 修法 |
+|---|---|---|---|
+| 1 | 旁白 aria-pressed 只在 paintHud 内同步，而 paintHud 开头 if(!state.scene) return | 点击后 narr.on=true 但 pressed 仍 "false"、.on 未加 | 抽 syncNarrBtn()，点击/API/paintHud 三处调用 |
+| 2 | create() 抛错后播放层停在「已打开但无场景」的空舞台（白屏） | 代码走查 + 场景不存在路径 | 回落其他已注册场景，全不可用则 close() |
+| 3 | reduced_motion_test.blocks() 死循环：CSS **注释**里出现 prefers-reduced-motion 时 idx 倒退 | CI job 静默挂死 15 分钟被取消；本机 20 个 python 进程各烧 900+ 秒 CPU | 只匹配真 @media 块 + 先剥注释；同类倒退全仓扫描 0 命中 |
+| 4 | 新判据未剥注释，把 phoenix.js 注释里的「旧口径 isMobile ? 1500 : 2600」当代码 → 误报 | 逐行定位命中文本在 /* */ 内 | strip_comments 定为判据标配（engine/narration 均过） |
+| 5 | build_fonts.py 把注释字符收进子集 → 写一段中文注释就让线上 woff2 +117KB | 289KB（超 260KB 险线） vs 剥注释后 193KB | 子集只收非注释字符，与 verify 第 20 项口径统一 |
+| 6 | verify_site 字体版本控制检查缺「无 git 环境」守卫（在册待办） | 无 .git 副本判红「字体未入版本控制」 | tracked is None → SKIP + WARNING（实测转 SKIP） |
+
+### 验证与提交
+- 门禁链 20 项：19 PASS + 1 本地噪声（并行端一次性脚本 _qa/apply_review3.py，不在 git 跟踪面、CI 不受影响，U-131 待其自处理）。
+- 反向验证 9/9 全部判红（含补的第 9 例：旁白态不即时同步 —— 抓出后新增 3 项判据，narration 17→20 项）。
+- CI：`39426314924` **success（2m51s）**；死循环修复前同一 job 是 15m21s 被取消。
+- 提交：24e83f2（gate 死循环）/ 134a5bb（I-7+I-8）/ efcfab0 + ab95048（判据加固）；04128a8（I-5+I-6）。
+- verify_site：PASS，整站 1323KB/1600KB，首屏关键路径 296KB/400KB。
+
+### 尚未做（诚实口径）
+- 真机 iPhone Safari / 微信内置的旁白发声与朗读质量（U-01 待排期；本机 Edge 已证 speaking=true）。
+- I-9 测试基线 / I-10 package.json+lint（报告列低优先级 P3，未动）。
+- 社区协作：本轮未向外部仓提 issue/PR；PR #1898 仍待维护者反馈。

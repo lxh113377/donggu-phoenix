@@ -20,10 +20,10 @@
 - [ ] **字体方案收口**（阻塞门禁）：并发字体子集化使站点 846KB→1,448KB→1,122KB，
       已触发「体积超预算 1200KB」判红。**正解是定字体方案，不是调高阈值**
       （调阈值＝报告 §3.3 批评的"改判据迁就实现"）
-- [ ] I-5 旁白音道：浏览器内置 speechSynthesis（零外部请求），补 152s 叙事的无声通道
-- [ ] I-6 图片 srcset + 全量 lazy + 脚本 defer（实测 srcset=0、lazy 仅 1 处）
-- [ ] I-7 粒子密度按面积自适应 + HUD 写入 leading/trailing 节流（现每帧无条件写 DOM）
-- [ ] I-8 场景注册表：消除「加一场景要改 3 处 + verify 白名单」的隐式耦合
+- [x] I-5 旁白音道（轮51）：内置 speechSynthesis + #ar-narrate 开关；实测 speaking=true、voice=Huihui、暂停即停声；判据 tools/narration_gate_test.py 20 项 + 反向验证抓红
+- [x] I-6（轮51）：12 件文创 -340 小档 + srcset/sizes；头像与二维码补 lazy；defer 轮11 已做。顺带清退 322KB 零引用孤儿位图，整站 1524→1323KB；判据 tools/orphan_asset_test.py 50 项
+- [x] I-7（轮51）：两点式拟合面积密度（1252.2 + 0.004666×面积），7 视口实测两锚点复现且无一处更密；HUD leading+trailing+force，实测 193.7 调用/秒 → 9.9 写入/秒，fps 223 不退化；判据 tools/engine_polish_test.py 23 项
+- [x] I-8（轮51）：SCENE_REGISTRY + register/create 查表，重复注册与未知 id 抛排查型错误；verify 第 9 项与 make_qr 直连码改数据驱动对账
 - [ ] I-9 测试基线：verify_site.py 拆可单测函数 + 浏览器端冒烟（复用 __ar.stats()/__site）
 - [ ] I-10 package.json + eslint/stylelint（只加 lint，不引构建）
 - [ ] 社区协作：本轮**未**向外部仓提 issue/PR。已验证一个候选不成立 ——
@@ -31,7 +31,7 @@
       AR-js-org/AR.js 中**不存在**（three/build 目录已重构为 404，aframe/build 无 lean 档），
       拿旧仓缺陷给新仓提单是错的。提单前必须在**现役仓**复现。
 
-- [ ] **并发进程新增的字体版本控制检查缺「无 git 环境」守卫**：git archive 场景（无 .git）
+- [x] （轮51 已修）并发进程新增的字体版本控制检查缺「无 git 环境」守卫：git archive 场景（无 .git）
       会直接判红「字体未入版本控制」，而本仓 verify 其余项一律走 SKIP + WARNING
       （「未取证不等于通过」）。CI 用 actions/checkout 带 .git 故不受影响，
       但本地/离线校验会误红。请补 `if tracked is not None` 条件。
@@ -58,3 +58,19 @@
 - [x] **要求 6 终签：≥30% 达标**——双臂 file:// 夹具公平形态，主口径 +330.8%（Q 0.4308/0.1000）/ 保守口径 +75.0%（完成率 8/9 vs 3/9）；公平性独立反证（旧臂真挂死非判据偏置）；兼容护栏 verify_site 全绿维持
 - [x] 七项要求交付核验全过（`_skill_audit/q_gate_final.json` + 四文档 + 扫描器 + 2027Q1 排程在列）
 - [ ] 遗留为计划内后续（非目标缺口）：Phase 2 拆卷 41 件 / mirror -Fix 待脏窗 / qmd 路由灰度 / ppt-master v6.7.2 专窗 / T03 索引位噪声下季带验
+
+## 轮51 新增待办（2026-10-20，源 docs/对标分析报告.md §4 剩余项 + 本轮实测发现）
+
+- [ ] **真机旁白发声复验**（U-01 同族扩展）：本机 Edge 已证 speechSynthesis.speaking=true 且挑到
+      Microsoft Huihui 中文语音，但 iPhone Safari / 微信内置浏览器是否给出中文语音、
+      是否受自动播放策略二次限制，均未实测。现场嘈杂时旁白是有用通道，必须真机验一次。
+- [ ] **并行端遗留脚本 _qa/apply_review3.py 原地写真实文件**（U-131）：
+      safe_script_test 本地判红。该脚本的改动**已生效**（index.html 现值即其目标值），
+      属一次性执行残留；未跟踪、不入 CI。按 U-17「不确定语义不代删」留给并行端自处理。
+- [ ] I-9 测试基线（报告低优先级 P3）：verify_site.py 拆可单测函数 + 浏览器端冒烟。
+      本轮已顺带把三道新判据做成可单测的纯静态脚本，边际收益递减，暂排后。
+- [ ] I-10 package.json + eslint/stylelint（P3）：与「零构建、评委直读源码」决策冲突，未动。
+- [ ] 打 git tag（报告 §4 唯一仍未闭合的高优项）：tag=0，对外无可核验发布面。
+      版本号口径已在 CHANGELOG 写明「与 memory/03-status.md 阶段一致」，
+      轮51 完成 I-5..I-8 后应发 1.2.0（新增旁白音道 + 响应式图片 + 引擎打磨 + 场景注册表）。
+- [ ] 社区协作：本轮仍未向外部仓提 issue/PR；跟踪 **PR #1898** 维护者反馈。
