@@ -138,3 +138,38 @@ python tools\make_ar_assets.py  # AR 分镜脚本重生成
 ### 门禁新增（均做反向验证）
 - 进场动画：threshold ≤0.02 + `revealTall()` 必须被调用 → 改回 0.12 / 删调用 → 均判红
 - 文创实物图：12 件必须件件有 image 且文件存在、≤120KB → 抽掉一件 → 判红
+
+## 轮7 结果（2026-10-20 · 八维系统复检 + 三处真缺陷）
+
+### 本轮做法
+不再靠肉眼猜，而是把八维自检**机器化**：新建 `tools/design_audit.py` 一键跑，
+读数可复核（对比度 / 行长 / 字阶 / 层级 / 动效 / 微交互 / 响应式 / 原创性）。
+
+### 机读抓出的三处真缺陷（都已修）
+| # | 缺陷 | 读数 | 修法 |
+|---|---|---|---|
+| 1 | **中文行长失控** | `.carve-note` 98.5 字/行、`.ar-stats` 98.5、`.ar-note p` 77.4、`.foot-copy p` 55.7（中文舒适区 20-40 字/行） | 全部加 `max-width` → 32 / 52 / 46 / 30 字/行 |
+| 2 | **无 `:active` 按下态** | 8 个主要可交互元素 0 条 `:active` 规则；触屏无 hover ⇒ 按下去零反馈 | 补 40 条 `:active`（scale .975 + 阴影收窄 + 120ms） |
+| 3 | **关键图无降级** | 17 张图里 14 张有 onerror，缺的正是 logo / **图腾主图** / **二维码** | 二维码失败→收起卡纸+给出可手输地址；图腾→回落 mark；logo→隐藏 |
+
+### 一手踩坑
+**`ch` 单位在中文下会砍半**：行长第一版用 `max-width:34ch`，实测 `.ar-note p` 从 77 字/行
+掉到 **18.9 字/行**（ch 按 "0" 宽算，中文 1 字≈2ch）。改用 `em` 后回到 32 字/行。
+
+### 门禁新增 4 条（全部反向验证）
+- 行长必须有 max-width 且禁用 ch → 缺 max-width / 改成 ch 均判红
+- 装饰元素必须标 `data-decorative`（240px 水印「畲」原对比度 1.04:1 被当正文判）→ 去掉即判红
+- `:active` 规则数 ≥5 → 删光判红
+- 二维码/图腾必须有 onerror + qr-fallback 替代块 → 删 fallback 判红
+
+### 新增可复跑工具
+`tools/design_audit.py`（八维一键）、`tools/extreme_viewport.py`（320/430/768/1440/横屏）、
+`tools/zoom_test.py`（200% / 125% 缩放，WCAG 1.4.4）、`tools/originality_audit.py`（反模板扫描）。
+
+### 本轮读数
+- design_audit：对比度 **152 处检查 / 不达标 0**；h1 唯一、无跳级；:active 40 条；字阶 21 档
+- 极端视口：320/430/768/1440/844×390 横屏 —— realOverflow 全 false、clippedText 全 0
+- 200% 缩放等效视口 720×450：无溢出、无元素出屏
+- 原创性 8/8 通过（无 UI 框架 / 无外链字体 / 无 AI 标配紫 / 无 emoji 堆砌）
+- SEO/PWA：manifest 4 图标含 maskable、3 shortcuts；JSON-LD hasPart 3；og 1200×630；meta 无缺失
+- CI：`39352624330` success
