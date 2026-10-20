@@ -13,6 +13,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gate_guard import verdict, emit
+
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = os.path.join(BASE, 'site')
 
@@ -67,15 +70,10 @@ def main():
     print('检查 %d 个数据字段：%d 有消费者 / %d 预留 / %d 无消费者'
           % (checked, consumed, allowed, len(fails)))
     print()
-    if fails:
-        print('RESULT: FAIL')
-        for f in fails[:12]:
-            print('  -', f)
-        print()
-        print('处置：删除死字段，或加入 ALLOWLIST 并写明理由。')
-        return 1
-    print('RESULT: PASS  所有数据字段都有消费者或已登记为预留')
-    return 0
+    for f in fails[:12]:
+        print('  -', f)
+    code, msg = verdict(checked=checked, fails=fails, what='数据字段')
+    return emit(code, msg)
 
 
 if __name__ == '__main__':

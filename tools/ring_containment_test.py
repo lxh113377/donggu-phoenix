@@ -21,6 +21,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gate_guard import verdict, emit
+
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSS = os.path.join(BASE, 'site', 'assets', 'css', 'main.css')
 
@@ -37,12 +40,14 @@ def rule_of(css, sel):
 def main():
     css = open(CSS, encoding='utf-8').read()
     fails = []
+    checked = 0
 
     for sel in RING_SELECTORS:
         rule = rule_of(css, sel)
         if rule is None:
             fails.append('找不到装饰环规则 %s' % sel)
             continue
+        checked += 1
 
         # 1) 负 inset 会向外扩布局盒
         m = re.search(r'inset:\s*-', rule)
@@ -71,13 +76,10 @@ def main():
             fails.append('.hero-ring.b 的 scale(%s) 与 keyframes 里的值不一致' % v)
 
     # 汇总
-    if fails:
-        print('RESULT: FAIL')
-        for f in fails:
-            print('  -', f)
-        return 1
-    print('RESULT: PASS  装饰环天然不溢出（纯静态判据：无负 inset / 无超宽 width / keyframes 保留 scale）')
-    return 0
+    for f in fails:
+        print('  -', f)
+    code, msg = verdict(checked=checked, fails=fails, what='装饰环规则')
+    return emit(code, msg)
 
 
 if __name__ == '__main__':
