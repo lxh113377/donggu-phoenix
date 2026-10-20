@@ -176,6 +176,22 @@ def main():
     print('[%s] 商品图 grid 行高已锁 + max-height 非百分比' % (
         'PASS' if not GRID_PCT else 'FAIL'))
 
+    # 装饰性头像不得把标题文字塞进 alt（轮17）
+    # 一手缺陷：main.js 里 avatar 的 alt 取 p.name，紧跟的 h3 也是 p.name → 读屏念两遍。
+    AVATAR_ALT = []
+    _mj2 = os.path.join(SITE, 'assets', 'js', 'main.js')
+    if os.path.exists(_mj2):
+        _js2 = open(_mj2, encoding='utf-8').read()
+        if re.search(r'class="avatar"[^>]*alt="\'\s*\+\s*\(p\.name', _js2):
+            AVATAR_ALT.append('avatar alt 使用了 p.name（与 h3 重复）')
+        # 必须有 aria-hidden 或 alt="" 的明确装饰声明
+        _avatar = re.search(r'class="avatar"[^>]*', _js2)
+        if _avatar and 'aria-hidden' not in _avatar.group(0) and 'alt=""' not in _avatar.group(0):
+            AVATAR_ALT.append('avatar 未声明为装饰性（缺 alt="" / aria-hidden）')
+    if AVATAR_ALT:
+        fails.append('头像 alt 与标题重复：' + '; '.join(AVATAR_ALT))
+    print('[%s] 装饰性头像 alt 不与标题重复' % ('PASS' if not AVATAR_ALT else 'FAIL'))
+
     purple = [c for c in ('#667eea', '#764ba2', '#8b5cf6', '#a855f7') if c in css.lower()]
     if purple:
         fails.append('出现 AI 标配紫渐变：' + ', '.join(purple))

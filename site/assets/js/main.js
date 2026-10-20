@@ -67,7 +67,10 @@
     if (!box || !C.craftsmen || !C.craftsmen.length) { if (box) box.parentNode.removeChild(box); return; }
     box.innerHTML = C.craftsmen.map(function (p) {
       return '<article class="craft-card">' +
-        '<img class="avatar" src="' + (p.avatar || 'assets/img/phoenix-mark.svg') + '" alt="' + (p.name || '') + '"' +
+        /* 头像是装饰性小图：紧随其后的 h3 已给出人名，
+         * 若 alt 也写人名，读屏会连续念两遍（图像一次、标题一次）。
+         * WCAG H67：装饰性图片用 alt="" 明确声明跳过。 */
+        '<img class="avatar" src="' + (p.avatar || 'assets/img/phoenix-mark.svg') + '" alt="" aria-hidden="true"' +
         ' onerror="this.src=\'assets/img/phoenix-mark.svg\'" width="74" height="74">' +
         '<h3>' + (p.name || '') + '</h3>' +
         '<p class="role">' + (p.role || '') + '</p>' +
