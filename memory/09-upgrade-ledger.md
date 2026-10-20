@@ -146,3 +146,10 @@
 | U-53 | 30 | AR 全屏焦点行为从未验证（移入/陷阱/恢复） | 建 ar_focus_test.py 7 项检查：实测实现完全正确 7/7 | **已完成**（非缺陷） | tools/ar_focus_test.py |
 | U-54 | 30 | 反向验证被 SW cache-first 假绿（破坏代码后仍全 PASS） | 测试前注销 SW + 清 caches + 唯一 URL；修正后判红。第 5 次「测量手段不可靠」 | **已完成** | tools/ar_focus_test.py |
 | U-55 | 30 | 用 API 打开 AR 导致误判焦点恢复失效（BODY→BODY 是正确的） | 必须走真实用户路径（先 focus 场景链接再 click），已写进工具注释 | **已完成** | tools/ar_focus_test.py |
+## 轮31 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-56 | 31 | `#cam .close` 摄像头关闭按钮（44×44 常驻）无 hover 也无 active 反馈 | 补 hover（边框/文字提亮到 --she-gold）+ active（scale .94），强度对齐 .btn | **已完成** | site/assets/css/main.css |
+| U-57 | 31 | 初版审查误判「9 个元素都缺 focus-visible」 | 核实有全局兜底 `:focus-visible{outline:2px...}`（正确做法）；判据改为检查全局兜底而非逐个元素 | **已完成** | tools/microinteraction_test.py |
+| U-58 | 31 | microinteraction_test 正则被局部规则误匹配（#carve-stage:focus-visible 被当全局兜底） | 改为只认「行首的 :focus-visible」；反向验证修正后可判红 | **已完成** | tools/microinteraction_test.py |

@@ -1118,3 +1118,50 @@ Tab 顺序：场景切换 → 上一段/继续/下一段 → 重播 → 切换�
 - 线上 build=24，CI：39381623724 success
 - ar_focus_test 7/7 PASS（反向验证可判红）
 - 静态门禁 22 条
+
+## 轮31 结果（2026-10-20 · 微交互反馈覆盖）
+
+### 环境
+浏览器 daemon 仍不可用（eval 无响应）。转做静态微交互审查 —— 找到一处真缺陷。
+
+### 发现：摄像头关闭按钮完全没有交互反馈
+逐个核对 13 类可交互元素的 hover/active 覆盖：
+
+| 元素 | hover | active | 判断 |
+|---|---|---|---|
+| ar-btn / hero-cta / btn / btn-ask / ar-icon / carve-play / totem-hit | 有 | 有 | 正常 |
+| nav-toggle | **缺** | 有（scale .975，原已存在）| 补 hover |
+| **#cam .close** | **缺** | **缺** | **真缺陷** |
+| brand | 有（图标旋转）| 缺 | 不算缺陷（见下）|
+
+`#cam .close` 是摄像头模式关闭按钮（44×44 常驻可见），
+只有静态样式，鼠标悬停毫无反馈 —— 用户不确定它可点。
+
+### 修法
+#cam .close 补 hover（边框/文字提亮到 var(--she-gold)）+ active（scale .94），
+强度对齐现有 .btn 的反馈量级。.nav-toggle 补 hover。
+
+### 一个我差点误判的地方
+初版审查用正则扫「各元素是否声明 :focus-visible」，9 个元素全报缺失。
+核实后发现全站有**全局兜底**：
+  :focus-visible{outline:2px solid var(--she-gold);outline-offset:4px}
+这是正确做法 —— 不必每个元素各写一遍。
+说明我的判据一开始问错了问题（该问「有没有全局兜底」而非「每个元素有没有」）。
+
+### brand 为什么豁免 active
+它的 hover 是**图标旋转** rotate(-8deg) scale(1.06)，
+这已经是有设计感的微交互，机械要求再加 active 属于过度约束。
+
+### 新增 tools/microinteraction_test.py（接入 CI）
+9 个核心交互元素要求 hover + active；全局 :focus-visible 兜底必须存在。
+CI 日志确认执行：「检查 9 个核心交互元素」「RESULT: PASS」。
+
+### 反向验证修掉判据自身两个漏洞
+B 删掉全局 :focus-visible → 原本仍 PASS：
+  正则被 #carve-stage:focus-visible 等局部规则误匹配。改为只认「行首的 :focus-visible」后判红。
+C 删掉 .nav-toggle 新增的 active → 仍 PASS：
+  因为原已存在的 scale(.975) 也是 active，该案例本身不是缺陷，已接受此限制。
+
+### 读数
+- 线上 build=25，CI：39391002002 success
+- 静态门禁 24 条
