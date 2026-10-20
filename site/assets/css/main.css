@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:34;
+  --build:35;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -1172,4 +1172,15 @@ section.foot{padding-top:var(--sec-y-loose)}
 @media (max-width:900px) and (max-height:700px),
        (max-width:900px) and (max-width:380px){
   .hero{height:auto;min-height:100svh}
+}
+/* === MERCH-FEATURE-FIX（轮48） ===
+ * 主推卡片 541×846，图片却只有 214×246（填充率 11.5%%），视觉失衡。
+ * 根因：.merch-shot img{max-height:150px} 是给普通卡片（196px 容器）设的，
+ * is-feature 的大容器没有覆盖这条，图片被压到 150px 上限内。
+ * 修法：feature 的图片按容器比例放大，容器改为 aspect-ratio 与卡片协调。 */
+.merch-item.is-feature .merch-shot{
+  height:auto;flex:1 1 auto;aspect-ratio:4/3;min-height:300px;
+}
+.merch-item.is-feature .merch-shot img{
+  max-height:88%;max-width:88%;width:auto;height:auto;
 }
