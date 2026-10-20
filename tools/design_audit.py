@@ -90,8 +90,9 @@ PROBE = """(function(){
 
 
 def static_checks():
-    css = open(os.path.join(SITE, 'assets/css/main.css'), encoding='utf-8').read()
-    html = open(os.path.join(SITE, 'index.html'), encoding='utf-8').read()
+    from source_scan import stripped as _strip_css, strip_html_comments as _strip_html
+    css = _strip_css(open(os.path.join(SITE, 'assets/css/main.css'), encoding='utf-8').read())
+    html = _strip_html(open(os.path.join(SITE, 'index.html'), encoding='utf-8').read())
     js = ''.join(open(os.path.join(SITE, 'assets/js', f), encoding='utf-8').read()
                  for f in os.listdir(os.path.join(SITE, 'assets/js')) if f.endswith('.js'))
     r = {}

@@ -15,8 +15,11 @@ SITE = os.path.join(BASE, 'site')
 
 
 def main():
-    css = open(os.path.join(SITE, 'assets/css/main.css'), encoding='utf-8').read()
-    html = open(os.path.join(SITE, 'index.html'), encoding='utf-8').read()
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'tools'))
+    from source_scan import stripped as _strip_css, strip_html_comments as _strip_html
+    css = _strip_css(open(os.path.join(SITE, 'assets/css/main.css'), encoding='utf-8').read())
+    html = _strip_html(open(os.path.join(SITE, 'index.html'), encoding='utf-8').read())
 
     fails, warns = [], []
 

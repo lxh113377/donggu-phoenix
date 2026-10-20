@@ -3,8 +3,10 @@
 import os, re
 BASE = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
 os.chdir(BASE)
-css = open('site/assets/css/main.css', encoding='utf-8').read()
-html = open('site/index.html', encoding='utf-8').read()
+import sys as _sys; _sys.path.insert(0, 'tools')
+from source_scan import stripped as _strip_css, strip_html_comments as _strip_html
+css = _strip_css(open('site/assets/css/main.css', encoding='utf-8').read())
+html = _strip_html(open('site/index.html', encoding='utf-8').read())
 js = ''.join(open(os.path.join('site/assets/js', f), encoding='utf-8').read()
              for f in os.listdir('site/assets/js') if f.endswith('.js'))
 
