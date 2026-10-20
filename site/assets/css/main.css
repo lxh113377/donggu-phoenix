@@ -319,11 +319,15 @@ a.btn-ask{margin-left:12px}
   width:min(74%,440px);aspect-ratio:1;border-radius:50%;
   border:1px solid var(--line-soft);opacity:.55;
 }
+/* 用 scale 放大而非加宽：transform 不参与布局盒计算，天然不产生横向溢出。
+ * 必须保留 translate(-50%,-50%)，否则环会偏离居中。 */
 .hero-ring.b{
-  width:min(88%,530px);border-style:dashed;border-color:rgba(212,162,76,.14);
+  width:min(66%,420px);transform:translate(-50%,-50%) scale(1.10);
+  border-style:dashed;border-color:rgba(212,162,76,.14);
   animation:slowSpin 74s linear infinite;
 }
-@keyframes slowSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+/* keyframes 必须带 scale：否则动画一跑就覆盖静态 scale、环缩回原尺寸。 */
+@keyframes slowSpin{from{transform:translate(-50%,-50%) scale(1.10) rotate(0)}to{transform:translate(-50%,-50%) scale(1.10) rotate(360deg)}}
 .hero-word{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   font-family:var(--font-display);font-size:min(30vw,15rem);line-height:1;
@@ -395,7 +399,9 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .totem-hit img{width:100%;height:100%;filter:drop-shadow(0 0 34px rgba(212,162,76,.25))}
 .totem-ring{position:absolute;inset:0;border-radius:50%;border:1px solid var(--line);
   animation:ringPulse 4.2s ease-in-out infinite}
-.totem-ring.b{inset:-5%;border-style:dashed;opacity:.5;animation-delay:-1.4s}
+/* 负 inset 会把布局盒撑出视口（实测 399px > 390px），只能靠祖先裁切兜住——
+ * 隐式依赖，换容器就露横向滚动。改 transform:scale，不参与布局盒计算。 */
+.totem-ring.b{inset:0;border-style:dashed;opacity:.5;animation-delay:-1.4s;transform:scale(1.09);transform-origin:center}
 @keyframes ringPulse{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.035);opacity:.8}}
 .totem-copy h3{font-family:var(--font-display);font-weight:400;font-size:clamp(1.5rem,3.4vw,2.375rem);
   letter-spacing:.12em;margin:0 0 18px;text-wrap:balance}
