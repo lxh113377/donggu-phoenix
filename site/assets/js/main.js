@@ -246,7 +246,9 @@
   }, { passive: true });
 
   /* ---------- 滚动：导航高亮当前段落 + 首屏视差 ---------- */
-  var navLinks = $$('.nav a[href^="#"]');
+  // 只取主导航列表里的链接：品牌链接（.brand）也是 a[href^='#']，
+  // 若一并纳入，滚动高亮会给 logo 也加上金色下划线（轮5 自测截图发现）。
+  var navLinks = $$('.nav ul a[href^="#"]');
   var sectionEls = navLinks.map(function (a) { return document.querySelector(a.getAttribute('href')); });
   var spyTick = false;
   function spy() {
