@@ -227,3 +227,11 @@
 | U-90 | 41 | `.craft` 的 grid `minmax(320px,1fr)` 下限大于 320px 视口下的容器宽 284px → 卡片被强制撑宽 36px | 改为 `minmax(min(320px,100%),1fr)` | **已完成** | site/assets/css/main.css |
 | U-91 | 41 | `.carve-slider-label::after` 补充文案「·按住画面左右拖也可」把 label 撑到 175px，320px 下挤压 slider 越界 16px | 窄屏（≤420px）隐藏该 ::after（触屏用户不需要此提示） | **已完成** | site/assets/css/main.css |
 | U-92 | 41 | 第 3 次被 SW cache-first 骗（改完 CSS 测试仍失败，误以为修复无效） | 把「先清 SW」写进 multi_viewport_test.py 开头，不再依赖记忆 | **已完成** | tools/multi_viewport_test.py |
+## 轮42 新增条目
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-93 | 42 | 手机横屏（568×320）首屏标题跑出视口：.hero-tag top −119、.hero h1 top −77 | 矮屏横置时压缩 padding 4/10、隐藏导语与数据行、h1 降字号、顶对齐 | **已完成** | site/assets/css/main.css |
+| U-94 | 42 | iPhone SE（375×667）H1 被固定导航遮挡 26px（top 56 < nav 82） | 分析后选择「允许滚动」而非削减内容；`max-height:700px` 解锁 `height:100svh` | **已完成** | site/assets/css/main.css |
+| U-95 | 42 | 窄宽度（320/360）同样遮挡：内容高度取决于宽度（按钮堆叠），单看高度不够 | 解锁条件扩展为「高度矮 或 宽度窄」；320 验证 heroHeight 844→878.9px、tag top 67→84 | **已完成** | site/assets/css/main.css |
+| U-96 | 42 | multi_viewport_test 只查横向溢出，漏掉纵向裁切与导航遮挡 | 补两条判据：首屏关键元素被裁 / 被固定导航遮挡；本轮共抓出 4 处缺陷 | **已完成** | tools/multi_viewport_test.py |
