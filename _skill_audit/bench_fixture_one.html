@@ -1,0 +1,10 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Bench Fixture One</title></head><body>
+<h1>Bench Fixture One</h1>
+<button id="b1">Alpha</button><button id="b2">Beta</button><button id="b3">Gamma</button>
+<input id="inp" aria-label="Search query" type="text">
+<a href="bench_fixture_two.html" id="lnk">To page two</a>
+<select aria-label="Pick"><option value="x">X</option><option value="y">Y</option></select>
+<input type="checkbox" aria-label="Agree">
+<script>document.getElementById('b2').addEventListener('click',()=>{document.title='Beta Clicked';const d=document.createElement('div');d.id='result';d.textContent='ok-beta';document.body.appendChild(d);});
+document.getElementById('lnk').addEventListener('click',()=>{setTimeout(()=>{location.href='bench_fixture_two.html';},300);});</script>
+</body></html>

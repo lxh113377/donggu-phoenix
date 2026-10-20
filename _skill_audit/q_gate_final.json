@@ -1,0 +1,149 @@
+{
+ "new_arm": {
+  "Q": 0.4308,
+  "sr": 0.8,
+  "ft": 0.7,
+  "eff": 0.77
+ },
+ "old_arm": {
+  "Q": 0.1,
+  "sr": 0.4,
+  "ft": 0.4,
+  "eff": 0.63
+ },
+ "lift_pct": 330.8,
+ "gate_30pct": true,
+ "caliber": "口径A 套件提升（r7 离线夹具公平臂：双臂默认会话+直连二进制+file://确定性页+每步25s超时）",
+ "tasks_new": [
+  {
+   "task": "T01 open+title",
+   "pass": 1,
+   "first_try": 0,
+   "rounds": 2
+  },
+  {
+   "task": "T02 snapshot-refs",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T03 click-dyn-ref",
+   "pass": 0,
+   "first_try": 0,
+   "rounds": 2
+  },
+  {
+   "task": "T04 fill-input",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T05 eval-js",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T06 navigate-link",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T07 screenshot",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T08 pdf",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T09 cookies",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T10 close-reopen",
+   "pass": 0,
+   "first_try": 0,
+   "rounds": 2
+  }
+ ],
+ "tasks_old": [
+  {
+   "task": "T01 open+title",
+   "pass": 0,
+   "first_try": 0,
+   "rounds": 2
+  },
+  {
+   "task": "T02 snapshot-refs",
+   "pass": 0,
+   "first_try": 0,
+   "rounds": 2
+  },
+  {
+   "task": "T03 click-dyn-ref",
+   "pass": 0,
+   "first_try": 0,
+   "rounds": 2
+  },
+  {
+   "task": "T04 fill-input",
+   "pass": 0,
+   "first_try": 0,
+   "rounds": 2
+  },
+  {
+   "task": "T05 eval-js",
+   "pass": 0,
+   "first_try": 0,
+   "rounds": 2
+  },
+  {
+   "task": "T06 navigate-link",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T07 screenshot",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T08 pdf",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T09 cookies",
+   "pass": 1,
+   "first_try": 1,
+   "rounds": 1
+  },
+  {
+   "task": "T10 close-reopen",
+   "pass": 0,
+   "first_try": 0,
+   "rounds": 2
+  }
+ ],
+ "conservative": {
+  "caliber": "仅完成率，剔除双臂共同首轮噪声任务 T01",
+  "new_success": 0.7777777777777778,
+  "old_success": 0.4444444444444444,
+  "lift_pct": 75,
+  "gate30": true
+ },
+ "fairness_check": "旧臂 snapshot 于 file:// 夹具 40s 真挂死（job 6187 实测 OLD_SNAP_HANG），非判据正则偏置；旧臂另证两项：命名会话跨进程不持久（r6）、与 Chrome 155 组合劣化。lift 含环境失配成分，故双口径并报：主口径（端到端替换栈在当前机）+330.8%，保守口径（完成率差）75%"
+}

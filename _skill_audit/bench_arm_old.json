@@ -1,0 +1,72 @@
+[
+    "OLD-0.31.1 T01 open+title pass=0 rounds=2",
+    {
+        "task":  "T01 open+title",
+        "pass":  0,
+        "first_try":  0,
+        "rounds":  2
+    },
+    "OLD-0.31.1 T02 snapshot-refs pass=0 rounds=2",
+    {
+        "task":  "T02 snapshot-refs",
+        "pass":  0,
+        "first_try":  0,
+        "rounds":  2
+    },
+    "OLD-0.31.1 T03 click-dyn-ref pass=0 rounds=2",
+    {
+        "task":  "T03 click-dyn-ref",
+        "pass":  0,
+        "first_try":  0,
+        "rounds":  2
+    },
+    "OLD-0.31.1 T04 fill-input pass=0 rounds=2",
+    {
+        "task":  "T04 fill-input",
+        "pass":  0,
+        "first_try":  0,
+        "rounds":  2
+    },
+    "OLD-0.31.1 T05 eval-js pass=0 rounds=2",
+    {
+        "task":  "T05 eval-js",
+        "pass":  0,
+        "first_try":  0,
+        "rounds":  2
+    },
+    "OLD-0.31.1 T06 navigate-link pass=1 rounds=1",
+    {
+        "task":  "T06 navigate-link",
+        "pass":  1,
+        "first_try":  1,
+        "rounds":  1
+    },
+    "OLD-0.31.1 T07 screenshot pass=1 rounds=1",
+    {
+        "task":  "T07 screenshot",
+        "pass":  1,
+        "first_try":  1,
+        "rounds":  1
+    },
+    "OLD-0.31.1 T08 pdf pass=1 rounds=1",
+    {
+        "task":  "T08 pdf",
+        "pass":  1,
+        "first_try":  1,
+        "rounds":  1
+    },
+    "OLD-0.31.1 T09 cookies pass=1 rounds=1",
+    {
+        "task":  "T09 cookies",
+        "pass":  1,
+        "first_try":  1,
+        "rounds":  1
+    },
+    "OLD-0.31.1 T10 close-reopen pass=0 rounds=2",
+    {
+        "task":  "T10 close-reopen",
+        "pass":  0,
+        "first_try":  0,
+        "rounds":  2
+    }
+]
