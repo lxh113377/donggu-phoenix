@@ -227,7 +227,18 @@ else:
         sw_txt = rd(swp).decode("utf-8")
         # 行尾必须容忍 \r：sw.js 在 Windows 工作区常是 CRLF，
         # 用 ',?$ 会一条都匹配不到 ⇒ 门禁解析到 0 项却打印 PASS，等于没检查（假绿）。
-        prec = re.findall(r"^\s+'([^']+\.(?:html|css|js|svg|webmanifest))',?\r?$", sw_txt, re.M)
+        # 扩展名清单必须覆盖 SW 实际缓存的所有类型。一手教训（2026-10-20 反向验证实测）：
+        # 本行原为 (?:html|css|js|svg|webmanifest)，设计系统 v2 把 woff2 加进 PRECACHE 后，
+        # 字体条目完全落在对账面之外 —— 注入指向不存在字体的条目，门禁仍 exit 0，
+        # 且把 16 项报成 14 项。故补 woff2/图片类，并加下面的计数一致性守卫。
+        prec = re.findall(r"^\s+'([^']+\.(?:html|css|js|svg|webmanifest|woff2|png|webp|jpg|jpeg|json))',?\r?$", sw_txt, re.M)
+        # 计数一致性守卫：正则漏掉某一类型时 prec 会变少但 SW 里的条目没变，
+        # 用「PRECACHE 数组内所有带引号条目」做独立分母，两者不等即判红。
+        _blk = re.search(r"var PRECACHE = \[([\s\S]*?)\n\];", sw_txt)
+        _all = re.findall(r"'([^']+\.[A-Za-z0-9]+)'", _blk.group(1)) if _blk else []
+        if _blk and len(_all) != len(prec):
+            fails.append("SW PRECACHE 对账覆盖不全：数组内 %d 项，正则只解析到 %d 项"
+                         "（正则扩展名清单缺类型 ⇒ 该类型条目未被检查）" % (len(_all), len(prec)))
         if not prec:
             fails.append("SW PRECACHE 解析到 0 项（正则失配或清单为空 ⇒ 本项检查失效）")
         for f in prec:

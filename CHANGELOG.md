@@ -15,10 +15,11 @@
 - 无障碍：`skip-link` 跳转正文、`prefers-contrast` 高对比适配、全站 `font-size` 由 px 改 rem（86 处）且根字号 `100%` 跟随用户系统设置。
 - 交付治理件：`LICENSE`、`CONTRIBUTING.md`、`SECURITY.md`、`CODE_OF_CONDUCT.md`、issue / PR 模板。
 - `tools/dev_server.js`：零依赖本地预览服务器。
-- 交付门禁 `tools/verify_site.py` 新增 4 类检查：git 跟踪面对账（防「本地存在但未提交 ⇒ 线上 404」）、SW PRECACHE 清单对账、治理件存在性、PWA/无障碍/分享基线；体积预算由 4MB 收紧到 1200KB。
+- 交付门禁 `tools/verify_site.py` 新增 4 类检查：git 跟踪面对账（防「本地存在但未提交 ⇒ 线上 404」）、SW PRECACHE 清单对账、治理件存在性、PWA/无障碍/分享基线；体积预算由 4MB 收紧到 1200KB（**2026-10-20 轮5 再修订为整站 1600KB + 新增首屏关键路径 ≤400KB 双判据**，见下）。
 
 ### 变更
-- CI（`.github/workflows/deploy-pages.yml`）在发布前**实际执行** `tools/verify_site.py`；此前该脚本只在本地跑，CI 仅做 `test -f` 存在性检查，等于没有门禁。
+- 体积门禁改为双判据：整站预算 1200KB → 1600KB，同时新增**首屏关键路径 ≤400KB**（HTML+CSS+首屏字体+首屏脚本）。上调是因为设计系统 v2 引入自托管中文字体（238KB 子集），而「零外部请求」是硬约束、不能把字体成本甩给 CDN；补偿是新增的这条比整站体积更能防退化。反向验证实测：注入 +300KB CSS 后关键路径 675KB 判红，而整站 1516KB 未触 1600 —— 两条独立生效。
+- `verify_site.py` 的 SW PRECACHE 对账正则补 `woff2/png/webp/jpg/json` 扩展名，并加**计数一致性守卫**（数组条目数 ≠ 正则解析数即判红）。一手教训：原正则只认 `html|css|js|svg|webmanifest`，字体进 PRECACHE 后完全落在对账面之外 —— 注入指向不存在字体的条目，门禁仍 exit 0 且把 16 项报成 14 项。- CI（`.github/workflows/deploy-pages.yml`）在发布前**实际执行** `tools/verify_site.py`；此前该脚本只在本地跑，CI 仅做 `test -f` 存在性检查，等于没有门禁。
 - `verify_site.py` 的仓库根改由 `__file__` 推导（此前硬编码本机绝对路径，在 Linux runner 上必红）。
 - `<main>` 的锚点 id 由 `top` 改为 `main`（配合 skip-link），品牌链接同步。
 
