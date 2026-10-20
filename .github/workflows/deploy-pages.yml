@@ -42,6 +42,11 @@ jobs:
       - name: Verify site integrity
         run: python tools/verify_site.py
 
+      # 设计审计的静态半部（无需浏览器）：:active 按下态 / 行长单位 / 无 UI 框架 /
+      # 无外链字体 / 无 AI 标配紫。这五项都是历史真缺陷的机器化判据。
+      - name: Design static audit
+        run: python tools/ci_design_static.py
+
   deploy:
     name: Deploy
     needs: verify
