@@ -28,6 +28,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      # node 是 tools/js_syntax_test.py 的硬依赖。该判据找不到 node 时
+      # 故意判 FAIL 而非 SKIP —— SKIP 会让「判据没跑」伪装成「判据通过」
+      #（轮96 修的正是这个病：main.js 语法坏、页面全不渲染，CI 却全绿）。
+      # 所以必须显式保证 runner 有 node，不依赖 ubuntu 镜像预装。
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       # numpy/opencv 是 tools/verify_pixel_exact.py（像素级判据）的硬依赖。
       # 一手教训：曾只装 Pillow，该脚本在 import 期就崩，父门禁把「缺依赖」
       # 误读成「判据未通过」—— 依赖清单必须与判据脚本同步升级。
@@ -46,6 +54,16 @@ jobs:
       # 那是个恒不失败的假步骤，已删除。
       - name: Verify site integrity
         run: python tools/verify_site.py
+
+      # JS 语法判据（轮96 新增，紧接 verify_site 之后 —— 语法错要最早暴露）。
+      # 起因：我把 main.js 改出 SyntaxError，页面数据全不渲染，而当时 36 条判据全绿：
+      # verify_site 只查文件存在性与引用完整性、不解析 JS；浏览器判据读不到数据时
+      # 按设计返回 SKIP（避免环境问题误判产品），于是「页面坏」和「环境不可用」
+      # 在结果里长得一样。这条纯静态判据堵住这个缝，扫描面含 site/ 与 functions/。
+      - name: JS syntax check (site + cloud functions)
+        run: |
+          python tools/js_syntax_test.py
+          python tools/reverse_js_syntax.py
 
       # 设计审计的静态半部（无需浏览器）：:active 按下态 / 行长单位 / 无 UI 框架 /
       # 无外链字体 / 无 AI 标配紫。这五项都是历史真缺陷的机器化判据。

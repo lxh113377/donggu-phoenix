@@ -106,7 +106,7 @@
              * 小档由 tools/make_srcset.py 生成，约定名 r-<id>-340.webp，12 件全有档；
              * verify 第 25 项断言 srcset 指向的每个文件必须真实存在（防线上 404）。
              */
-            ? '<figure class="merch-shot"><img src="' + m.image + '" srcset="' + m.image.replace(/\.([a-z]+)$/, '-340.$1') + ' 340w, ' + m.image + ' 620w" sizes="(min-width: 900px) 380px, (min-width: 600px) 300px, 232px" alt="' + (m.name || '') + ' 效果图" loading="lazy" decoding="async" width="380" height="380" onerror="this.style.opacity=0"></figure>'            : '<figure class="merch-shot placeholder"><img src="assets/img/phoenix-mark.svg" alt="" aria-hidden="true"></figure>';
+            ? '<figure class="merch-shot"><img src="' + m.image + '" srcset="' + m.image.replace(/\.([a-z]+)$/, '-340.$1') + ' 340w, ' + m.image + ' 620w" sizes="' + (feature ? '(min-width: 900px) 450px, (min-width: 600px) 300px, 232px' : '(min-width: 900px) 380px, (min-width: 600px) 300px, 232px') + '" alt="' + (m.name || '') + ' 效果图" loading="lazy" decoding="async" width="' + (feature ? 450 : 380) + '" height="' + (feature ? 520 : 380) + '" onerror="this.style.opacity=0"></figure>'            : '<figure class="merch-shot placeholder"><img src="assets/img/phoenix-mark.svg" alt="" aria-hidden="true"></figure>';
           return '<article class="merch-item' + feature + '">' +
             img +
             '<div class="tier">' + (m.tier || '') + '</div>' +
