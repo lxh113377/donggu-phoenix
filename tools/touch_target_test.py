@@ -312,4 +312,12 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    # 自写时效戳（轮71）：直接跑本判据也要留下「最后一次真跑」记录，
+    # 否则 run_browser_suite --status 会把今天跑过的判据报成「从未跑过」，
+    # 一个给出误导读数的时效机制比没有更糟。
+    sys.path.insert(0, BASE)
+    from tools.gate_stamp import record
+    _t0 = time.time()
+    _rc = main()
+    record(__file__, {0: 'PASS', 1: 'FAIL'}.get(_rc, 'SKIP'), time.time() - _t0)
+    sys.exit(_rc)
