@@ -48,7 +48,11 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px
   letter-spacing:.12em;color:var(--fg-faint)}
 
 /* ---------- 登录 ---------- */
-#login{min-height:calc(100vh - 60px);display:grid;place-items:center;padding:24px}
+/* ID 级 display 会压过 .zone 的 display:none（优先级 1-0-0 > 0-1-0），
+ * 登录卡因此永不隐藏——用户登录成功后仍看见登录框，误以为「进不去」
+ *（2026-10-21 实测截图抓到）。正解：grid 只在 .on 态声明。 */
+#login{min-height:calc(100vh - 60px);padding:24px}
+#login.on{display:grid;place-items:center}
 .login-card{width:min(380px,100%);padding:34px 30px;background:var(--panel);border:1px solid var(--line);
   border-radius:8px}
 .login-card h1{margin:0 0 6px;font-size:var(--fs-l);font-weight:400;letter-spacing:.16em}
@@ -150,7 +154,7 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
     <a class="btn" id="escape-link" href="https://donggu-phoenix.pages.dev/admin/" target="_blank" rel="noopener" style="display:none;margin-top:10px;text-decoration:none;justify-content:center">在新标签页打开（嵌入窗口受限时用）</a>
     <noscript><p style="color:var(--red-hi);font-size:var(--fs-xs)">本页需要启用 JavaScript 才能登录。</p></noscript>
     <!-- 版本标：看不到这行 = 浏览器还在用旧缓存，请 Ctrl+Shift+R 强刷 -->
-    <p class="ver">后台版本 2026.10.21-3</p>
+    <p class="ver">后台版本 2026.10.21-4</p>
   </form>
 </div>
 
