@@ -37,7 +37,7 @@
  * 跨版本对账锚点仍是 CSS --build(38) ⇄ HTML BUILD(38)。 */
 /* v44（2026-10-21，统计端）：管理后台修复版缓冲期清理——昨晚有语法损坏版 admin
  * 被部分访客 networkFirst 缓存兜住过，bump 强制删旧缓存保干净版。 */
-var VERSION = 'v45';
+var VERSION = 'v46';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [

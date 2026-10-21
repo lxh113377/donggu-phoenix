@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:43;
+  --build:44;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -587,7 +587,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .ar-src>summary{
   cursor:pointer;list-style:none;
   font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.18em;
-  color:var(--she-gold);opacity:.85;padding:4px 0;
+  color:var(--she-gold);opacity:.85;padding:4px 0;display:flex;align-items:center;min-height:44px;
   transition:opacity .3s var(--ease), letter-spacing .3s var(--ease);
 }
 .ar-src>summary::-webkit-details-marker{display:none}
