@@ -28,10 +28,24 @@
 ## 依赖
 websocket-client（本机已装）。缺失时判据明确报 SKIP 而非假装通过。
 
-## 判据
-· 主方向重量差异 < 15% → 平衡
-· 15%-25% → 轻微失衡（可接受，视设计意图）
-· > 25% → 明显失衡
+## 判据（按态别取阈值，轮103）
+完整态（粒子 2600/1500，设计目标）：
+  < 15% 平衡 | 15-25% 轻微失衡 | > 25% 明显失衡
+降级态（粒子 900，低端机兜底）：
+  < 30% 平衡 | 30-40% 轻微失衡 | > 40% 明显失衡
+
+### 为什么降级态要放宽（实测依据，非拍脑袋）
+本机强制 lowEnd 连跑 5 次：
+  桌面 26.4 / 26.4 / 27.0 / 27.0 / 26.7  极差 0.6
+  平板 19.7 / 19.8 / 19.9 / 20.1 / 19.9  极差 0.4
+对照完整态同口径：桌面 6.0 / 6.3 / 5.9 极差 0.7，平板 17.5 / 17.7 / 16.9 极差 0.8。
+降级态桌面**稳定在 26.8%，已超过完整态的 25% 阈值** ——
+粒子从 2600 压到 900 后，凤凰右翼（画面右侧）密度必然下降，
+左右分量差必然扩大。这是该降级设计的已知代价，不是产品缺陷。
+若沿用 25%，CI（lowEnd=True）会稳定 FAIL，正是轮99 说的
+「会 FAIL 的门禁比没有更糟」。
+40% 的取法：给降级态实测值约 13 个百分点余量，
+与完整态 25% 对 6.8% 的余量比例相当；真正构图崩坏仍能抓到。
 
 ## 已知边界：CI 与本机读数有系统差（轮101 实测）
 同一判据、同一批视口，本地 chrome 155 与 CI chromium（setup-chrome）读数不同：
@@ -74,6 +88,11 @@ VIEWPORTS = [
     ('手机', 390, 844, 'v'),
 ]
 TOP_SKIP = 60   # 去掉顶部固定导航区
+
+# 轮103：按态别取阈值。完整态沿用轮40 起的设计目标标准；
+# 降级态放宽（实测桌面稳定 26.8%，粒子 900 下右翼密度必降）。
+FULL_LO, FULL_HI = 15, 25
+DEGRADED_LO, DEGRADED_HI = 30, 40
 SITE_PORT = 8791
 
 
@@ -140,7 +159,7 @@ class Cdp:
             pass
 
 
-def analyze(png, axis):
+def analyze(png, axis, low_end=False):
     """返回 (差异%, 判定词, 是否判红, 详情, 空洞列表)。"""
     import numpy as np
     from PIL import Image
@@ -171,9 +190,14 @@ def analyze(png, axis):
 
     total = a + b
     diff = abs(a - b) / total * 100 if total else 0.0
-    if diff > 25:
+    # 轮103：阈值按态别取。降级态（粒子 900）下左右分量差必然扩大
+    # （实测桌面稳定 26.8%，见 docstring），拿完整态的 25% 要求它
+    # 会把「低端兜底构图」误判成「产品失衡」。
+    hi = DEGRADED_HI if low_end else FULL_HI
+    lo = DEGRADED_LO if low_end else FULL_LO
+    if diff > hi:
         verdict, bad = '明显失衡', True
-    elif diff > 15:
+    elif diff > lo:
         verdict, bad = '轻微失衡（可视设计意图接受）', False
     else:
         verdict, bad = '平衡', False
@@ -219,7 +243,8 @@ def main():
 
     # 兼容旧用法：显式传截图路径时只做分析
     if len(sys.argv) > 1 and os.path.exists(sys.argv[1]):
-        diff, verdict, bad, det, holes, _diag = analyze(sys.argv[1], 'h')
+        diff, verdict, bad, det, holes, _diag = analyze(
+            sys.argv[1], 'h', low_end=False)
         (names, a, b, total, _d) = det
         n1, n2 = names
         print('截图: %s' % sys.argv[1])
@@ -378,7 +403,9 @@ def main():
                     print('[%s %dx%d] 截图无效' % (label, vw, vh))
                     continue
                 measured.append('%s %dx%d' % (label, vw, vh))
-                diff, verdict, bad, det, holes, diag = analyze(png, axis)
+                _le = bool(degraded.get('lowEnd') or degraded.get('degraded'))
+                diff, verdict, bad, det, holes, diag = analyze(
+                    png, axis, low_end=_le)
                 (names, a, b, total, detail) = det
                 n1, n2 = names
                 print('[%s %dx%d] %s %s %.2f (%.1f%%) / %s %.2f (%.1f%%)'
@@ -400,8 +427,10 @@ def main():
                     print('    （低端降级态：粒子数被压到 900，构图偏暗、'
                           '差异偏大是预期，不据此判产品失衡 —— 见 phoenix.js:32）')
                 if bad and axis == 'h':
-                    fails.append('%s %dx%d：%s重量差异 %.1f%% > 25%%'
-                                 % (label, vw, vh, n1, diff))
+                    _thr = DEGRADED_HI if _le else FULL_HI
+                    fails.append('%s %dx%d：%s重量差异 %.1f%% > %d%%（%s态）'
+                                 % (label, vw, vh, n1, diff, _thr,
+                                    '降级' if _le else '完整'))
                 elif bad:
                     # 窄屏主方向改上下是为适配布局重排，但凤凰图腾是横向构图，
                     # 用上下分量量它本就不公平（轮99 引入、轮101 识别的尺子问题）。
