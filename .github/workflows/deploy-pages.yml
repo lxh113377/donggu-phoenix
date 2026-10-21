@@ -74,6 +74,7 @@ jobs:
           python tools/dead_definition_test.py
           python tools/dead_css_decl_test.py
           python tools/tracking_center_test.py
+          python tools/secret_leak_test.py
           python tools/ledger_id_test.py
 
   deploy:
