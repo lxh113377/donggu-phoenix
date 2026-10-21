@@ -2983,3 +2983,41 @@ verify_site 字体完整性判红。admin 其实只用 monospace、不引用子�
 而它恰好是**唯一没有任何检查看过的页面**。
 每打通一条新的可测路径（headless、pages dev），都要回头问一句：
 还有哪些面从来没被测过？
+
+## 轮76 结果（2026-10-21 · 环境缺口归因：一条假红挖出真根因，两条判据首次真实跑起来）
+
+### 起点：一条真红，三种错因叠加
+在 PATH 首位是 LibreOffice 自带 python 的现场跑 tools/verify_site.py，报
+「[FAIL] 像素级数值判据：未知原因」。逐层挖：
+1. 子判据 verify_pixel_exact.py 缺 cv2（rc=2，stderr 明写）；
+2. 父门禁只接 rc=2/stderr 一支 —— **异常分支**（子进程压根没起来）落进「未知原因」；
+3. **真根因**：LibreOffice 的 python 启动器给自身进程注入
+   PYTHONHOME=...python-core-3.13.15 与 PYTHONPATH=...，子解释器继承后
+   报「AssertionError: SRE module mismatch」（3.12 去加载 3.13 标准库）——
+   表面「缺 3 个库」实为一个环境变量毒化（brotli 是纯模块才幸存）。
+   且该解释器**不能 spawn 自己**（PermissionError WinError 5），
+   而 spawn git / 别的解释器正常 —— 这才是「报错这么怪」的原因。
+
+### 修法（三处，同族「静默降级 / 错误归因」）
+1. tools/pyenv.py（新）：确定性解释器解析 + 能力探测（真的能 import）+ clean_env() 剥毒化变量
+   + classify_child() 归类失败；都不可用则 ENV 块 rc=2，禁「未知原因」。
+2. tools/verify_site.py：入口自动切换（CI 有依赖 -> 走原路径，**零行为变化**）；
+   子判据解释器按能力解析；字体判据报真名 + 显式 [SKIP]。
+3. .github/workflows/deploy-pages.yml：新增 reverse_env_attribution 入口。
+
+### 读数（本轮实测）
+- 失败现场（PATH 首位 LibreOffice python）跑 verify_site.py：
+  「[ENV] ... 缺 cv2,brotli -> 自动切换到 ...」-> **RESULT: PASS（rc=0）**
+- **两条判据首次真实执行**：「[PASS] 字体完整性：渲染汉字全部在子集内（缺 0）」、
+  「[PASS] 像素级数值判据：6 层全部成立」（此前一条只发 WARN 不占判据行、一条「未知原因」）
+- CI 门禁清单本地逐条实跑：**28 条（26 条多行入口 + verify_site + ci_design_static）= 28 PASS / 0 FAIL**
+- 反向验证 tools/reverse_env_attribution.py：**18/18 PASS**
+  （C4 在沙箱副本把子判据换成「静默 rc=3」-> 父门禁报「rc=3; 子进程零输出」；全部用例断言禁「未知原因」）
+- 体积 1372KB/1600KB（>80% WARNING）、首屏关键路径 319KB/400KB
+
+### 教训
+- 「未知原因」不是一种归因，只是没归因 —— 同一坑第 2 次复现（轮51 修过一次）。
+  **凡「归因分支」，都要能被「造一个该类的错」反向验证**；没有反向用例的归因等于没修。
+- 环境类报错先怀疑**环境变量**再怀疑依赖清单：本轮「缺 3 个库」全是一个
+  PYTHONHOME 造成的假象，真正缺的只有一个变量。
+- 判据降级必须占一行：WARN 不进判据行 => 总结果仍 PASS => 等于放水（U-221）。

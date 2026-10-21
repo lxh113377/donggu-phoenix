@@ -2,6 +2,19 @@
 """站点交付前自检：引用完整性、体积预算、编码、关键内容、降级路径。"""
 import os, re, sys, json, subprocess
 
+# 0) 环境缺口与产品缺陷必须先分开归因（2026-10-21 轮74 修）。
+#    本机 PATH 首位的 python 实测是 LibreOffice 自带解释器（缺 cv2/brotli/PIL，
+#    且**无法 spawn 自己**），会让下面两条真判据（字体完整性 / 像素级数值）静默降级。
+#    能力不足时自动切到可用解释器（CI 有依赖，走这条零变化）；都不可用时打 ENV 块退出 2。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import pyenv
+except ImportError:      # pyenv 缺失不静默：显式点名，否则又变成「未知原因」
+    pyenv = None
+    print("[WARN] tools/pyenv.py 缺失，无法解析解释器能力（环境缺口将只能靠人工判读）")
+if pyenv is not None:
+    pyenv.ensure(["numpy", "cv2", "fontTools", "brotli"], label="verify_site")
+
 # 仓库根由脚本自身位置推导（交付门禁必须在 CI 的 Linux runner 上同样可跑，
 # 硬编码本机绝对路径会让门禁「本地绿、CI 必红」，等于没有门禁）
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -645,8 +658,18 @@ try:
         fails.append("字体子集缺 %d 个渲染汉字：%s" % (len(_miss_zh), ''.join(_miss_zh[:12])))
     print("[%s] 字体完整性：渲染汉字全部在子集内（缺 %d）" % (
         'PASS' if not _miss_zh else 'FAIL', len(_miss_zh)))
-except ImportError:
-    warns.append('fontTools 未安装，跳过字体完整性判据')
+except ImportError as _fe:
+    # 轮74：这条曾一律断言「fontTools 未安装」，但实测真实缺的是 **brotli**
+    # （woff2 解压必需，fontTools 的 TTFont 才会抛 ImportError）——归因错了；
+    # 且它只打 WARNING、不占判据行，等于「字体完整性判据可以静默不跑而总门禁仍 PASS」。
+    # 现按 ImportError.name 报真名，并显式打 [SKIP]（未取证 != 通过）。
+    _mod = getattr(_fe, "name", None)
+    if not _mod:                     # fontTools 内部会包一层纯 ImportError，name 可能为空
+        _m = re.search(r"No module named '?([\w\.]+)'?", str(_fe))
+        _mod = _m.group(1) if _m else str(_fe)
+    _msg = "缺 Python 模块 %s（该判据需 fontTools + brotli）" % _mod
+    warns.append("字体完整性判据未取证：" + _msg + "；用 tools/pyenv.py 解析出的解释器，或 pip install fontTools brotli")
+    print("[SKIP] 字体完整性：未取证（%s）" % _msg)
 
 # 21) 首屏口径必须**语义正确**，不能只检查变量名存在。
 #     一手教训：第一版只判 'crit_xfer_kb' 是否出现，把赋值改成 0 仍然 PASS —— 检查了名字没检查行为。
@@ -743,17 +766,32 @@ if not os.path.exists(PIXEL_TOOL):
 else:
     pixel_out, pixel_rc = "", None
     pixel_err = ""
+    pixel_exc = ""
+    # 轮74：子进程解释器不能裸用 sys.executable —— 若当前解释器是 LibreOffice 自带那份，
+    # 它能 spawn git/别的解释器，却**不能 spawn 自己**（PermissionError [WinError 5]），
+    # 于是子判据根本没起来。改为按依赖能力解析（需要 numpy + cv2）。
+    child_cmd = (pyenv.best_cmd_for(["numpy", "cv2"]) if pyenv else None) or [sys.executable]
+    child_env = pyenv.clean_env() if pyenv else None   # 剥掉 PYTHONHOME/PYTHONPATH 毒化
     try:
-        pr = subprocess.run([sys.executable, PIXEL_TOOL], capture_output=True, text=True,
-                            cwd=BASE, timeout=300)
+        pr = subprocess.run(child_cmd + [PIXEL_TOOL], capture_output=True, text=True,
+                            cwd=BASE, timeout=300, env=child_env)
         pixel_out, pixel_rc = (pr.stdout or ""), pr.returncode
         pixel_err = (pr.stderr or "")
     except Exception as e:
-        pixel_out = "子进程调用失败：%s" % e
+        pixel_exc = "%s: %s" % (type(e).__name__, e)
+        pixel_out = "子进程调用失败：%s" % pixel_exc
+    # 失败原因归类抽成纯函数（pyenv.classify_child）：可逐例单测。
+    # 「未知原因」不是一种归因，只是没归因 —— 它已经害过两轮（轮51、轮74）。
+    if pyenv is not None:
+        _kind, _detail = pyenv.classify_child(pixel_rc, pixel_out, pixel_err, pixel_exc)
+    else:
+        _hard = [ln.strip() for ln in pixel_out.splitlines() if ln.startswith("[FAIL]")]
+        _kind = "ok" if pixel_rc == 0 else ("crashed" if _hard else "env_gap")
+        _detail = "; ".join(_hard[:3]) or "rc=%s（pyenv 缺失，无法细分归因）" % pixel_rc
     lines = [ln for ln in pixel_out.splitlines() if ln.startswith("[PASS]") or ln.startswith("[SKIP]")]
     n_pass = sum(1 for ln in lines if ln.startswith("[PASS]"))
     n_skip = sum(1 for ln in lines if ln.startswith("[SKIP]"))
-    if pixel_rc == 0:
+    if _kind == "ok":
         if n_skip:
             warns.append("像素级数值判据：%d 层因缺件未取证（%s）"
                          % (n_skip, "；".join(ln.split("：")[0].replace("[SKIP] ", "")
@@ -764,15 +802,12 @@ else:
             print("[PASS] 像素级数值判据：%d 层全部成立（L1 资产==素材 / L1' SHA256 锁 / "
                   "L2 无损编码 / L3 剖面绑定 / L4 1:1 渲染 / L4' 引擎通路）" % n_pass)
     else:
-        hard = [ln for ln in pixel_out.splitlines() if ln.startswith("[FAIL]")]
-        # 一手教训（轮51）：判据只读 stdout，缺依赖时报错走 stderr（纯文本 Traceback），
-        # 于是父门禁只能写「未知原因」——把一个可归因的环境问题伪装成谜团。
-        # 缺库与判据不通过是两件事，但都必须说清是哪一件。
-        if not hard and pixel_rc == 2 and pixel_err:
-            hint = [ln for ln in pixel_err.splitlines() if "Error" in ln or "请先运行" in ln]
-            hard.append("子进程 rc=2（依赖/环境）: " + (" | ".join(hint[:2]) or pixel_err.strip()[:120]))
-        fails.append("像素级数值判据未通过：" + ("; ".join(x.strip() for x in hard[:3]) or "未知原因"))
-        print("[FAIL] 像素级数值判据：%s" % ("; ".join(x.strip() for x in hard[:3]) or "未知原因"))
+        # 轮51 只接上 rc==2/stderr 一支；轮74 实测异常分支仍掉进「未知原因」（第 2 次复现）。
+        # 现在结论来自 classify_child，且 env_gap 必须显式标 ENV（环境缺口 != 产品缺陷）。
+        _label = "[ENV 环境缺口，非产品缺陷] " if _kind == "env_gap" else ""
+        _msg = _label + (_detail or "原因未能归因（判据自身缺陷）")
+        fails.append("像素级数值判据未通过：" + _msg)
+        print("[FAIL] 像素级数值判据：%s" % _msg)
 
 
 print()

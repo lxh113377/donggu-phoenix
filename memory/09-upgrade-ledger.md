@@ -413,3 +413,16 @@
 | U-216 | 75 | 新增后台对比度判据：后台数据来自 Functions+D1、需 X-Admin-Key，纯静态服务只会停在登录卡 -> contrast_audit 那套起不了作用 | `npx wrangler pages dev` 起带后端本地面 + 同源 iframe 注入 sessionStorage 密钥，走**真实登录渲染路径**；zone != dash 直接判 FAIL（防「停在登录卡但登录卡对比度达标」的假绿）；密钥只经 URL hash 传，探针本体无密钥 | **已完成** | tools/admin_contrast_test.py |
 | U-217 | 75 | **我自己犯的错①（破坏性用例顺序）**：错误密钥会往 `auth_fails` 写失败计数。第一版把「错密钥」用例放前面，紧随其后的正确密钥用例拿不到读数，我一度误判「A 触发限流挡了 B」—— 实测 FAIL_LIMIT=20、我只写 4 条**根本没触发限流**，B 单独重跑 3/3 全绿，真因是 chrome 偶发空输出（U-193） | 破坏性用例放最后 + 测后清 auth_fails；反向验证补外层重试。**教训：下结论前先验证假设，我当时差点据此去改中间件** | **已完成**（方法论） | tools/reverse_admin_contrast.py |
 | U-218 | 75 | **我自己犯的错②（SUITE 重复登记）**：multi_viewport 本已在 SUITE 表内，我又加一行 -> --list 出现两条 | 登记后必用 --list 复核条目数，不靠「看起来加上了」；已删重复条目 | **已完成**（方法论） | tools/run_browser_suite.py |
+
+## 轮76 新增条目（2026-10-21 · 环境缺口归因：把「未知原因」假红挖成真根因）
+
+> 起点是「python tools/verify_site.py」的一条真红「[FAIL] 像素级数值判据：未知原因」。
+> 逐层挖出三层同族缺陷（**静默降级 / 错误归因**）+ 一个伪装成「缺依赖」的环境毒化。
+> 续编前已实测现值（最大 U-218），本块取 U-219~222，不与并行端撞号（U-135 纪律）。
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-219 | 76 | **父门禁把环境缺口写成「未知原因」**（同族第 2 次复现）：PATH 首位 python 是 LibreOffice 自带 3.13.15，它**无法 spawn 自己**（PermissionError WinError 5），而 spawn git / 别的解释器正常 —— 于是 subprocess.run([sys.executable, ...]) 调用期抛异常、父门禁 hard 为空，落到「未知原因」。轮51 只接了 rc=2/stderr 一支 | 失败原因归类抽成纯函数 pyenv.classify_child()（ok / product_fail / env_gap / crashed）；无 [FAIL] 行时必须归因（异常文本 + rc + stderr 尾部），env_gap 显式标「[ENV 环境缺口，非产品缺陷]」；子判据解释器改按**依赖能力**解析而非裸用 sys.executable | **已完成** | tools/pyenv.py, tools/verify_site.py |
+| U-220 | 76 | **PYTHONHOME/PYTHONPATH 环境毒化（本轮真根因，伪装成「缺依赖」）**：LibreOffice 的 python 启动器给自身进程注入 PYTHONHOME=...python-core-3.13.15 + PYTHONPATH=...，子解释器继承后 3.12 去加载 3.13 标准库，报 AssertionError: SRE module mismatch -> numpy/cv2/fontTools 全部 import 失败，而 brotli（纯模块）侥幸幸存 —— 掩盖了「只有一个变量坏了」的真相 | 新增 tools/pyenv.py：确定性解释器解析（env SITE_PY > 当前 > py 启动器 3.12/3.13/3.11 > workbuddy envs > uv > where python），按「真的能 import」判定能力；**探测与切换前一律 clean_env()**；execv 前 scrub_own_env()（否则带着 3.13 的 PYTHONHOME 切进 3.12 照样崩＝白切）；都不可用则打 ENV 块 + rc=2 | **已完成** | tools/pyenv.py |
+| U-221 | 76 | **字体完整性判据静默未取证**：except ImportError 一律断言「fontTools 未安装」，实测真缺的是 **brotli**（woff2 解压必需，TTFont 才会抛）；且它只打 WARNING、不占判据行 => 该判据可以整轮不跑而总 RESULT 仍 PASS（违反「SKIP 不等于放水」）；同样情形下像素判据报「未知原因」 | 按 ImportError.name / 正则报**真实模块名**；未取证时显式打「[SKIP]」行并进 WARNINGS；并把该场景写进反向验证 C3 | **已完成** | tools/verify_site.py |
+| U-222 | 76 | 这组修复的反向验证入口缺失：三条缺陷都在「失败归因」路径上，不造错就永远发现不了（轮51 修完仍漏，正是没有针对异常分支的反向用例） | 新增 tools/reverse_env_attribution.py：6 个 classify_child 向量（含 2 条真实事故读数）+ C2 环境缺口块 + C3 字体真名 + C4 沙箱副本把子判据换成「静默 rc=3」 + C5 自动切换后两条判据真的跑起来；**每条都断言「禁出现未知原因」**；已接入 CI（CI 上 C1 跑、C2~C5 因无本机故障现场显式 SKIP） | **已完成** | tools/reverse_env_attribution.py, .github/workflows/deploy-pages.yml |
