@@ -41,6 +41,11 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px
 .btn.warn{color:var(--red-hi)}
 .btn.warn:hover{border-color:var(--red-hi)}
 .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+/* hidden 属性必须赢过 display:inline-flex —— 否则未登录时顶栏按钮全露出
+ * （2026-10-21 实测：老大截图里刷新/导出/退出与登录卡同屏 = 本 bug） */
+.btn[hidden]{display:none}
+.ver{margin:14px 0 0;text-align:center;font:var(--fs-2xs)/1.6 ui-monospace,Consolas,monospace;
+  letter-spacing:.12em;color:var(--fg-faint)}
 
 /* ---------- 登录 ---------- */
 #login{min-height:calc(100vh - 60px);display:grid;place-items:center;padding:24px}
@@ -144,6 +149,8 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
     <p class="login-err" id="login-err" role="alert" aria-live="polite"></p>
     <a class="btn" id="escape-link" href="https://donggu-phoenix.pages.dev/admin/" target="_blank" rel="noopener" style="display:none;margin-top:10px;text-decoration:none;justify-content:center">在新标签页打开（嵌入窗口受限时用）</a>
     <noscript><p style="color:var(--red-hi);font-size:var(--fs-xs)">本页需要启用 JavaScript 才能登录。</p></noscript>
+    <!-- 版本标：看不到这行 = 浏览器还在用旧缓存，请 Ctrl+Shift+R 强刷 -->
+    <p class="ver">后台版本 2026.10.21-3</p>
   </form>
 </div>
 
