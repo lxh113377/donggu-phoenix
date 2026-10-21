@@ -77,6 +77,8 @@ jobs:
           python tools/reverse_cjk_scope.py
           python tools/tracking_center_test.py
           python tools/secret_leak_test.py
+          python tools/admin_colspan_test.py
+          python tools/reverse_admin_colspan.py
           python tools/ledger_id_test.py
           # 轮74：环境缺口归因的反向验证。CI 上 C1（classify_child 单测）跑，
           # C2-C5 因无本机 LibreOffice 故障现场而显式 SKIP —— SKIP 不等于通过。
