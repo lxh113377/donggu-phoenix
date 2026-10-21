@@ -167,7 +167,13 @@
     return new Promise(function (resolve) {
       var t0 = performance.now();
       var f = document.createElement('iframe');
-      f.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + innerWidth + 'px;height:' + innerHeight + 'px;border:0';
+      // 必须**可见**：Chrome 对 display:none / 移出视口的 frame 不产生 paint entry，
+      // 第一版把 iframe 放 left:-9999px，结果 FCP 恒为 null（线上实测），
+      // 于是只能退而用 load 事件判「首屏」—— 那是整页加载完成，比验收判据 1
+      // 说的「3 秒内出首屏」严得多，会把本来达标的页面判成未达标（假红）。
+      // 现在占满视口上部真实渲染，既拿到真 FCP，也让扫码的人第一眼就看到真首屏。
+      f.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:58vh;border:0;background:#0B0908';
+      f.setAttribute('title', '被测首屏（真实渲染，用于取 FCP）');
       f.src = siteURL + (siteURL.indexOf('?') >= 0 ? '&' : '?') + 'probe=' + Date.now();
       var settled = false;
       var timer = setTimeout(function () {
@@ -191,12 +197,22 @@
               ? w.performance.getEntriesByType('paint') : [];
             for (var i = 0; i < pl.length; i++) { if (pl[i].name === 'first-contentful-paint') fcp = Math.round(pl[i].startTime); }
           } catch (e) { /* 跨帧读取失败：不当成站点缺陷，标 unknown */ }
-          var ok = ready && ms <= 3000;
-          log('firstScreen', { ok: ok, ms: ms, fcp: fcp, engineReady: ready, state: state, particles: parts });
-          set(1, ok ? 'ok' : 'bad', ok ? '达标' : '未达标',
-              '整页可用 ' + ms + 'ms（预算 3000ms）' +
-              (fcp ? ' · FCP ' + fcp + 'ms' : ' · FCP 取不到') +
-              ' · 粒子 ' + (parts == null ? '?' : parts) + ' · 引擎 ' + (state || '?'));
+          // 判定口径：验收判据 1 =「3 秒内出首屏」，量的是 **FCP**，不是整页 load。
+          // load 只作为次读数展示（它含图片/字体全部落地，天然比首屏晚）。
+          // FCP 取不到时判「未取证」而不是判红或判绿 —— 未取证不等于通过（U-221）。
+          var ok, badge, detail;
+          if (fcp == null) {
+            ok = null; badge = 'skip';
+            detail = 'FCP 未取证（frame 未真实渲染？）· 整页 ' + ms + 'ms · 引擎 ' + (state || '?');
+          } else {
+            ok = fcp <= 3000 && !!ready;
+            badge = ok ? 'ok' : 'bad';
+            detail = 'FCP ' + fcp + 'ms（预算 3000ms）' + (ok ? '' : ' ← 超预算') +
+                     ' · 整页可用 ' + ms + 'ms · 粒子 ' + (parts == null ? '?' : parts) +
+                     ' · 引擎 ' + (state || '?');
+          }
+          log('firstScreen', { ok: ok, fcp: fcp, ms: ms, engineReady: ready, state: state, particles: parts });
+          set(1, badge, ok === null ? '未取证' : (ok ? '达标' : '未达标'), detail);
           R.__siteWindow = null;
           try { R.probeFrame = f; } catch (e) {}
           resolve();
@@ -370,6 +386,8 @@
   function verdict() {
     var c = R.checks;
     var hard = [c.firstScreen, c.narration, c.ar].filter(Boolean);
+    // ok === null 是「未取证」：既不算过也不算缺陷，必须显式落到 △（未取证不等于通过）
+    var unknown = hard.filter(function (x) { return x.ok === null; });
     // 旁白「未进入播放态」不算缺陷：iOS/微信的 speechSynthesis 必须有用户手势，
     // 现场真用时本来就是「先碰一下屏幕再听」。只要 API 在、中文语音挑到了，
     // 就归入「待一次点击」，不吓唬看展的人（实测：headless/未手势下 started=false 是常态）。
@@ -383,6 +401,9 @@
       document.getElementById('verdict').style.color = 'var(--bad)';
     } else if (narrGesture) {
       done('△ 点一次「点我重测旁白」就能收尾（首屏与 AR 已过）');
+      document.getElementById('verdict').style.color = 'var(--warn)';
+    } else if (unknown.length) {
+      done('△ 有 ' + unknown.length + ' 项未取证（见下方黄色项，不能当成通过）');
       document.getElementById('verdict').style.color = 'var(--warn)';
     } else if (hard.length === 3) {
       done('✓ 三项全过，现场可用');
