@@ -1,34 +1,42 @@
 # -*- coding: utf-8 -*-
-"""tools/dead_css_decl_test.py —— 同上下文完全相同的重复声明判据（纯静态，CI 可跑）。
+r"""tools/dead_css_decl_test.py —— 同上下文重复 CSS 声明判据（纯静态，CI 可跑）。
 
-## 为什么需要它（轮59 实测抓到真东西）
-「同选择器 + 同 media 上下文 + 同属性 + 同值」写两遍 = 纯冗余。
-它当下无害，但它是「设计意图静默丢失」的温床：
-以后改其中一处，另一处会把它盖回去 —— 改动看起来成功，实则无效。
-这类 bug 不报错、不白屏，只能靠读代码发现。
+## 判据
+「同选择器 + 同 media 上下文 + 同属性 + **同值**」写两遍 = 纯冗余。
+当下不改变渲染，但它是「设计意图静默丢失」的温床：
+以后只改其中一处，另一处会把它盖回去 —— 改动看起来成功，实则无效。
 
-## 轮59 实测：抓到我自己造成的重复
+值不同的情况只 WARN 不判红：同属性不同值有两种合法用途
+（渐进增强 display:flex;display:grid、后写的修复块有意覆盖），判红必然误报。
+
+## 轮59 实测抓到 6 组，其中一组是我自己造成的
 @media (max-height:520px) and (orientation:landscape) 块里
-  .hero-grid{...} / .hero-inner{margin:0} / .hero h1 em{display:none}
-被完整写了两遍。
-根因：轮41 我用脚本追加规则，第一次改完测试仍失败（实为 SW 缓存 U-142），
+  .hero-grid / .hero-inner / .hero h1 em 三条规则被完整写了两遍。
+根因：轮41 用脚本追加规则，第一次改完测试仍失败（实为 SW 缓存 U-142），
 以为没写进去就又跑一次；幂等检查只查块标记、没查规则本身。
-已清理，并把这条做成判据防回退。
 
-## 只判「值完全相同」，不判「值不同」
-同属性不同值有两种合法用途：
-  · 渐进增强（display:flex; display:grid）
-  · 后写的修复块有意覆盖前一条
-所以值不同只 WARN 供人工看，不判红 —— 否则必然误报。
+## 必须排除 @keyframes 帧与 @font-face（轮59 的假阳性教训）
+两处 @font-face、@keyframes 的 from/to 会被切成同一个 key 造成假报，
+故按 at-rule 链排除。
 
-## 解析器踩过的两个坑（轮59 实测）
-1. @keyframes 的 from/to、@font-face 的 font-style：
-   不记录 at-rule 归属就会把不同字体/不同动画的同名声明并成「重复」。
-2. @font-face 自身的声明块，其 prelude 是 '@font-face'，
-   若只按「选择器不含 @」筛，sel 会被切成 'font-face' 仍然误并。
-   → 显式排除 at-rule 关键字作为选择器的情况。
+## 轮84 两处升级
+### ① 必须先剥注释（U-160 同课，这次是真实隐患不是理论）
+实测：main.css 的 .hero-tag 注释里写着
+  「移动端 .hero-tag 用 justify-content:center」
+—— 与该规则的真实声明文本完全相同。判据若不剥注释，
+只要注释与声明落在同一 media 上下文就会被判成「同值重复声明」误报。
+admin 内联 CSS 里有大量我轮60~80 写的含 outline:none / display:block
+字样的注释，风险更高。
+本轮用等长空白替换注释（保偏移量，at-rule 链计算不受影响）。
 
-零样本判 SKIP 不判 PASS。
+### ② 扫描面从「main.css」扩到「main.css + 后台内联 style」
+后台 140 行内联 CSS 此前不在任何重复声明判据的面上；
+而轮79 我刚在 admin 的 CSS 里写坏过一条声明（拼接漏分号）。
+逐源分别分析（不跨源合并 key）—— 主站与后台是两个页面，
+同名选择器在不同页面不构成重复。
+
+## 自检
+判据自带违例样本证明尺子有效（U-149/U-151 教训：测不出不等于不存在）。
 """
 import os
 import re
@@ -36,11 +44,20 @@ import sys
 from collections import defaultdict
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CSS = os.path.join(BASE, 'site', 'assets', 'css', 'main.css')
 
 AT_KEYWORDS = {'font-face', 'media', 'supports', 'keyframes', '-webkit-keyframes',
                '-moz-keyframes', 'import', 'charset', 'namespace', 'page'}
 INNER_AT = ('keyframes', '-webkit-keyframes', '-moz-keyframes')
+
+
+def strip_comments_keep_len(s):
+    """注释替换为等长空白：既剥掉文字，又保住偏移量（at-rule 链依赖偏移）。"""
+    out = list(s)
+    for m in re.finditer(r'/\*.*?\*/', s, flags=re.S):
+        for i in range(m.start(), m.end()):
+            if s[i] not in '\r\n':
+                out[i] = ' '
+    return ''.join(out)
 
 
 def at_ranges(s):
@@ -62,26 +79,19 @@ def at_ranges(s):
     return out
 
 
-def main():
-    if not os.path.exists(CSS):
-        print('RESULT: SKIP  找不到 main.css')
-        return 0
-    s = open(CSS, encoding='utf-8').read()
+def analyze_css(css_text):
+    """返回 (规则块数, 声明总数, 同值重复组, 异值组)。"""
+    s = strip_comments_keep_len(css_text)
     ranges = at_ranges(s)
 
     def chain_of(pos):
-        c = []
-        for a, b, kind, hdr in ranges:
-            if a <= pos < b:
-                c.append((kind, hdr))
-        return c
+        return [(kind, hdr) for a, b, kind, hdr in ranges if a <= pos < b]
 
     rules = []
     for m in re.finditer(r'([^{}@]+)\{([^{}]*)\}', s):
         sel = m.group(1).strip()
         if not sel or sel.startswith('@'):
             continue
-        # 关键：@font-face 自身块的 sel 会被切成 'font-face'，必须排除
         if sel in AT_KEYWORDS:
             continue
         ch = chain_of(m.start())
@@ -98,8 +108,7 @@ def main():
                 continue
             key_map[(sel, media, mm.group(1))].append(mm.group(2).strip())
 
-    dup_same = []
-    diff_val = []
+    dup_same, diff_val = [], []
     for (sel, media, prop), vals in key_map.items():
         if len(vals) < 2:
             continue
@@ -109,30 +118,91 @@ def main():
             diff_val.append((sel, media, prop, vals))
 
     total = sum(len(v) for v in key_map.values())
-    print('规则块 %d，声明 %d 条' % (len(rules), total))
+    return len(rules), total, dup_same, diff_val
 
-    if dup_same:
+
+def admin_inline_css(path):
+    raw = open(path, encoding='utf-8', errors='ignore').read()
+    return '\n'.join(re.findall(r'<style[^>]*>(.*?)</style>', raw, flags=re.S | re.I))
+
+
+# 自检样本：同值重复必须被抓到，异值与单条必须放过
+SELFTEST = [
+    (".a{color:red}\n.a{color:red}", True, '同选择器同值重复 -> 应报'),
+    (".a{color:flex;color:grid}", False, '同属性不同值（渐进增强）-> 只 WARN 不判红'),
+    (".a{color:red}", False, '单条 -> 应放过'),
+    (".a{/* 说明 color:red 只是注释 */color:red}", False,
+     '注释里的伪声明不得算重复（轮84 真实隐患）-> 应放过'),
+]
+
+
+def selftest():
+    bad = []
+    for css, should_flag, desc in SELFTEST:
+        _n, _t, dup, _d = analyze_css(css)
+        flagged = bool(dup)
+        if flagged != should_flag:
+            bad.append('%s（期望%s 实得%s）' % (
+                desc, '报' if should_flag else '放过', '报' if flagged else '放过'))
+    return bad
+
+
+def main():
+    bad = selftest()
+    if bad:
+        print('RESULT: FAIL  判据自检不通过，读数不可信：')
+        for b in bad:
+            print('  -', b)
+        return 1
+    print('[PASS] 自检 %d 个用例符合预期（含注释伪声明不误判）' % len(SELFTEST))
+
+    sources = []
+    cssp = os.path.join(BASE, 'site', 'assets', 'css', 'main.css')
+    if os.path.exists(cssp):
+        sources.append(('main.css', open(cssp, encoding='utf-8').read()))
+    adp = os.path.join(BASE, 'site', 'admin', 'index.html')
+    if os.path.exists(adp):
+        css = admin_inline_css(adp)
+        if css.strip():
+            sources.append(('admin 内联', css))
+
+    if not sources:
+        print('RESULT: SKIP  找不到可扫的 CSS 源')
+        return 0
+
+    all_dup = []
+    all_diff = []
+    total_decl = 0
+    for name, text in sources:
+        n, total, dup, diff = analyze_css(text)
+        total_decl += total
+        print('  %-12s 规则块 %d，声明 %d 条，同值重复 %d 组' % (
+            name, n, total, len(dup)))
+        all_dup.extend((name,) + d for d in dup)
+        all_diff.extend((name,) + d for d in diff)
+
+    if all_dup:
         print()
-        print('完全相同的重复声明（后者覆盖前者=同值，纯冗余）%d 组：' % len(dup_same))
-        for sel, media, prop, v in sorted(dup_same):
-            print('  - %s @ %s { %s: %s } 写了 %d 遍' % (
-                sel, media[:30], prop, v, len(key_map[(sel, media, prop)])))
-    if diff_val:
+        print('完全相同的重复声明（后者覆盖前者=同值，纯冗余）%d 组：' % len(all_dup))
+        for src, sel, media, prop, v in sorted(all_dup):
+            print('  - [%s] %s @ %s { %s: %s }' % (src, sel, media[:28], prop, v))
+    if all_diff:
         print()
-        print('[WARN] 同上下文同属性但值不同 %d 组（渐进增强或有意覆盖，需人工判断）：' % len(diff_val))
-        for sel, media, prop, vals in sorted(diff_val)[:8]:
-            print('  ~ %-38s %-14s %s' % (sel[:38], prop[:14], vals))
+        print('[WARN] 同上下文同属性但值不同 %d 组（渐进增强或有意覆盖，需人工判断）：' % len(all_diff))
+        for src, sel, media, prop, vals in sorted(all_diff)[:8]:
+            print('  ~ [%s] %-36s %-12s %s' % (src, sel[:36], prop[:12], vals))
 
     print()
-    if total == 0:
+    if total_decl == 0:
         print('RESULT: SKIP  未解析到任何声明')
         return 0
-    if dup_same:
+    if all_dup:
         print('RESULT: FAIL')
         print('  - %d 组同上下文完全相同的重复声明；改一处会被另一处盖回，'
-              '属「设计意图静默丢失」温床' % len(dup_same))
+              '属「设计意图静默丢失」温床' % len(all_dup))
         return 1
-    print('RESULT: PASS  无同上下文重复声明（%d 条声明，值不同组仅 WARN）' % total)
+    print('RESULT: PASS  无同上下文重复声明（%d 个源共 %d 条声明，值不同组仅 WARN）'
+          % (len(sources), total_decl))
     return 0
 
 
