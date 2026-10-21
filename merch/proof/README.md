@@ -7,6 +7,12 @@
 - 凤影纸雕灯（proof-lamp.pdf）：210 × 91 mm（成品）· 内芯 195 × 76 mm · 300g 白卡 ×7 层 + 120g 硫酸纸 ×6 + 亚克力底板 + 暖白 LED 3000K
 - 凤纹帆布袋（proof-tote.pdf）：380 × 420 mm（提手 750 mm 双股） · 12oz 本白棉（未漂白），双针缝线，底部加固
 
+## 印刷文件本体（已随包拷入 artwork/，工厂无需访问仓库）
+
+- artwork/badge-phoenix-totem-color.svg ← 仓库 merch/print/phoenix-totem-color.svg
+- artwork/lamp-phoenix-totem-mono.svg ← 仓库 merch/print/phoenix-totem-mono.svg
+- artwork/tote-phoenix-totem-mono.svg ← 仓库 merch/print/phoenix-totem-mono.svg
+
 ## 回样后怎么替换线上图
 
     python tools/replace_merch_photo.py badge <实拍文件>

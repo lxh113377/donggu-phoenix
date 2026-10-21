@@ -89,6 +89,9 @@ jobs:
           # 轮85（U-02）：实拍替换流水线的反向验证。它会在沙箱副本上跑，
           # 含「门禁判红必须逐字回滚」这条 —— 不造红就永远不知道回滚是真是假。
           python tools/reverse_replace_merch_photo.py
+          # 轮85/88（U-01）：真机自检入口码判据的反向验证。用例 C 换成「能正常解码
+          # 但内容错误」的码，证明 7b 真的读了像素，而不是只看文件在不在。
+          python tools/reverse_probe_qr_gate.py
 
   deploy:
     name: Deploy

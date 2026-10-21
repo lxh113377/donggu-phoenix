@@ -223,6 +223,62 @@ for q in ["assets/img/qr.png"]:
         fails.append("二维码缺失或过小: " + q)
 print(f"[{'PASS' if not any('二维码' in f for f in fails) else 'FAIL'}] 二维码文件检查")
 
+# 7b) 真机自检页的入口码必须**解码后正好指向该页**（轮85 / U-01）。
+#     为什么单独立判据：qr-device-probe.png 是 U-01 唯一的真机入口，
+#     而自检页改名/挪路径/被 clean-URL 规则改写都会让它**静默失效** ——
+#     现场拿手机扫出来是 404，比没有这个功能更糟（人已经到场了）。
+#     存在性检查不够，必须回读像素解码比对（与 tools/make_qr.py 同一口径）。
+PROBE_URL = "https://lxh113377.github.io/donggu-phoenix/_device_probe.html"
+probe_html = os.path.join(SITE, "_device_probe.html")
+probe_state = "PASS"
+if not os.path.exists(probe_html):
+    fails.append("真机自检页缺失: site/_device_probe.html（U-01 唯一真机入口）")
+    # 反向验证抓出的真缺陷（tools/reverse_probe_qr_gate.py 用例 B）：
+    # 第一版这里只 append 到 fails，probe_state 仍由「码能不能解码」单独决定，
+    # 于是删掉页面后 7b 行照打 PASS —— 总门禁虽然红，但**归因行在说谎**。
+    # 判据的汇总行必须反映该项的全部子检查，不能只反映其中一半。
+    probe_state = "FAIL"
+probe_qr = os.path.join(BASE, "qr", "qr-device-probe.png")
+probe_state = "SKIP"
+if os.path.exists(probe_qr):
+    try:
+        import cv2 as _cv2
+        _arr = _cv2.imread(probe_qr, _cv2.IMREAD_GRAYSCALE)
+        if _arr is None:
+            fails.append("入口码无法读取: qr/qr-device-probe.png")
+            probe_state = "FAIL"
+        else:
+            _det = _cv2.QRCodeDetector()
+            _data, _pts, _ = _det.detectAndDecode(_arr)
+            if not _data:
+                _big = _cv2.resize(_arr, None, fx=2, fy=2, interpolation=_cv2.INTER_NEAREST)
+                _data, _pts, _ = _det.detectAndDecode(_big)
+            if _data != PROBE_URL:
+                fails.append("入口码解码不等于自检页 URL（实得 %r）—— 自检页路径或码已漂移"
+                             % (_data or "")[:80])
+                probe_state = "FAIL"
+            else:
+                probe_state = "PASS"
+    except ImportError as _qe:
+        # U-221 教训：缺依赖不能静默当通过，必须占一行并写明真实模块名
+        warns.append("入口码判据未取证：缺 Python 模块 %s（需 opencv-python）"
+                     % getattr(_qe, "name", "?"))
+        probe_state = "SKIP"
+else:
+    fails.append("入口码缺失: qr/qr-device-probe.png")
+    probe_state = "FAIL"
+if probe_state == "PASS" and not os.path.exists(probe_html):
+    probe_state = "FAIL"
+# 汇总行的措辞必须跟着状态走。反向验证用例 B 抓出：删掉页面后本行仍打印
+# 「页面在位 + 码解码 ==」—— 判据虽然判红了，但读日志的人会被这句话误导。
+if probe_state == "PASS":
+    _probe_desc = "页面在位 + 码解码 == %s" % PROBE_URL[-28:]
+elif probe_state == "SKIP":
+    _probe_desc = "未取证（缺 opencv，见 WARNINGS；未取证不等于通过）"
+else:
+    _probe_desc = "; ".join([f for f in fails[-2:] if "自检" in f or "入口码" in f]) or "见 FAIL 明细"
+print("[%s] 真机自检入口码：%s" % (probe_state, _probe_desc))
+
 # 8) 无障碍与 SEO 基础
 checks = {
     "viewport meta": 'name="viewport"' in html,

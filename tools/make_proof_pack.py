@@ -28,6 +28,7 @@ import argparse
 import datetime
 import os
 import re
+import shutil
 import sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -164,6 +165,10 @@ def build_pdf():
     print("  中文字体：%s（粗体 %s）" % (F, FB))
 
     os.makedirs(OUT, exist_ok=True)
+    # 印刷文件本体随包交付：工厂拿不到仓库，只给他们仓库路径等于没给。
+    art_dir = os.path.join(OUT, "artwork")
+    shutil.rmtree(art_dir, ignore_errors=True)
+    os.makedirs(art_dir, exist_ok=True)
     ink = HexColor("#1A1409")
     dim = HexColor("#6B5F52")
     acc = HexColor("#C9A227")
@@ -249,8 +254,13 @@ def build_pdf():
             c.drawString(W - 18 * mm - iw * s, max(20 * mm, y - 68 * mm - ih * s),
                          "参照效果图（渲染，非印刷文件）")
 
+        art_src = os.path.join(BASE, it["art"].replace("/", os.sep))
+        art_name = "%s-%s" % (it["id"], os.path.basename(it["art"]))
+        shutil.copy2(art_src, os.path.join(art_dir, art_name))
         c.setFont(F, 7)
         c.setFillColor(dim)
+        c.drawString(18 * mm, 16 * mm,
+                     "印刷文件本体已随包交付：artwork/%s（无需另行索取）" % art_name)
         c.drawString(18 * mm, 12 * mm,
                      "畲·凤鸣东固 · 薪火寰行实践团 · 本页由 tools/make_proof_pack.py 生成，"
                      "改规格请改脚本与 culture.js，勿手改 PDF")
@@ -264,6 +274,10 @@ def build_pdf():
         f.write("> 打印后先用页底 100mm 比例尺校验未被缩放，再发厂。\n\n")
         for it in ITEMS:
             f.write("- %s（proof-%s.pdf）：%s · %s\n" % (it["cn"], it["id"], it["cut"], it["material"]))
+        f.write("\n## 印刷文件本体（已随包拷入 artwork/，工厂无需访问仓库）\n\n")
+        for it in ITEMS:
+            f.write("- artwork/%s-%s ← 仓库 %s\n"
+                    % (it["id"], os.path.basename(it["art"]), it["art"]))
         f.write("\n## 回样后怎么替换线上图\n\n")
         f.write("    python tools/replace_merch_photo.py badge <实拍文件>\n")
         f.write("    python tools/replace_merch_photo.py --all      # 按 merch/shot/ 命名批量\n")
