@@ -214,8 +214,9 @@ select:focus-visible,.login-card input:focus-visible{outline:2px solid var(--gol
       <div class="tw"><table id="tbl-country"><thead><tr><th>国家</th><th>浏览</th><th>访客</th></tr></thead><tbody></tbody></table></div>
     </section>
     <section class="panel">
-      <h2>语言与设备</h2>
-      <div class="tw"><table id="tbl-dev"><thead><tr><th>语言</th><th>次数</th><th>屏幕</th><th>次数</th></tr></thead><tbody></tbody></table></div>
+      <h2>语言与设备<em>各自独立排行</em></h2>
+      <div class="tw"><table id="tbl-lang"><thead><tr><th>语言</th><th>访问次数</th></tr></thead><tbody></tbody></table></div>
+      <div class="tw" style="margin-top:12px"><table id="tbl-screen"><thead><tr><th>屏幕档</th><th>访问次数</th></tr></thead><tbody></tbody></table></div>
     </section>
   </div>
 
@@ -418,22 +419,17 @@ select:focus-visible,.login-card input:focus-visible{outline:2px solid var(--gol
       return [c.c, fmt(c.n), fmt(c.u)];
     }));
 
-    /* 语言与屏幕并排双列 */
-    var langs = d.langs || [], screens = d.screens || [];
-    var rows = Math.max(langs.length, screens.length);
-    var html = '';
-    for (var i = 0; i < rows; i++) {
-      /* 两个列表长度不同（语言约 5 种、屏幕档 24 种），
-       * 缺失侧必须显式给 '—'：原先写 {n:''} 再走 fmt，
-       * 而 fmt 是 (n||0) —— 空值被渲染成 0，
-       * 于是出现「语言空白 + 610 次」的假数据行（轮92 目视发现）。 */
-      var l = langs[i], sc = screens[i];
-      html += '<tr><td>' + (l ? escapeHtml(l.l || '(未知)') : '—') + '</td>' +
-        '<td class="mono">' + (l ? fmt(l.n) : '—') + '</td>' +
-        '<td class="mono">' + (sc ? escapeHtml(sc.s || '(未知)') : '—') + '</td>' +
-        '<td class="mono">' + (sc ? fmt(sc.n) : '—') + '</td></tr>';
-    }
-    $('#tbl-dev tbody').innerHTML = html;
+    /* 语言与屏幕档是两个互不相关的排行：
+     * 原先硬拼成一张表（语言|次数|屏幕|次数），既有两个同名「次数」表头
+     * 让读屏器无法区分（WCAG 1.3.1），又让同一行暗示不存在的对应关系，
+     * 且两列长度天然不同（轮94 拆表；U-282 的假 0 也是这个根子导致的）。
+     * 拆开后各自复用 fillTable（colspan 由表头动态推导）。 */
+    fillTable('#tbl-lang tbody', (d.langs || []).map(function (x) {
+      return [x.l || '(未知)', fmt(x.n)];
+    }));
+    fillTable('#tbl-screen tbody', (d.screens || []).map(function (x) {
+      return [x.s || '(未知)', fmt(x.n)];
+    }));
   }
 
   function renderBars(sel, items) {
