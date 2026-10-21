@@ -10,8 +10,17 @@
 - [x] 设计系统 v2：自托管字体 / 令牌字阶 / 三处结构改造 / 移动端导航 / 5 条新门禁（轮5）
 - [x] 部署本轮（一木成像 + AR 场景一改造）到 GitHub Pages / pages.dev 并复测二维码指向
 - [ ] 真机实测 iPhone Safari 与微信内置浏览器的摄像头行为（曝光、侧光、识别阈值）
+      → 轮85 已把**可自动化部分全部做完**：`python tools/preflight_device_test.py`（三档 UA/视口/4G/CPU4x，
+      实测 FCP 2.1~2.2s < 3000ms、AR 三场景推进+降级+旁白全 PASS）；
+      真机侧只剩「扫码」一个动作：`qr/qr-device-probe.png` → `site/_device_probe.html` 自动跑完出报告。
+      仍待真机的只有：摄像头**曝光/侧光/识别阈值**（模拟无摄像头，只能验降级链，验不了识别率）。
 - [ ] 摄像头识别升级为 OpenCV.js 模板匹配（当前为暖色占比判定）
-- [ ] 打样：徽章 / 纸雕灯 / 帆布袋 实物打样与实物拍照替换效果图
+      依赖上一条的现场光照读数，没有真机数据就调阈值等于猜（U-01 未闭则本条不动）。
+- [~] 打样：徽章 / 纸雕灯 / 帆布袋 实物打样与实物拍照替换效果图（轮85 拆成两段）
+      ✅ 自动化段已完成：`merch/proof/proof-{badge,lamp,tote}.pdf` 发厂规格卡（与 culture.js 强制对账）
+         + `tools/replace_merch_photo.py` 一键替换链（EXIF→准入→双档→预算→门禁红即回滚→manifest）。
+      ⬜ 物理段待做（唯一剩余动作）：PDF 发厂 → 回样拍一张照丢 `merch/shot/` → `python tools/replace_merch_photo.py --all`。
+         当前 `--status` = 实拍 0 / 渲染 12。目检确认 `素材/` 九张图**无一张实物照**，故不可用改代码假装完成。
 
 ## 对标改造后续（2026-10-20 登记，源 docs/对标分析报告.md §4/§5）
 
@@ -62,16 +71,20 @@
 
 ## 轮51 新增待办（2026-10-20，源 docs/对标分析报告.md §4 剩余项 + 本轮实测发现）
 
-- [ ] **真机旁白发声复验**（U-01 同族扩展）：本机 Edge 已证 speechSynthesis.speaking=true 且挑到
-      Microsoft Huihui 中文语音，但 iPhone Safari / 微信内置浏览器是否给出中文语音、
-      是否受自动播放策略二次限制，均未实测。现场嘈杂时旁白是有用通道，必须真机验一次。
+- [~] **真机旁白发声复验**（U-01 同族扩展，轮85 推进一半）
+      ✅ 已取证（CDP 模拟面）：voice = `Microsoft Huihui - Chinese (Simplified, PRC)`、
+         lastText = 第一章全文 49 字、aria-pressed false→true→false 自洽（_qa/capture_narr.py 可复跑）。
+      ✅ 已定性：iOS/微信的 speechSynthesis **必须有用户手势**才出声，这是平台设计不是缺陷
+         —— 自检页第②项据此改判「△ 点一次重测按钮」而非「✗ 需要处理」。
+      ⬜ 仍待真机：那台手机到底给不给中文语音、音质在嘈杂现场是否可用。
+         动作 = 扫 `qr/qr-device-probe.png` → 看第②项 → 必要时点一次「点我重测旁白」。
 - [ ] **并行端遗留脚本 _qa/apply_review3.py 原地写真实文件**（U-131）：
       safe_script_test 本地判红。该脚本的改动**已生效**（index.html 现值即其目标值），
       属一次性执行残留；未跟踪、不入 CI。按 U-17「不确定语义不代删」留给并行端自处理。
 - [ ] I-9 测试基线（P3）**明确不做**，理由见 docs/对标分析报告.md §11.2：本轮新增 93 项纯静态判据已覆盖。
       本轮已顺带把三道新判据做成可单测的纯静态脚本，边际收益递减，暂排后。
 - [ ] I-10 package.json + eslint/stylelint（P3）**明确不做**，理由见 §11.2：与零依赖零构建硬约束冲突。
-- [ ] 打 git tag（报告 §4 唯一仍未闭合的高优项）：tag=0，对外无可核验发布面。
+- [x] 打 git tag（报告 §4 唯一仍未闭合的高优项）：**已于轮51 闭合**——annotated tag `v1.2.0` 已发并推远端（轮77 复核：`git tag -l` 有 v1.2.0，`git ls-remote --tags origin` 远端可见）。本行旧描述已作废。
       版本号口径已在 CHANGELOG 写明「与 memory/03-status.md 阶段一致」，
       轮51 完成 I-5..I-8 后应发 1.2.0（新增旁白音道 + 响应式图片 + 引擎打磨 + 场景注册表）。
 - [ ] 社区协作：本轮仍未向外部仓提 issue/PR；跟踪 **PR #1898** 维护者反馈。

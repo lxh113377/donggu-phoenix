@@ -179,3 +179,124 @@ IntersectionObserver 用 `threshold:0.12` ⇒ 交叉比最高只有 0.17，用�
 - 真机 iPhone Safari / 微信内置的旁白发声与朗读质量（U-01 待排期；本机 Edge 已证 speaking=true）。
 - I-9 测试基线 / I-10 package.json+lint（报告列低优先级 P3，未动）。
 - 社区协作：本轮未向外部仓提 issue/PR；PR #1898 仍待维护者反馈。
+
+## 轮77 · 目标闭环确认（2026-10-21）
+
+议题：会话目标「系统性学习 + 对标分析 + 按优先级四项工程改造 + 完成后请示」的完成度核验。
+
+**结论：目标已达成，证据本轮现取（非转述）。**
+
+| 目标项 | 交付物 | 本轮实测证据 |
+|---|---|---|
+| 对标分析（8 维） | `docs/对标分析报告.md`（42,731B，§0–§11） | §2 对比总览表 / §3 逐项差距 / §4 改进建议清单（I-1..I-10 带高/中/低）/ §5 可实施路径（P0–P7 + 里程碑）齐全 |
+| 四项改造按优先级 I-1→I-4 | 见报告 §9、§11 | ①I-1：`.github/workflows/deploy-pages.yml` 真实执行 `python tools/verify_site.py`，Deploy 带 `needs: verify`；CI 近 5 次 run 全 success（末次 39554711273）②I-2：`site/sw.js` 7,191B + `site/manifest.webmanifest` 1,745B，门禁「PWA 离线兜底」PASS ③I-3：LICENSE/CONTRIBUTING/CHANGELOG/SECURITY/CODE_OF_CONDUCT + PR 模板 + 3 份 ISSUE 模板 = 7/7，门禁 PASS ④I-4：门禁「无障碍与分享基线」PASS；I-5..I-8 已于轮51 补齐 |
+| 社区协作 | UniversalViewer PR #1898 | 报告 §10：MERGED / APPROVED |
+| 可核验发布面 | tag `v1.2.0` | `git tag -l` → v1.2.0（报告 §4 唯一未闭合高优项已闭合） |
+| 当前门禁 | — | `python tools/verify_site.py` → RESULT: PASS（整站 1373KB/1600KB、首屏 319KB/400KB） |
+| 线上可用性 | GitHub Pages + Cloudflare Pages | 两条链 HEAD 均 200（25,260B） |
+
+**未做（诚实口径，非目标缺口）**：真机 iPhone Safari / 微信内置复验（U-01）；I-9 / I-10（报告 P3 明示取舍，§11.2）。
+
+
+## 轮85 · U-01 现场收口 + U-02 文创实物化（2026-10-21）
+
+**性质**：把两件「只能靠人做」的事，拆成「能自动化的全部自动化 + 剩余一次点击」。
+
+### U-01 真机复验（首屏 3 秒 / 旁白中文发声 / AR 三场景可看）
+
+本机**没有真机**（实测：`Get-PnpDevice -Class WPD` 无 OK 设备、未装 adb、Windows 无 iOS 自动化通道）。
+所以拆两面：
+
+**① 自动化面 = `tools/preflight_device_test.py`（CDP 直连，三档 profile）**
+
+| 档位 | UA | 视口 | 附加 |
+|---|---|---|---|
+| wechat-ios | MicroMessenger/8.0.49（iOS） | 390×844 @3x | + AR 三场景深检 |
+| iphone-safari | Version/17.5 Safari/604.1 | 390×844 @3x | — |
+| wechat-android | XWEB/1260089 MicroMessenger/8.0.50 | 360×800 @3x | — |
+
+三档共同条件：真 CSS 视口（DeviceMetricsOverride，非 --window-size 伪影）+ 4G 限速（170ms RTT / 4Mbps）+ CPU 4x 降频。
+
+实测读数（本轮现取）：
+
+```
+wechat-ios      FCP 2180ms / LCP 2812ms / CLS 0 / 传输 919KB / 20 请求
+wechat-android  FCP 2148ms / LCP 2780ms / CLS 0
+iphone-safari   FCP 2184ms / LCP 2784ms / CLS 0
+RESULT: PASS  3 档模拟移动端全部达标（FCP 预算 3000ms）
+```
+
+AR 三场景（wechat-ios 档，4x 降频下）：craft 17fps / red 23fps / phoenix 20fps，
+进度轴均 0.9→2.5s 推进，画面签名两次采样都不同（证「真在画」而非停在首帧），
+mode 全部 gallery（`camera:false` 语义正确），无摄像头时 `__ar.open()` 自动落展柜模式。
+
+旁白中文发声（_qa/capture_narr.py 取证）：
+`voice = Microsoft Huihui - Chinese (Simplified, PRC)`、`lastText` = 第一章全文 49 字、
+`aria-pressed` false→true→false 自洽。
+
+**诚实边界（写进判据输出，不藏）**：模拟只能**证伪**不能**证实**。
+WebKit（Safari）与 XWEB（微信）内核差异、iOS 自动播放策略、真机 CPU/内存仍需真机自证。
+
+**② 真机一次点击面 = `site/_device_probe.html` + `qr/qr-device-probe.png`**
+
+扫码即自动跑完三项（先清 SW 再测，防 cache-first 假绿），屏上直接出
+`✓ 三项全过 / △ 点一次重测旁白 / ✗ 需要处理`，一键复制 JSON 报告。
+不需要人点任何东西、不需要懂技术。无头端到端实测（_qa/probe_e2e.py）：
+
+```
+verdict: △ 点一次「点我重测旁白」就能收尾（首屏与 AR 已过）
+firstScreen: {ok:true, ms:416, engineReady:true, particles:1500}
+ar.ok: true（craft/red/phoenix 全部 t 推进 + 画面签名变化 + gallery 模式）
+camera: {mode:gallery, ok:true}
+consoleErrors: 0
+```
+
+旁白在无手势下判「△ 待一次点击」而非「✗ 需要处理」—— iOS speechSynthesis
+必须有用户手势是平台设计，不是页面缺陷；挑到中文 voice 就不吓唬看展的人。
+
+### U-02 文创实物化
+
+**先做了一件必须做的事：目检 `素材/` 九张图，确认没有任何一张是实物打样照**
+（00055735 是标着「直径 51mm」的手绘设计稿，a29d83e2 是礼盒/徽章/纸雕灯草图，其余是采访与航拍）。
+所以「实拍替换」在物理上尚未发生，**不能靠改代码假装完成**。能做的是把两侧都铺平：
+
+- `tools/make_proof_pack.py` → `merch/proof/proof-{badge,lamp,tote}.pdf`（三份 A4 发厂规格卡：
+  成品尺寸/出血咬口/材质/工艺/印刷文件/逐条验收复选框/100mm 实物比例尺/参照效果图）。
+  规格与 `culture.js` **强制对账**，不一致拒绝生成（防「工厂按 A 做、观众看 B」）。
+- `tools/replace_merch_photo.py` → 实拍到手后一条命令：EXIF 转正 → 准入校验（≥620px、动态范围）
+  → 居中裁方 620 + -340 双档 → q 逐档降进 120KB/40KB 预算 → 三道门禁任一红即按 SHA 逐字回滚
+  → 写 `merch/shot-manifest.json`（源文件/live/render 三 sha + 日期，供素材真实性追溯）。
+- 反向验证 `tools/reverse_replace_merch_photo.py` 7 项全过，其中最重要的是
+  **伪造门禁红，证明回滚真的把主图与小档 SHA 逐字还原**（不造这一次红，回滚代码是真是假永远不知道）。
+- `merch/shot/` 已加 .gitignore（手机直出 3~8MB/张属原图仓库，不入库）。
+
+当前状态 `python tools/replace_merch_photo.py --status` → **实拍 0 / 渲染 12**。
+剩余唯一动作：把 `merch/proof/` 三份 PDF 发给工厂，回样后拍一张照丢进 `merch/shot/`，跑 `--all`。
+
+### 本轮我自己犯的错（逐条）
+
+| # | 错 | 怎么发现 | 处置 |
+|---|---|---|---|
+| 1 | 判据把 favicon 404 当页面错误 → 好夹具判红 | 尺子自检当场逼出 | 滤 favicon，且 URL 在 `entry.url` 不在 `entry.text`（第一版只查 text，第二次自检仍红才定位） |
+| 2 | canvasSig 12×12 网格 + `Math.round(求和)` 把 craft 的画面变化四舍五入吃掉 → 误判「动画未在画」 | 真跑站点时只有 craft 报红，另两个正常，反常即线索 | 改 20×20 + 保留 3 位小数 |
+| 3 | getImageData 夹在 fps 采样窗口中间，**尺子自己压被测 fps** | A/B：CPU1x 53/60/60 vs CPU4x 14/21/18，且 GPU 开关无差别 | fps 窗口与画面采样分离；MIN_FPS 按证据定 10，画面在动由「进度推进 + 签名变化」两条独立证据保证 |
+| 4 | 单线程 http.server 被首屏 20 资源并发打爆，把带宽误算成排队（2G 档直接 reset） | _qa/dbg_bw2.py 复现 | 改 ThreadingTCPServer(daemon_threads) |
+| 5 | 用 127.0.0.1 测站 = 混入「本地开发面」语义（analytics 白名单含 127.0.0.1，静态主链根本不发 /api） | 读数里出现 /api/track 404 才想到两侧语义相反 | 主机名改 `donggu.local`（故意不在白名单）+ host-resolver 映射；并新增「静态面 /api 请求必须为 0」判据 |
+| 6 | 不加 `--no-proxy-server` 时 Chrome 走系统代理，别名解析变 502/5s | _qa/dbg_host.py A/B 三组 | 列为硬需求写进 CHROME_ARGS |
+| 7 | 预注入采集器没装上时，错误/LCP/CLS 全空读数而判据照样绿（U-221 同族） | 自查 | 探针回填 `pfInstalled`，false 直接判违规 |
+| 8 | 自检页 camera 链未 await，报告写完 2.5s 后才回填 → 屏上永远「待测」 | 无头端到端实测 | 并入 promise 链，复跑 camera={mode:gallery,ok:true} |
+| 9 | **String.raw 写 HTML 内联 JS 正则，双反斜杠原样落盘 → 页面 SyntaxError**，肉眼读源码看不出 | 无头加载一次即抓到 | 产物写完必过 `node --check`（提取 <script> 单独验）再进浏览器；「写了」≠「能跑」 |
+| 10 | 第一版 PDF 所有中文变成字母 I（reportlab Helvetica 不含中文字形） | PyMuPDF 抽文本实测 | 注册 simsun/msyh/simhei（TTC 必须带 subfontIndex）→ 降级 CID → 全不可用则拒绝生成，绝不静默出豆腐 |
+| 11 | 规格对账两次误报（拿工艺数字比尺寸 / 圆形只有 1 个数字） | --check 自己判红 | 按语义切段：只比「成品尺寸段」的数字 |
+| 12 | 改了中文文案没重建字体子集 → verify 字体完整性判红（缺 10 字） | 门禁当场拦（U-212 立过的规矩，我又踩一次） | 固定动作链：改文案 → build_fonts.py → verify；并留 _qa/check_subset.py 做替换前 cmap 预检 |
+
+### 接入与验证
+
+- CI（`.github/workflows/deploy-pages.yml` Guard self-test 段）新增 3 条：
+  `make_proof_pack.py --check` / `reverse_replace_merch_photo.py`（反向验证）。
+- 本地套件 `run_browser_suite.py` 新增 `preflight_device_test.py`（--list 复核无重复条目，U-218 纪律）。
+- `verify_site.py` → **RESULT: PASS**（整站 1383KB/1600KB、首屏 328KB/400KB、字体缺 0）。
+- `ledger_id_test` → PASS（262 条，U 号唯一）。
+- `safe_script_test` → PASS（新工具不写真实 site/；PIL save 类生成器与该判据口径本就无关，
+  与 make_srcset/build_statue_asset 同类）。
+- 自检页二维码 `qr/qr-device-probe.png`：生成 + OpenCV 回读解码 == 目标 URL 双验通过。

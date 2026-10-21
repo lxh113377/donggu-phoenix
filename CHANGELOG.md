@@ -8,7 +8,33 @@
 
 ## [未发布]
 
-（暂无待发布条目；以下内容已随 1.2.0 发布）
+### 新增（轮85 · U-01 现场收口 + U-02 文创实物化）
+- **真机前哨判据** `tools/preflight_device_test.py` + `tools/preflight_device.mjs`：CDP 直连，
+  三档移动端 profile（微信 iOS / iPhone Safari / 微信 Android）× 真 CSS 视口 × 4G 限速 × CPU 4x 降频，
+  实测首屏 FCP/LCP/CLS/LongTask、横向溢出、AR 三场景推进与画面签名、无摄像头降级、旁白可用性。
+  自带双向自检（好夹具必须绿、坏夹具必须红），已接入 `run_browser_suite.py`。
+- **真机自检页** `site/_device_probe.html` + `qr/qr-device-probe.png`：手机扫码即自动跑完三项并出
+  PASS/FAIL，一键复制 JSON 报告；测前先 unregister SW + 清 caches 再 reload，防 cache-first 假绿。
+- **文创打样文件包** `tools/make_proof_pack.py` → `merch/proof/proof-{badge,lamp,tote}.pdf`：
+  A4 发厂规格卡（成品尺寸 / 出血咬口 / 材质 / 工艺 / 印刷文件 / 逐条验收复选框 / 100mm 实物比例尺）。
+  规格与 `site/assets/data/culture.js` 强制对账，不一致拒绝生成；`--check` 已接入 CI。
+- **实拍替换流水线** `tools/replace_merch_photo.py`：EXIF 转正 → 准入校验（≥620px、动态范围）→
+  居中裁方 620 + -340 双档 → q 逐档降进 120KB/40KB 预算 → 三道门禁任一红即按 SHA256 逐字回滚 →
+  写 `merch/shot-manifest.json`（源/live/render 三 sha + 日期，供素材真实性追溯）。
+  `--status` 可查哪几件仍是渲染图。反向验证 `tools/reverse_replace_merch_photo.py`（7 项，含
+  「伪造门禁红证明回滚是真的」）已接入 CI。
+
+### 变更
+- `run_browser_suite.py` 浏览器判据由 21 项增至 22 项（新增真机前哨）。
+- `.gitignore` 新增 `merch/shot/`：实拍原图属「原图仓库」（手机直出 3~8MB/张），发布物是
+  `site/assets/img/merch/` 里的成品图，原件不入库。
+- 自托管字体子集随自检页文案重建：875 → 912 汉字（222KB，仍在 260KB 险线内）。
+
+### 已知边界（不粉饰）
+- 真机前哨是**模拟**，只能证伪不能证实：WebKit（Safari）与 XWEB（微信）内核差异、
+  iOS 自动播放策略、真机 CPU/内存与摄像头曝光/识别阈值仍需真机自证（扫码即验）。
+- U-02 的「实拍替换」**物理上尚未发生**：目检 `素材/` 九张图确认无一张实物打样照
+  （设计稿与草图不算）。当前 `--status` = 实拍 0 / 渲染 12；剩余动作是把 PDF 发厂、回样后拍照入库。
 
 ## [1.2.0] - 2026-10-20
 

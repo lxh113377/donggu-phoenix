@@ -452,3 +452,26 @@
 | U-246 | 84 | **轮59 建判据时漏做反向验证**（25 轮无人知）：一条判据若从没被证明能判红，等于不知道它是不是哑的 —— 而 U-244 那个漏报恰恰只有反向验证能发现 | 补 reverse_dead_css.py 四用例：D 未注入必须 PASS（排除过度反应）、A 同值重复判红点名、B「规则前带注释」的同值重复判红（专防注释残渣假通过）、C 同属性异值不判红（渐进增强合法只 WARN）。已接入 CI（现 30 条） | **已完成** | tools/reverse_dead_css.py |
 | U-247 | 84 | 反向验证自己踩的坑：第一版想用 .ar-icon{display:grid;place-items:center} 当注入锚点，但那条正是轮59 我自己清理掉的（改成注释），锚点根本不存在，assert 直接炸 | 反向验证不要依赖「某条具体业务规则还在」，注入全新的唯一选择器（.zz-reverse-probe）最稳，也不与真实代码耦合 | **已完成**（方法论） | tools/reverse_dead_css.py |
 | U-248 | 84 | 干净克隆首测 reverse_dead_css rc=2，但同场 dead_css 显示 1926 条（本地 2236）—— 判定为 clone 拿到**未提交的旧版**（版本不匹配）而非真缺陷；提交后重验 4 项全通过（2236 条）。另确认 CI 的 Guard self-test 块有 set -e，任一判据非 0 即 job 红，故 success 可信；并查 CI 日志确认 4 项在 ubuntu runner 真的执行（本地绿不等于 CI 绿，尤其这些脚本用 safe_mutation 跨平台跑子进程） | 结论：新反向验证在 CI 有效执行且失败会让 job 变红 | **已完成** | .github/workflows/deploy-pages.yml |
+
+
+## 轮85 新增条目（2026-10-21 · U-01 真机复验的自动化面 + 一次点击面）
+
+> 续编前实测台账最大 U-248（并行端轮84），本块取 U-249~257，不与并行端撞号（U-135 纪律）。
+
+| ID | 轮次 | 问题 | 建议做法 | 状态 | 落地位置 |
+|---|---|---|---|---|---|
+| U-249 | 85 | U-01 的真机本机不可得（实测：WPD 无 OK 设备 / 未装 adb / Windows 无 iOS 通道），但「首屏 3 秒 / 旁白中文发声 / AR 三场景」三条判据长期只靠 390×844 模拟，唯一可能现场翻车的口子没闭 | 拆两面收口：①**自动化面** preflight_device_test.py（CDP 三档 profile：微信iOS UA·iPhoneSafari·微信Android + 真 CSS 视口 + 4G 限速 + CPU 4x 降频，实测 FCP 1.7~2.2s < 3000ms 预算，AR 三场景推进/降级/旁白全 PASS）②**真机一次点击面** site/_device_probe.html（扫码自动跑三项出报告）。模拟能证伪不能证实，边界写进结论 | **已完成** | tools/preflight_device_test.py |
+| U-250 | 85 | 尺子自检逼出 4 处自身缺陷：①favicon 404 被当页面错误（URL 在 entry.url 不在 text，第一版只查 text，第二次自检仍红才发现）②canvasSig 12×12 网格+Math.round 把 craft 的画面变化四舍五入吃掉→误判「动画未在画」③getImageData 夹在 fps 窗口中间，尺子自己压被测 fps ④单线程 http.server 被首屏 20 资源并发打爆，带宽误算成排队（2G 档直接 reset） | ①滤 favicon 且查 url 字段 ②改 20×20+保留 3 位小数 ③fps 窗口与画面采样分离 ④ThreadingTCPServer(daemon_threads)。**每条都被双向自检（好夹具必须绿、坏夹具必须红）当场抓住，不是靠想** | **已完成** | tools/preflight_device.mjs |
+| U-251 | 85 | MIN_FPS=20 差点把正常手机判死：_qa/dbg_gpu.py A/B 实测同 profile 下 --disable-gpu 与真 GPU 无差别（14/21/18 vs 13/21/19），CPU 1x 为 53/60/60 —— 瓶颈在 CPU 降频代理而非光栅；4x 是保守代理（桌面核心≈中端机 2~4 倍单核） | 按证据定红线：fps 冻结线=10；「画面在动」由进度推进+画面签名变化两条独立证据保证，不靠 fps 单数；读数作 [INFO] 打印不隐藏 | **已完成** | tools/preflight_device_test.py |
+| U-252 | 85 | 用 127.0.0.1 测站会混入「本地开发面」语义：analytics.js 白名单含 127.0.0.1，静态主链（扫码落地面）根本不会发的 /api 请求在本地全发，误差与真实面相反 | 主机名用 donggu.local（**故意不在**白名单）+ --host-resolver-rules 映射 127.0.0.1；实测不加 --no-proxy-server 会被系统代理劫持成 502/5s，硬需求；新增「静态面 /api 请求数必须为 0」判据（修完白名单语义后实测 0） | **已完成** | tools/preflight_device_test.py |
+| U-253 | 85 | 预注入采集器若没装上，错误/LCP/CLS 全是空读数而判据照样绿（U-221「未取证≠通过」同族） | 探针回填 pfInstalled 标志；判据对 false 直接违规一条「读数不可信」；driver 无 JSON/无 title 一律归「无读数」不判 PASS | **已完成** | tools/preflight_device.mjs |
+| U-254 | 85 | 真机复验要老大「拿手机测一次」仍是人工多步；且自检页第一版被无头端到端实测抓出两个自身缺陷：①camera 链未 await，报告写完 2.5s 后才回填（屏上永远「待测」）②旁白无手势被判「✗ 需要处理」——iOS speechSynthesis 按设计必须有用户手势，把它判成缺陷是页自己不懂平台 | 扫码即自动跑完三项 + 一键复制 JSON 报告；camera 并入 promise 链；旁白无手势改「△ 点一次重测按钮就能收尾」（挑到中文 voice 就不算缺陷，只待手势）；复跑实测 camera={mode:gallery,ok:true}、verdict 正确落 △ | **已完成** | site/_device_probe.html |
+| U-255 | 85 | String.raw 写 HTML 里的 JS 正则，双反斜杠原样落盘：/AppleWebKit/(\d+\.\d+)/ 写成了带转义残留的畸形正则，**页面 SyntaxError** ——肉眼读源码完全看不出，无头加载一次才抓到 | 产物写完必过 node --check（提取 <script> 单独验）再进浏览器复跑；「写了」≠「能跑」，对 HTML 内联 JS 这条最狠 | **已完成**（方法论） | _qa/probe_e2e.py |
+| U-256 | 85 | 自检页新增中文文案后 verify 字体完整性判红（缺 10 字：势待息户控策缺跑降陷）——子集是扫描生成的，改了文案不重建子集必红（U-212 立过的规矩，本轮自己又踩一次流程） | 固定动作链：改中文文案 → build_fonts.py 重建（875→912 汉字，222KB<260KB 险线）→ verify 复跑 PASS。已复现 U-212 的 cmap 实测候选法做替换前预检（_qa/check_subset.py） | **已完成** | site/assets/fonts/ |
+| U-257 | 85 | 「旁白中文发声」此前只有本地 Edge 读数；CDP 面能证到什么程度要写清楚 | 实测读数：voice=Microsoft Huihui - Chinese (Simplified, PRC)、lastText=第一章全文（49 字含标点）、aria-pressed false→true→false 自洽；4x 降频下 speaking 采样为 false（引擎排队假象），CPU1x 复采 lastText 非空。真机是否出声/音质仍由自检页第②项收口 | **已完成** | _qa/capture_narr.py |
+
+| U-258 | 85 | U-02 长期停在「等打样」，但**能自动化的部分一直没做**：工厂要的是带尺寸/出血/材质/工艺/验收点的规格文件，以前每次现写现排，于是干脆没发过厂 | 新增 tools/make_proof_pack.py：一键生成 badge/lamp/tote 三份 A4 规格 PDF（含 100mm 实物比例尺校验未被缩放、逐条验收复选框、印刷文件指向 merch/print/*.svg）。规格与 culture.js 强制对账，不一致拒绝生成 —— 防「工厂按 A 做、观众看 B」 | **已完成** | merch/proof/ |
+| U-259 | 85 | 第一版 PDF **所有中文变成字母 I**（PyMuPDF 抽文本实测 'IIIII · IIII (badge)'）：reportlab 内置 Helvetica 不含中文字形，肉眼在 PDF 阅读器里还可能看到「豆腐块」当成字体渲染问题 | 注册系统 TTF/TTC（simsun/msyh/simhei，TTC 必须带 subfontIndex）→ 降级 CID STSong-Light → 全不可用则**拒绝生成**，绝不静默出豆腐。复跑抽文本确认中文逐字可读 | **已完成** | tools/make_proof_pack.py |
+| U-260 | 85 | 规格对账自己误报两次：①拿页面 spec 的工艺数字（七层/3000K/12oz）比尺寸 → lamp/tote 假红 ②改「比前两个数字」后圆形只有 1 个数字 → badge 假红 | 按语义切段：页面 spec 取第一个 · 之前、PDF cut 取第一个括号/· 之前，只比这两段的数字。**判据误报必须改判据口径，不是放宽判据** | **已完成** | tools/make_proof_pack.py |
+| U-261 | 85 | 实拍到手后的替换是六步手工链（压图/改名/重跑 srcset/跑门禁…），漏任一步就上线 404 或 900KB 原图（本站首屏预算 400KB） | tools/replace_merch_photo.py 固化整链：EXIF 转正 → >=620px 与动态范围准入 → 居中裁方 620 + -340 双档 → q 逐档降进 120KB/40KB 预算 → 三道门禁任一红即**按 SHA 逐字回滚** → 写 shot-manifest.json 记三 sha 与日期。反向验证 7 项全过（含伪造门禁红证明回滚是真的） | **已完成** | tools/replace_merch_photo.py, tools/reverse_replace_merch_photo.py |
+| U-262 | 85 | 目检素材/ 九张图确认：**没有任何一张是实物打样照**（00055735 是标着「直径51mm」的手绘设计稿、a29d83e2 是礼盒/徽章/纸雕灯草图，余为采访与航拍）。所以 U-02 的「实拍替换」在物理上尚未发生，不能靠改代码假装完成 | 把可自动化部分全部做完（打样包 U-258 + 替换链 U-261 + merch/shot/ 投放约定 + qr/qr-device-probe.png 扫码入口），剩余唯一动作是「把 PDF 发给工厂、回样后拍一张照放进 merch/shot/ 跑一条命令」。当前状态用 --status 可查：实拍 0 / 渲染 12 | **已完成**（物理动作待回样，非代码缺口） | tools/replace_merch_photo.py --status |
