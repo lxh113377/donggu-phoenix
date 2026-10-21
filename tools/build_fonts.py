@@ -25,6 +25,10 @@ def strip_comments(s, is_html):
     """
     if is_html:
         s = re.sub(r"<!--.*?-->", " ", s, flags=re.S)
+        # HTML 模式不做 // 剥离：// 在 HTML 属性里是 URL 协议符（https://…），
+        # 剥了会把 URL 之后的渲染文本整段误删（2026-10-21 实测：escape-link 的
+        # 「受限时用」四字被连坐，子集缺字、门禁 FAIL）。
+        return re.sub(r"/\*.*?\*/", " ", s, flags=re.S)
     s = re.sub(r"/\*.*?\*/", " ", s, flags=re.S)
     s = re.sub(r"//[^\n]*", " ", s)
     return s

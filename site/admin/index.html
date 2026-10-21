@@ -142,6 +142,8 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
     <input id="admin-key" type="password" autocomplete="off" spellcheck="false" required>
     <button class="btn" type="submit" id="btn-login">进入后台</button>
     <p class="login-err" id="login-err" role="alert" aria-live="polite"></p>
+    <a class="btn" id="escape-link" href="https://donggu-phoenix.pages.dev/admin/" target="_blank" rel="noopener" style="display:none;margin-top:10px;text-decoration:none;justify-content:center">在新标签页打开（嵌入窗口受限时用）</a>
+    <noscript><p style="color:var(--red-hi);font-size:var(--fs-xs)">本页需要启用 JavaScript 才能登录。</p></noscript>
   </form>
 </div>
 
@@ -259,6 +261,21 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
     });
   }
 
+  /* 嵌入环境检测：聊天窗口内嵌浏览器（跨源 iframe）里 sessionStorage 与部分 fetch
+   * 会被沙箱静默拦截，登录会「点了没反应」——此时给出明确出路。 */
+  (function detectEmbed() {
+    var embedded = false;
+    try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+    var storageBlocked = false;
+    try { sessionStorage.setItem('dg-probe', '1'); sessionStorage.removeItem('dg-probe'); } catch (e) { storageBlocked = true; }
+    if (embedded || storageBlocked) {
+      var link = document.getElementById('escape-link');
+      if (link) { link.style.display = 'inline-flex'; }
+      var err = document.getElementById('login-err');
+      if (err && embedded) { err.textContent = '当前是嵌入窗口，可能无法登录，请点下方按钮在新标签页打开'; }
+    }
+  })();
+
   function toast(msg) {
     var t = $('#toast');
     t.textContent = msg;
@@ -293,8 +310,8 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
       } else {
         err.textContent = errText(r.error);
       }
-    }).catch(function () {
-      err.textContent = '网络错误，请重试';
+    }).catch(function (ex) {
+      err.textContent = '请求被拦截或断网（' + (ex && ex.message ? ex.message.slice(0, 40) : 'network') + '）——若是嵌入窗口请用下方新标签页打开';
     }).finally(function () {
       $('#btn-login').disabled = false;
     });
