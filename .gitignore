@@ -10,6 +10,11 @@ __pycache__/
 .wrangler/
 # 本地开发密钥（生产走 Pages secret，绝不入库）
 .dev.vars
+# 后台质检探针页：必须与 /admin/ 同源所以只能落在 site/ 下，
+# 而它带明文 ADMIN_KEY —— 上一道 gitignore 兜底，防止习惯性 git add site/
+# 把密钥永久写进公开仓库（轮73 真踩过这个险，判据见 tools/secret_leak_test.py）。
+site/_admin_probe*.html
+site/_admin_diag*.html
 # 素材原件（保留在本地，避免仓库过大；发布用 site/ 内已优化版本）
 素材/*.jpg
 素材/*.png

@@ -94,6 +94,9 @@ canvas{display:block;width:100%;height:190px}
 
 /* ---------- 表格 ---------- */
 .tw{overflow-x:auto}
+/* 表格可横滑提示：窄屏表格溢出时由 JS 点亮（宽屏自动隐藏）。无提示时用户不知道右侧还有列，数据等于被藏起来。 */
+.scroll-hint{display:none;margin:0 0 8px;font-size:var(--fs-2xs);letter-spacing:.1em;color:var(--gold-dim)}
+.scroll-hint.on{display:block}
 th{padding:8px 10px;text-align:left;font-size:var(--fs-2xs);letter-spacing:.14em;color:var(--fg-faint);
   border-bottom:1px solid var(--line);white-space:nowrap;font-weight:400}
 td{padding:8px 10px;border-bottom:1px solid var(--line-soft);font-size:var(--fs-s);color:var(--fg-dim);
@@ -221,6 +224,7 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
       <button class="btn" id="pg-next" type="button">下一页</button>
       <span class="info" id="pg-info">—</span>
     </div>
+    <p class="scroll-hint" id="hint-events">表格可左右滑动 · 更多列在右方</p>
     <div class="tw"><table id="tbl-events">
       <thead><tr><th>#</th><th>时间（UTC）</th><th>事件</th><th>场景</th><th>路径</th><th>访客</th><th>来源</th><th>地理</th></tr></thead>
       <tbody></tbody></table></div>
@@ -562,6 +566,16 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
     }).catch(function () { toast('网络错误'); });
   }
 
+  /* 检测 .tw 是否真的需要横向滚动，需要才显示提示。
+   * 渲染后与 resize 时各调一次：数据变、窗口变都可能改变可滚性。 */
+  function syncScrollHint() {
+    var tw = $('#tbl-events') ? $('#tbl-events').parentElement : null;
+    var hint = document.getElementById('hint-events');
+    if (!tw || !hint) { return; }
+    hint.classList.toggle('on', tw.scrollWidth > tw.clientWidth + 1);
+  }
+  window.addEventListener('resize', syncScrollHint);
+
   function renderEvents() {
     var tb = $('#tbl-events tbody');
     if (!state.rows.length) {
@@ -588,6 +602,7 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
     $('#pg-info').textContent = '第 ' + from + '–' + to + ' 条 · 共 ' + fmt(state.total) + ' 条';
     $('#pg-prev').disabled = state.offset <= 0;
     $('#pg-next').disabled = state.offset + state.limit >= state.total;
+    syncScrollHint();
   }
 
   $('#pg-prev').addEventListener('click', function () {
