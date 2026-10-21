@@ -31,8 +31,13 @@ jobs:
       # numpy/opencv 是 tools/verify_pixel_exact.py（像素级判据）的硬依赖。
       # 一手教训：曾只装 Pillow，该脚本在 import 期就崩，父门禁把「缺依赖」
       # 误读成「判据未通过」—— 依赖清单必须与判据脚本同步升级。
+      # qrcode 是轮88 新增的 tools/reverse_probe_qr_gate.py 的硬依赖（经 tools/make_qr.py
+      # 生成「能正常解码但内容错误」的码，才能证明判据真的读了像素）。
+      # 我又踩了一次上面那条注释写的同一个坑：本机装了 qrcode 所以本地 7 道全绿，
+      # CI 干净环境 ModuleNotFoundError 判红（run 39589515658）。
+      # 教训固化：**加判据的当轮必须同时核对依赖清单**，本地绿不构成证据。
       - name: Install image tooling (generators, icon checks, pixel-fidelity gate)
-        run: python -m pip install --quiet Pillow numpy opencv-python-headless fonttools brotli
+        run: python -m pip install --quiet Pillow numpy opencv-python-headless fonttools brotli qrcode
 
       # 这一步在 CI 里比在本地更有判定力：checkout 产出的工作区恰好等于「将要部署的内容」，
       # 所以 verify_site.py 的 git 跟踪面对账会真实抓到「页面引用了未提交的文件」——

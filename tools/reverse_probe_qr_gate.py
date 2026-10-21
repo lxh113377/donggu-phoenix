@@ -16,12 +16,24 @@ C 是关键用例：它证明判据真的**解码了像素**，而不是只看�
 （只看存在性的话，换成任何一张能扫出别的内容的码都会蒙混过关。）
 """
 import os
+import shutil
 import sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(BASE, "tools"))
 from safe_mutation import mutate_sandbox  # noqa: E402
-import make_qr  # noqa: E402
+
+# 缺依赖必须显式归因成「环境缺口」，不能抛裸 traceback 让人以为判据在报产品缺陷
+# （U-219/U-221 同族）。本脚本自己就因 CI 干净环境缺 qrcode 红过一次：run 39589515658
+# —— 依赖清单已补，但守卫仍要留：换任何一台机器/容器都可能再缺。
+try:
+    import make_qr  # noqa: E402
+except ImportError as _e:                       # 经 make_qr 间接缺 qrcode / 缺 cv2 都会走到这里
+    _mod = getattr(_e, "name", None) or str(_e)
+    print("[SKIP] 入口码反向验证未取证：缺 Python 模块 %s" % _mod)
+    print("       环境缺口，非产品缺陷。装齐后可跑：pip install qrcode opencv-python-headless")
+    print("RESULT: SKIP  未取证不等于通过")
+    sys.exit(2)
 
 GATE_MARK = "真机自检入口码"
 
@@ -64,6 +76,12 @@ def report(tag, rc, out, line, want_red, want_kw):
             "FAIL" if want_red else "PASS", "FAIL" if got_red else "OK", line[:90]))
     if want_red and want_kw and want_kw not in line and want_kw not in out:
         bad.append("判红了但没点名 %r（归因不清）" % want_kw)
+    # 归因必须**只**指向本用例制造的那个错：出现别的自检类 FAIL 说明上一个用例没复位。
+    if want_red and want_kw:
+        others = [k for k in ("自检页缺失", "入口码缺失", "解码不等于") if k != want_kw
+                  and k in line]
+        if others:
+            bad.append("归因混入其它用例的错：%s（上一个用例未复位）" % ",".join(others))
     if not bad:
         print("  [PASS] %s -> %s" % (tag, line[:110]))
     else:
@@ -93,6 +111,11 @@ def main():
         os.remove(page)
         rc, out, line = run(sb)
         fails += report("B", rc, out, line, want_red=True, want_kw="自检页缺失")
+
+        # B 跑完必须把页面放回沙箱：否则 C/D 的 FAIL 归因里会一直挂着
+        # 「自检页缺失」，读日志的人分不清到底是谁触发的（第一版实测就是这样）。
+        # 每个用例只应制造它自己要造的那一个错。
+        shutil.copy2(os.path.join(BASE, "site", "_device_probe.html"), page)
 
         print("C 入口码漂移（换成指向别的 URL 的合法码，必须红）")
         # 重新生成一个**能正常解码**但内容不同的码：这才能证明判据真的读了像素
