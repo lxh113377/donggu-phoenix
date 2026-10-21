@@ -619,8 +619,8 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
 
   /* ---------- 启动 ---------- */
   if (!hostOk()) {
-    zone('noapi');
-    $('#main-url').textContent = 'https://donggu-phoenix.pages.dev/admin/';
+    /* github.io 等纯静态端：不停留在提示页，直接送主站后台（免得老大还要分辨地址）。 */
+    location.replace('https://donggu-phoenix.pages.dev/admin/');
     return;
   }
   state.key = '';

@@ -35,7 +35,9 @@
  * 这是本项目第 4 次踩同一坑（前三次见 v2/v4/v6/v37 注释），因此把 bump 写进判据：
  * tools/verify_site.py 的版本对账只保证 CSS⇄HTML 同值，SW VERSION 由人工随内容变更 bump。
  * 跨版本对账锚点仍是 CSS --build(38) ⇄ HTML BUILD(38)。 */
-var VERSION = 'v43';
+/* v44（2026-10-21，统计端）：管理后台修复版缓冲期清理——昨晚有语法损坏版 admin
+ * 被部分访客 networkFirst 缓存兜住过，bump 强制删旧缓存保干净版。 */
+var VERSION = 'v44';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [
