@@ -3,34 +3,36 @@
 
 ## 为什么需要（轮96，一手教训）
 本轮我把 main.js 改出 SyntaxError（在 JS 字符串里插表达式时漏了续接引号），
-main.js **整个不执行**、.merch-grid 一张卡都不渲染 —— 页面等于坏了。
+main.js 整个不执行、.merch-grid 一张卡都不渲染 —— 页面等于坏了。
 但当时 36 条 CI 判据全部照绿：
   · verify_site.py       PASS（它查文件存在性/引用完整性，不解析 JS）
   · safe_script_test.py  PASS（它查脚本是否改写站点文件）
-  · merch_image_fill_test 报「无数据」-> 返回 0 -> 也算绿
-实测证据见 _qa/check_js_syntax_gate.py：故意把 main.js 改坏，
-两条判据都 PASS。**「JS 全坏而 CI 全绿」是真实存在的缺口。**
-
-浏览器判据能间接发现（读不到数据），但它们依赖 daemon/环境，
-读不到数据时按设计返回 SKIP 而非 FAIL（避免环境问题误判产品），
+  · 浏览器判据读不到数据时按设计返回 SKIP（避免环境问题误判产品）
 于是「页面坏」和「环境不可用」在结果里长得一样。
-语法判据是纯静态的，不需要浏览器，能堵住这个缝。
+实测证据：故意把 main.js 改坏，verify_site 与 safe_script_test 都 PASS。
+「JS 全坏而 CI 全绿」是真实缺口，这条纯静态判据堵住它。
 
-## 判据
-对 site/ 的 JS 与 functions/ 的云函数 JS，逐个用 node --check 解析：
-  · 先按 --input-type=module 试（ESM，本站与 CF Functions 都是 ESM）
-  · 失败再按 --input-type=script 试（CJS，兼容老写法）
-  · 两种模式都报 SyntaxError 才算真坏；任一通过即合法
-「两种模式都试」是必要的：只按 module 检会把合法的 CJS 误报为坏。
+## 实现：按扩展名让 node 自己决定解析模式
+把源码写成临时文件，用 .mjs（ESM）与 .cjs（CJS）各跑一次 node --check，
+任一通过即语法合法。
+  · 不用 --input-type，也不用 --check 加短横线从 stdin 读。
+    第一版正是这么写的，本机 node 24 可用，CI 的 node 20 判红
+    （run 39609685793，22 秒即失败）。
+    我刚在 workflow 注释里写过「本机装了依赖所以本地全绿，CI 干净环境判红」，
+    下一轮就亲手踩了同一条 —— 教训写在注释里不等于长进脑子里。
+  · 双模式都试是必要的：只按 ESM 检会把 sloppy-CJS 才合法的写法
+    （八进制字面量 0755、with 语句）误报为坏。
+  · 扩展名决定模式是 node 长期稳定的公开行为，版本不敏感。
 
 ## 环境依赖必须显式声明
-node 缺失时本判据返回 FAIL（不是 SKIP）——
-因为 SKIP 会让「判据没跑」伪装成「判据通过」，正是本轮要修的病。
-CI 里已加 setup-node 保证 node 存在。
+node 缺失时返回 FAIL（不是 SKIP）—— SKIP 会让「判据没跑」伪装成
+「判据通过」，正是本判据要修的那种病。CI 已加 setup-node 保证 node 存在。
 """
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -38,7 +40,6 @@ SCAN_ROOTS = [
     os.path.join(BASE, 'site'),
     os.path.join(BASE, 'functions'),
 ]
-# 图片/字体等非代码目录不遍历；assets 单独放行 js 子目录
 PRUNE = {'.git', 'node_modules', 'img', 'fonts', 'data'}
 
 
@@ -68,26 +69,22 @@ def node_bin():
     return None
 
 
-def check_file(node, path):
-    """返回 (ok, mode, msg)。两种解析模式都试，任一通过即合法。"""
+def check_file(node, path, workdir):
+    """返回 (ok, mode, msg)。.mjs 与 .cjs 各检一次，任一通过即合法。"""
     src = open(path, 'rb').read()
     last_err = ''
-    # node 的 --input-type 只接受 module / commonjs（'script' 是非法值，
-    # 会让第二模式变成从未生效的空壳 —— 轮96 实测踩过）
-    for mode in ('module', 'commonjs'):
+    for ext, label in (('mjs', 'ESM'), ('cjs', 'CJS')):
+        tmp = os.path.join(workdir, 'probe.' + ext)
+        with open(tmp, 'wb') as fh:
+            fh.write(src)
         try:
-            r = subprocess.run([node, '--input-type=' + mode, '--check', '-'],
-                               input=src, capture_output=True, timeout=60)
+            r = subprocess.run([node, '--check', tmp],
+                               capture_output=True, timeout=60)
         except subprocess.TimeoutExpired:
-            return False, mode, 'node --check 超时'
+            return False, label, 'node --check 超时'
         if r.returncode == 0:
-            return True, mode, ''
-        err = (r.stderr or b'').decode('utf-8', 'replace')
-        last_err = err
-        # 非语法类错误（参数不被支持等）不该判红，交上层区分
-        if 'SyntaxError' not in err:
-            tail = [l.strip() for l in err.splitlines() if l.strip()]
-            return False, mode, (tail[-1][:160] if tail else '未知错误')
+            return True, label, ''
+        last_err = (r.stderr or b'').decode('utf-8', 'replace')
     tail = [l.strip() for l in last_err.splitlines() if l.strip()]
     msg = ''
     for l in tail:
@@ -103,9 +100,8 @@ def main():
     node = node_bin()
     if not node:
         print('RESULT: FAIL')
-        print('  - 找不到 node。本判据**故意不返回 SKIP**：'
-              'SKIP 会让「判据没跑」伪装成「判据通过」（轮96 修的正是这个病）。'
-              'CI 已配 setup-node；本地跑请先装 node。')
+        print('  - 找不到 node。本判据故意不返回 SKIP：'
+              'SKIP 会让「判据没跑」伪装成「判据通过」。CI 已配 setup-node。')
         return 1
 
     files = collect_js()
@@ -116,15 +112,19 @@ def main():
     ver = subprocess.run([node, '--version'], capture_output=True,
                          timeout=30).stdout.decode().strip()
     print('node %s，受检 JS %d 个' % (ver, len(files)))
+    workdir = tempfile.mkdtemp(prefix='jssyn_')
     bad = []
-    for f in files:
-        ok, mode, msg = check_file(node, f)
-        rel = os.path.relpath(f, BASE).replace('\\', '/')
-        if ok:
-            print('  [ok] %-46s (%s)' % (rel, mode))
-        else:
-            print('  [X ] %-46s %s' % (rel, msg[:110]))
-            bad.append((rel, msg))
+    try:
+        for f in files:
+            ok, mode, msg = check_file(node, f, workdir)
+            rel = os.path.relpath(f, BASE).replace('\\', '/')
+            if ok:
+                print('  [ok] %-46s (%s)' % (rel, mode))
+            else:
+                print('  [X ] %-46s %s' % (rel, msg[:110]))
+                bad.append((rel, msg))
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
 
     print()
     if bad:
