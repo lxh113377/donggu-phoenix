@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>真机自检 · 畲凤鸣东固</title>
+<!--
+  真机自检页（U-01 的「一次点击」面）
+
+  为什么需要它：本机没有真机（实测 Get-PnpDevice -Class WPD 无 OK 设备、未装 adb、
+  Windows 无 iOS 自动化通道）。tools/preflight_device_test.py 已把能自动化的部分全部
+  自动化，但那是「模拟」——模拟能证伪、不能证实。WebKit（iPhone Safari）与
+  XWEB（微信内置）的真实内核行为，只有真机能给。
+
+  本页把「拿手机测一次」压成：扫码 -> 自动跑三项 -> 屏上出 PASS/FAIL -> 一键复制报告。
+  不需要人点任何按钮，不需要懂任何技术。
+
+  测什么（对齐 memory/01-goal.md 验收判据）：
+    1. 首屏 3 秒内出内容（判据 1）—— 用真实网络，不限速
+    2. 旁白能发出中文（判据 5 的音频通道；I-5）—— speechSynthesis 挑到 zh voice 且 speaking=true
+    3. AR 三场景都能看（判据 6）—— 逐场景开演、推进、画面签名变化
+  附带记录：摄像头授权链结果（判据 8）、控制台报错（判据 1）、UA/内核标识。
+
+  与 SW 的关系：本页 <meta name="robots" content="noindex"> 且**必须绕过 Service Worker**
+  —— 被测的是「真实现场网络」，被 cache-first 命中就成了假绿（memory/03-status.md 轮3 教训）。
+  所以页面第一件事是 getRegistrations() 并 unregister，然后 location.reload 一次再测。
+  报告里会写明「本轮是否清过缓存」。
+
+  不上传任何数据：报告只在屏上显示 + 复制到剪贴板，由人自己发回来。
+-->
+<style>
+  :root { --bg:#0B0908; --fg:#F3EDE4; --dim:#9A8F82; --ok:#5FBF7A; --bad:#E5544B; --warn:#E0A63C; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:18px 16px 60px; background:var(--bg); color:var(--fg);
+         font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:16px; }
+  .card { background:#15100E; border:1px solid #2A211C; border-radius:12px; padding:14px; margin:0 0 12px; }
+  .row { display:flex; align-items:baseline; gap:8px; margin:0 0 6px; flex-wrap:wrap; }
+  .name { font-weight:600; }
+  .badge { font-size:12px; padding:1px 8px; border-radius:999px; border:1px solid currentColor; }
+  .b-run { color:var(--warn); } .b-ok { color:var(--ok); } .b-bad { color:var(--bad); } .b-skip { color:var(--dim); }
+  .num { font-variant-numeric:tabular-nums; } .muted { color:var(--dim); font-size:12.5px; }
+  button { font:inherit; padding:12px 16px; border-radius:10px; border:1px solid #3A2E26;
+           background:#211915; color:var(--fg); min-height:44px; cursor:pointer; }
+  button.primary { background:#C9A227; color:#1A1409; border-color:#C9A227; font-weight:700; }
+  textarea { width:100%; min-height:180px; background:#0E0B09; color:#D8CFC3; border:1px solid #2A211C;
+             border-radius:10px; padding:10px; font:12px/1.5 ui-monospace,Menlo,monospace; }
+  .hint { font-size:12.5px; color:var(--dim); margin-top:8px; }
+  #verdict { font-size:17px; font-weight:700; margin:6px 0 2px; }
+  .step { padding:6px 0; border-bottom:1px dashed #241C18; font-size:13px; color:var(--dim); }
+  .step:last-child { border-bottom:0; }
+</style>
+</head>
+<body>
+<h1>真机自检</h1>
+<p class="sub">畲·凤鸣东固 · 首屏 / 旁白 / AR 三场景 · 自动跑完，不用点任何东西</p>
+
+<div class="card">
+  <div id="verdict">准备中…</div>
+  <p class="muted" id="env">读取设备信息…</p>
+</div>
+
+<div class="card" id="c1">
+  <div class="row"><span class="name">① 首屏 3 秒内出内容</span><span class="badge b-run" id="s1">进行中</span></div>
+  <p class="muted num" id="d1">—</p>
+</div>
+
+<div class="card" id="c2">
+  <div class="row"><span class="name">② 旁白能用中文发声</span><span class="badge b-run" id="s2">进行中</span></div>
+  <p class="muted num" id="d2">—</p>
+</div>
+
+<div class="card" id="c3">
+  <div class="row"><span class="name">③ AR 三场景可看</span><span class="badge b-run" id="s3">进行中</span></div>
+  <p class="muted num" id="d3">—</p>
+</div>
+
+<div class="card">
+  <div class="row"><span class="name">附加：摄像头 / 展柜降级</span><span class="badge b-skip" id="s4">待测</span></div>
+  <p class="muted num" id="d4">—</p>
+</div>
+
+<div class="card">
+  <div class="row"><span class="name">附加：控制台报错</span><span class="badge b-skip" id="s5">待测</span></div>
+  <p class="muted num" id="d5">—</p>
+</div>
+
+<p class="hint">iPhone 上旁白受「需用户手势」限制：若第②项报 NO_USER_GESTURE，
+请点一次下面按钮重测旁白 —— 这不是缺陷，是 iOS 自动播放策略，现场真用时也是同样一次点击。</p>
+<button id="retry-narr" type="button" hidden>点我重测旁白</button>
+<p class="hint"></p>
+<button class="primary" id="copy" type="button">复制报告发回</button>
+<p class="muted" id="copy-tip"></p>
+
+<div class="card">
+  <p class="muted" style="margin:0 0 8px">原始读数（发回来时带上这份最准）</p>
+  <textarea id="raw" readonly aria-label="原始读数 JSON"></textarea>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var R = { ua: navigator.userAgent, when: new Date().toISOString(),
+            clearedSW: 'unknown', checks: {}, consoleErrors: [] };
+  var siteURL = (function () {
+    // 自检页在 /site/_device_probe.html（本地）或 /_device_probe.html（线上子路径）
+    // 被测对象 = 同目录的 index.html，路径由本页 pathname 推导，不写死（防子路径口径错）
+    var p = location.pathname.replace(/\/[^/]*$/, '/index.html');
+    return location.origin + p;
+  })();
+
+  function set(i, cls, txt, detail) {
+    var b = document.getElementById('s' + i);
+    b.className = 'badge ' + (cls === 'ok' ? 'b-ok' : cls === 'bad' ? 'b-bad' : cls === 'skip' ? 'b-skip' : 'b-run');
+    b.textContent = txt;
+    if (detail !== undefined) { document.getElementById('d' + i).textContent = detail; }
+  }
+  function log(k, v) { R.checks[k] = v; }
+  window.addEventListener('error', function (e) { R.consoleErrors.push(String(e.message || 'error')); });
+  window.addEventListener('unhandledrejection', function (e) {
+    R.consoleErrors.push('rejection: ' + String((e.reason && e.reason.message) || e.reason));
+  });
+
+  function paintEnv() {
+    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    var wx = /MicroMessenger/.test(navigator.userAgent);
+    var webKit = /AppleWebKit\/(\d+\.\d+)/.exec(navigator.userAgent);
+    var chrome = /Chrome\/(\d+)/.exec(navigator.userAgent);
+    var kern = wx ? '微信内置' + (/(XWEB|WKWebView)/.test(navigator.userAgent) ? '（' + RegExp.$1 + '）' : '')
+      : chrome ? 'Chrome/Blink ' + chrome[1] : webKit ? 'WebKit（Safari）' + webKit[1] : '未知内核';
+    document.getElementById('env').textContent =
+      '内核：' + kern + ' · ' + (ios ? 'iOS' : /Android/.test(navigator.userAgent) ? 'Android' : '其他') +
+      ' · ' + screen.width + 'x' + screen.height + ' @' + (window.devicePixelRatio || 1).toFixed(1) +
+      'x · 视口 ' + innerWidth + 'x' + innerHeight;
+    R.env = kern; R.screen = screen.width + 'x' + screen.height; R.vp = innerWidth + 'x' + innerHeight;
+  }
+
+  function done(msg) {
+    document.getElementById('verdict').textContent = msg;
+    document.getElementById('raw').value = JSON.stringify(R, null, 1);
+  }
+
+  // ---- 步骤 0：清 SW 后重载一次，保证测的是真实网络 ----
+  function clearSWAndReload() {
+    if (!('serviceWorker' in navigator)) { R.clearedSW = 'no-sw-api'; run(); return; }
+    var flag = sessionStorage.getItem('dg-probe-nocache');
+    if (flag === '1') { R.clearedSW = 'cleared-this-run'; run(); return; }
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      return Promise.all((regs || []).map(function (r) { return r.unregister(); }));
+    }).then(function (n) {
+      return caches.keys().then(function (ks) {
+        return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+      }).then(function () { return n; });
+    }).then(function (n) {
+      sessionStorage.setItem('dg-probe-nocache', '1');
+      R.clearedSW = 'unregistered ' + n + ' + caches cleared, reloading';
+      location.reload();
+    }).catch(function (e) { R.clearedSW = 'clear failed: ' + e; run(); });
+  }
+
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  // ---- 步骤 1：真实网络下 iframe 加载主站，测 FCP/就绪 ----
+  function checkFirstScreen() {
+    return new Promise(function (resolve) {
+      var t0 = performance.now();
+      var f = document.createElement('iframe');
+      f.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + innerWidth + 'px;height:' + innerHeight + 'px;border:0';
+      f.src = siteURL + (siteURL.indexOf('?') >= 0 ? '&' : '?') + 'probe=' + Date.now();
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return; settled = true;
+        log('firstScreen', { ok: false, ms: Math.round(performance.now() - t0), error: 'TIMEOUT_15s' });
+        set(1, 'bad', '未达标', '15 秒仍未就绪（现场会直接不可用）');
+        resolve();
+      }, 15000);
+      f.addEventListener('load', function () {
+        setTimeout(function () {
+          if (settled) return; settled = true; clearTimeout(timer);
+          var ms = Math.round(performance.now() - t0);
+          var w = null;
+          try { w = f.contentWindow; } catch (e) { w = null; }
+          var ready = !!(w && w.__site && w.__site.ready);
+          var state = null, parts = null, fcp = null;
+          try {
+            state = w.__site && w.__site.state();
+            parts = w.__site && w.__site.count();
+            var pl = (w.performance || {}).getEntriesByType
+              ? w.performance.getEntriesByType('paint') : [];
+            for (var i = 0; i < pl.length; i++) { if (pl[i].name === 'first-contentful-paint') fcp = Math.round(pl[i].startTime); }
+          } catch (e) { /* 跨帧读取失败：不当成站点缺陷，标 unknown */ }
+          var ok = ready && ms <= 3000;
+          log('firstScreen', { ok: ok, ms: ms, fcp: fcp, engineReady: ready, state: state, particles: parts });
+          set(1, ok ? 'ok' : 'bad', ok ? '达标' : '未达标',
+              '整页可用 ' + ms + 'ms（预算 3000ms）' +
+              (fcp ? ' · FCP ' + fcp + 'ms' : ' · FCP 取不到') +
+              ' · 粒子 ' + (parts == null ? '?' : parts) + ' · 引擎 ' + (state || '?'));
+          R.__siteWindow = null;
+          try { R.probeFrame = f; } catch (e) {}
+          resolve();
+        }, 120);
+      });
+      document.body.appendChild(f);
+    });
+  }
+
+  // ---- 步骤 2：旁白中文发声（在同帧里做，读不到就用本帧） ----
+  function checkNarration() {
+    return new Promise(function (resolve) {
+      var supported = !!(window.speechSynthesis && window.SpeechSynthesisUtterance);
+      if (!supported) {
+        log('narration', { ok: false, error: 'NO_SPEECH_API' });
+        set(2, 'bad', '不支持', '这台设备没有 speechSynthesis，旁白通道不可用');
+        resolve(); return;
+      }
+      function voices() { try { return window.speechSynthesis.getVoices() || []; } catch (e) { return []; } }
+      function pickZh(vs) {
+        for (var i = 0; i < vs.length; i++) { if (/^zh/i.test(vs[i].lang)) return vs[i]; }
+        return null;
+      }
+      // iOS/Android 语音表异步填充：最多等 2.5s
+      var waited = 0;
+      (function poll(done2) {
+        var zh = pickZh(voices());
+        if (zh || waited >= 2500) { done2(zh); return; }
+        setTimeout(function () { waited += 250; poll(done2); }, 250);
+      })(function (zh) {
+        if (!zh) {
+          log('narration', { ok: false, error: 'NO_ZH_VOICE', voices: voices().map(function (v) { return v.lang + '|' + v.name; }).slice(0, 6) });
+          set(2, 'bad', '无中文语音', '挑不到 zh-* 语音（' + voices().length + ' 个语音全非中文）');
+          resolve(); return;
+        }
+        var u = new SpeechSynthesisUtterance('自检：凤凰展翅，东固会师。');
+        u.lang = zh.lang; u.voice = zh;
+        var started = false, finished = false, timedOut = false;
+        u.onstart = function () { started = true; };
+        u.onend = function () { finished = true; };
+        u.onerror = function (e) { log('narration', { ok: false, error: (e && e.error) || 'utter_error', voice: zh.name }); };
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        window.speechSynthesis.speak(u);
+        var t = setInterval(function () {
+          try { if (window.speechSynthesis.speaking || window.speechSynthesis.pending) started = true; } catch (e) {}
+        }, 100);
+        setTimeout(function () {
+          clearInterval(t);
+          var ok = started || finished;
+          log('narration', {
+            ok: ok, voice: zh.name, voiceLang: zh.lang, started: started, finished: finished,
+            totalVoices: voices().length,
+            hint: ok ? (finished ? '真发声（onend 触发）' : '已进入播放态（speaking 曾经为真）')
+                     : '未进入播放态：多半是 iOS「需用户手势」策略，请点页面上的重测按钮'
+          });
+          set(2, ok ? 'ok' : 'skip', ok ? '达标' : '待手势',
+              (ok ? '语音 ' + zh.name : '未检测到人声启动') + ' · 共 ' + voices().length + ' 个语音');
+          if (!ok) { var b = document.getElementById('retry-narr'); b.hidden = false;
+            b.addEventListener('click', function () {
+              var u2 = new SpeechSynthesisUtterance('手势后重测：畲族凤凰，东固非遗。');
+              u2.lang = zh.lang; u2.voice = zh;
+              u2.onend = function () {
+                log('narration', { ok: true, voice: zh.name, viaGesture: true, finished: true });
+                set(2, 'ok', '达标', '点击后成功发声：' + zh.name);
+                document.getElementById('raw').value = JSON.stringify(R, null, 1);
+              };
+              u2.onerror = function (e) {
+                set(2, 'bad', '失败', '点击后仍报错：' + ((e && e.error) || 'unknown'));
+              };
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.speak(u2);
+            }, { once: true });
+          }
+          resolve();
+        }, 2200);
+      });
+    });
+  }
+
+  // ---- 步骤 3：AR 三场景（在同帧里做） ----
+  function sig(cv) {
+    try {
+      var ctx = cv.getContext('2d'); if (!ctx) return null;
+      var w = cv.width, h = cv.height, step = Math.max(3, Math.floor(Math.min(w, h) / 16));
+      var sum = 0, n = 0;
+      for (var y = Math.floor(step / 2); y < h; y += step) {
+        for (var x = Math.floor(step / 2); x < w; x += step) {
+          var d = ctx.getImageData(x, y, 1, 1).data; sum += (d[0] + d[1] + d[2]) / 3; n++;
+        }
+      }
+      return { sig: Number(sum.toFixed(3)), samples: n };
+    } catch (e) { return { error: String(e && e.message || e) }; }
+  }
+  function checkAR() {
+    return new Promise(function (resolve) {
+      var f = R.probeFrame;
+      var w = null;
+      try { w = f && f.contentWindow && f.contentWindow.__ar ? f.contentWindow : null; } catch (e) { w = null; }
+      if (!w) {
+        log('ar', { ok: false, error: 'NO_FRAME_ACCESS' });
+        set(3, 'skip', '无法验', '取不到站点帧（跨域或加载失败）—— 请直接用主站页手动看三段');
+        resolve(); return;
+      }
+      var AR = w.__ar;
+      var ids = (AR.scenes || []).map(function (s) { return s.id; });
+      if (ids.length !== 3) {
+        log('ar', { ok: false, error: 'SCENE_COUNT', got: ids });
+        set(3, 'bad', '未达标', '场景数 ' + ids.length + ' != 3'); resolve(); return;
+      }
+      var res = {}, idx = 0;
+      function one() {
+        if (idx >= ids.length) {
+          var allOk = ids.every(function (k) { return res[k] && res[k].ok; });
+          log('ar', { ok: allOk, scenes: res });
+          set(3, allOk ? 'ok' : 'bad', allOk ? '达标' : '未达标',
+              ids.map(function (k) {
+                var v = res[k] || {};
+                return k + '：' + (v.ok ? '✓' : '✗') + ' ' + (v.t1 || '?') + '→' + (v.t2 || '?') + 's';
+              }).join(' · '));
+          // 顺带记录摄像头链：必须在 resolve 之前完成，否则报告写完才回来
+          // （无头端到端实测踩过这个序：camera 在 raw 写完后 2.5s 才落，屏上「待测」永远不变）
+          var camP = new Promise(function (r2) {
+            try { AR.open(ids[0]); } catch (e) {}
+            setTimeout(function () {
+              var st = null; try { st = AR.stats(); } catch (e) {}
+              log('camera', st ? { mode: st.mode, ok: st.mode === 'gallery' || st.mode === 'camera' } : { ok: false, error: 'no stats' });
+              set(4, st && st.mode ? 'ok' : 'skip',
+                  st && st.mode === 'camera' ? '实景可用' : '已降级',
+                  st ? '最终模式：' + st.mode + '（camera 失败必须落 gallery）' : '取不到模式');
+              try { AR.close(); } catch (e) {}
+              r2();
+            }, 2500);
+          });
+          camP.then(function () { resolve(); }); return;
+        }
+        var id = ids[idx];
+        try { AR.close(); } catch (e) {}
+        try { AR.open(id, { camera: false }); } catch (e) {}
+        setTimeout(function () {
+          var a = null, s1 = null;
+          try { a = AR.stats(); } catch (e) {}
+          var cv = null; try { cv = f.contentDocument.querySelector('#ar-stage'); } catch (e) {}
+          s1 = cv ? sig(cv) : null;
+          setTimeout(function () {
+            var b = null; try { b = AR.stats(); } catch (e) {}
+            var s2 = cv ? sig(cv) : null;
+            var moved = !!(a && b && b.t > a.t + 0.3);
+            var drew = !!(s1 && s2 && s1.sig !== undefined && s2.sig !== undefined && s1.sig !== s2.sig);
+            var painted = !!(s2 && (s2.samples || 0) > 0 && s2.sig > 0);
+            res[id] = {
+              ok: moved && painted, t1: a && a.t, t2: b && b.t, fps: b && b.fps,
+              mode: b && b.mode, chapter: b && b.chapter,
+              drawBefore: s1 && s1.sig, drawAfter: s2 && s2.sig, animationMoving: drew,
+              drawError: (s1 && s1.error) || (s2 && s2.error) || null
+            };
+            idx++; one();
+          }, 1400);
+        }, 900);
+      }
+      one();
+    });
+  }
+
+  function reportConsole() {
+    var n = R.consoleErrors.length;
+    log('consoleErrors', { count: n, list: R.consoleErrors.slice(0, 10) });
+    set(5, n ? 'bad' : 'ok', n ? '有报错' : '零报错',
+        n ? R.consoleErrors.slice(0, 3).join(' | ').slice(0, 200) : '整轮无未捕获错误（验收判据 1）');
+  }
+
+  function verdict() {
+    var c = R.checks;
+    var hard = [c.firstScreen, c.narration, c.ar].filter(Boolean);
+    // 旁白「未进入播放态」不算缺陷：iOS/微信的 speechSynthesis 必须有用户手势，
+    // 现场真用时本来就是「先碰一下屏幕再听」。只要 API 在、中文语音挑到了，
+    // 就归入「待一次点击」，不吓唬看展的人（实测：headless/未手势下 started=false 是常态）。
+    var narrGesture = c.narration && c.narration.ok === false &&
+      c.narration.voice && !c.narration.error;
+    var bads = hard.filter(function (x) { return x.ok === false; });
+    if (narrGesture) { bads = bads.filter(function (x) { return x !== c.narration; }); }
+    if (bads.length) {
+      var names = bads.map(function (x) { return x === c.firstScreen ? '首屏' : x === c.narration ? '旁白' : 'AR'; });
+      done('✗ 需要处理：' + names.join('、'));
+      document.getElementById('verdict').style.color = 'var(--bad)';
+    } else if (narrGesture) {
+      done('△ 点一次「点我重测旁白」就能收尾（首屏与 AR 已过）');
+      document.getElementById('verdict').style.color = 'var(--warn)';
+    } else if (hard.length === 3) {
+      done('✓ 三项全过，现场可用');
+      document.getElementById('verdict').style.color = 'var(--ok)';
+    } else {
+      done('△ 部分项未能验证');
+      document.getElementById('verdict').style.color = 'var(--warn)';
+    }
+  }
+
+  function run() {
+    paintEnv();
+    checkFirstScreen().then(checkNarration).then(checkAR).then(function () {
+      reportConsole(); verdict();
+    });
+  }
+
+  document.getElementById('copy').addEventListener('click', function () {
+    var txt = JSON.stringify(R, null, 1);
+    var tip = document.getElementById('copy-tip');
+    function ok() { tip.textContent = '已复制，粘回来给锋即可。'; }
+    function fallback() {
+      var ta = document.getElementById('raw'); ta.focus(); ta.select();
+      tip.textContent = '已全选文本框内容，长按复制即可。';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(ok, fallback);
+    } else { fallback(); }
+  });
+
+  // 300ms 后先画环境，再清 SW
+  setTimeout(function () { paintEnv(); clearSWAndReload(); }, 300);
+})();
+</script>
+</body>
+</html>

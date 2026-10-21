@@ -81,6 +81,12 @@ jobs:
           # 轮74：环境缺口归因的反向验证。CI 上 C1（classify_child 单测）跑，
           # C2-C5 因无本机 LibreOffice 故障现场而显式 SKIP —— SKIP 不等于通过。
           python tools/reverse_env_attribution.py
+          # 轮85（U-02）：打样包规格必须与 culture.js 同源 —— 工厂按 A 做、观众看 B
+          # 是最难发现的交付事故，故把对账做成 CI 判据（只读，不生成 PDF）。
+          python tools/make_proof_pack.py --check
+          # 轮85（U-02）：实拍替换流水线的反向验证。它会在沙箱副本上跑，
+          # 含「门禁判红必须逐字回滚」这条 —— 不造红就永远不知道回滚是真是假。
+          python tools/reverse_replace_merch_photo.py
 
   deploy:
     name: Deploy

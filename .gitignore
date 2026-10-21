@@ -24,4 +24,7 @@ site/_admin_diag*.html
 # skill治理：上游解包物与临时件不入库
 _skill_audit/gstack_up/
 *.tar.gz
+# 文创实拍原图投放目录（U-02）：手机直出常 3~8MB/张，属「原图仓库」不是发布物。
+# 替换后的成品图落在 site/assets/img/merch/（发布面），原件留本地即可，不入库。
+merch/shot/
 
