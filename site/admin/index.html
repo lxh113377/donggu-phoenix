@@ -33,7 +33,7 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px
 .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:6px;
   animation:pulse 2.4s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--line);
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;min-height:44px;border:1px solid var(--line);
   border-radius:4px;background:var(--panel);color:var(--fg-dim);font-size:var(--fs-s);
   letter-spacing:.06em;transition:border-color .2s,color .2s,background .2s;user-select:none}
 .btn:hover{border-color:var(--gold-dim);color:var(--fg)}
@@ -113,7 +113,7 @@ tr:hover td{background:rgba(212,162,78,.03)}
 .pager{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
 .pager .info{margin-left:auto;font-size:var(--fs-xs);color:var(--fg-faint);letter-spacing:.06em}
 select{padding:6px 10px;background:var(--panel-2);color:var(--fg-dim);border:1px solid var(--line);
-  border-radius:4px;font-size:var(--fs-s);outline:none}
+  border-radius:4px;font-size:var(--fs-s);outline:none;min-height:44px;line-height:1.4;}
 select:active{border-color:var(--gold-dim)}
 
 /* ---------- 提示与空态 ---------- */
