@@ -155,6 +155,9 @@ def analyze(png, axis):
         sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1), 0)
         return float(np.mean(np.abs(lum - 11.0) * (1 + sat)))
 
+    lum_all = 0.2126 * content[:, :, 0] + 0.7152 * content[:, :, 1] + 0.0722 * content[:, :, 2]
+    mx = np.max(content, axis=2)
+    mn = np.min(content, axis=2)
     if axis == 'h':
         a, b = weight(content[:, :cw // 2]), weight(content[:, cw // 2:])
         names, detail = ('左', '右'), ''
@@ -178,10 +181,22 @@ def analyze(png, axis):
             region = content[y0:y0 + 100, x0:x1]
             rr2, gg2, bb2 = region[:, :, 0], region[:, :, 1], region[:, :, 2]
             lum = 0.2126 * rr2 + 0.7152 * gg2 + 0.0722 * bb2
-            vals.append((lum > 30).mean() * 100)
+            vals.append((lum_all > 30).mean() * 100)
         if all(v < 1.0 for v in vals[-3:]):
             holes.append('%s栏下方连续 300px 无内容' % label)
-    return diff, verdict, bad, (names, a, b, total, detail), holes
+    # 轮102：诊断数字，供 CI/本地差异时自证（不需下载截图）
+    bright = float((lum_all > 30).mean() * 100)
+    colorful = float((((mx - mn) > 30) & (lum_all > 25)).mean() * 100)
+    lb = float((content[:, :cw // 2].mean(axis=2) > 30).mean() * 100)
+    rb = float((content[:, cw // 2:].mean(axis=2) > 30).mean() * 100)
+    band_top = [round(float((content[y:y + 100].mean(axis=2) > 30).mean() * 100), 1)
+                for y in range(0, min(300, ch), 100)]
+    band_bot = [round(float((content[y:y + 100].mean(axis=2) > 30).mean() * 100), 1)
+                for y in range(max(0, ch - 300), ch, 100)]
+    diag = {'bright': round(bright, 2), 'colorful': round(colorful, 2),
+            'leftBright': round(lb, 2), 'rightBright': round(rb, 2),
+            'bandTop': band_top, 'bandBottom': band_bot}
+    return diff, verdict, bad, (names, a, b, total, detail), holes, diag
 
 
 def main():
@@ -200,7 +215,7 @@ def main():
 
     # 兼容旧用法：显式传截图路径时只做分析
     if len(sys.argv) > 1 and os.path.exists(sys.argv[1]):
-        diff, verdict, bad, det, holes = analyze(sys.argv[1], 'h')
+        diff, verdict, bad, det, holes, _diag = analyze(sys.argv[1], 'h')
         (names, a, b, total, _d) = det
         n1, n2 = names
         print('截图: %s' % sys.argv[1])
@@ -341,7 +356,7 @@ def main():
                     print('[%s %dx%d] 截图无效' % (label, vw, vh))
                     continue
                 measured.append('%s %dx%d' % (label, vw, vh))
-                diff, verdict, bad, det, holes = analyze(png, axis)
+                diff, verdict, bad, det, holes, diag = analyze(png, axis)
                 (names, a, b, total, detail) = det
                 n1, n2 = names
                 print('[%s %dx%d] %s %s %.2f (%.1f%%) / %s %.2f (%.1f%%)'
@@ -351,6 +366,11 @@ def main():
                          diff, verdict, detail))
                 for hl in holes:
                     print('    提示: %s（可能是留白，也可能是空洞，需目检判断）' % hl)
+                print('    诊断: 亮像素 %.2f%%  彩色 %.2f%%  左亮 %.2f%% / 右亮 %.2f%%'
+                      '  上带 %s  下带 %s'
+                      % (diag['bright'], diag['colorful'],
+                         diag['leftBright'], diag['rightBright'],
+                         diag['bandTop'], diag['bandBottom']))
                 if bad and axis == 'h':
                     fails.append('%s %dx%d：%s重量差异 %.1f%% > 25%%'
                                  % (label, vw, vh, n1, diff))
