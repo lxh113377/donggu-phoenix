@@ -4,6 +4,12 @@
 **第三轮已上线**：一木成像雕刻台 + AR 场景一改造，提交 95f7575 已推 GitHub Pages 主链，并用 wrangler 同步 Cloudflare 备用链（两条链路实测 200 且含新引擎）。
 **第三轮补丁**：背景板加入墨色山峦剪影（海报下半的岭脊），并把 sw.js 的 VERSION 从 v1 提到 v2 —— PRECACHE 清单未变但 wood-to-statue.js 内容变了，不 bump 则已装 SW 的访客走 cache-first 永远拿不到新引擎。
 Cloudflare Pages 备用链已于本轮同步（wrangler pages deploy，别名与部署 URL 均实测 200）。
+> ⚠️ **双部署面（轮73 更正，覆盖下文「备用链」说法）**：GitHub Pages 由 CI 自动部署（静态主链，无 /api 无后台）；
+> Cloudflare Pages（*.pages.dev）是**后台 /admin 与 /api 的唯一可用面**，非备用链，
+> CI 无 CF 凭据故**只能手动** npx wrangler pages deploy。
+> 改到 site/admin、functions/、migrations/ 的修复：只 git push 等于没上线，两条腿都要走。详见台账 U-208。
+
+已完成：
 
 已完成：
 - **一木成像**：落地页可拖动雕刻台（wood-to-statue.js 引擎 + wood-demo.js 控件），
