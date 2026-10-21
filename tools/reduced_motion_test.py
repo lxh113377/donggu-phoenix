@@ -26,6 +26,22 @@ import sys
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSS = os.path.join(BASE, 'site', 'assets', 'css', 'main.css')
 
+# 轮76：后台是单文件自包含页，样式写在 <style> 内联，
+# 只扫 main.css 会整块漏掉它（与轮75 contrast 只测主站同族缺口）。
+SOURCES = [
+    ('site/assets/css/main.css', 'css'),
+    ('site/admin/index.html', 'html'),
+]
+
+
+def extract_css(path, kind):
+    """取一个文件的 CSS 文本。html 源只取 <style> 块内容。"""
+    raw = open(path, encoding='utf-8', errors='replace').read()
+    if kind != 'html':
+        return raw
+    parts = re.findall(r'<style[^>]*>(.*?)</style>', raw, flags=re.S | re.I)
+    return chr(10).join(parts)
+
 
 def strip_comments(s):
     """剥注释 —— 判据扫的是 CSS 行为，注释里的字面量不是行为。"""
@@ -57,50 +73,65 @@ def blocks(s):
     return out
 
 
-def main():
-    if not os.path.exists(CSS):
-        print('RESULT: SKIP  找不到 main.css')
-        return 0
-
-    s = open(CSS, encoding='utf-8').read()
-    snc = strip_comments(s)
+def check_source(text):
+    """检查一份 CSS 文本，返回 (无限动画选择器, 未覆盖列表)。"""
+    snc = strip_comments(text)
     rm = ' '.join(blocks(snc))
-    # 剥注释后再找动画（注释里提到 infinite 不算）
-    body = snc
-    # 去掉 media 块内部，避免把 reduced-motion 块里的 animation:none 当成使用者
-    flat = body
+    flat = snc
     for b in blocks(snc):
         flat = flat.replace(b, ' ')
 
     users = []
     for m in re.finditer(r'([^{}\n;]+)\{([^}]*animation\s*:[^}]*infinite[^}]*)\}', flat):
-        sel = m.group(1).strip().split(chr(10))[-1].strip()
+        sel = m.group(1).strip().splitlines()[-1].strip()
         if not sel or sel.startswith('@'):
             continue
         users.append(sel)
 
     fails = []
-    checked = len(users)
     for sel in users:
-        parts = [p.strip() for p in sel.split(',')]
-        if not any(p in rm for p in parts):
+        parts = [x.strip() for x in sel.split(',')]
+        if not any(x in rm for x in parts):
             fails.append('无限动画未被 reduced-motion 覆盖: %s' % sel[:60])
+    return users, fails
 
-    print('检查 %d 个无限动画的使用者' % checked)
-    if checked == 0:
-        print()
-        print('RESULT: SKIP  未找到任何无限动画 —— 不计入 PASS（防止「没测到」被当「通过」）')
-        return 0
+
+def main():
+    total_users = 0
+    all_fails = []
+    seen = 0
+
+    for rel, kind in SOURCES:
+        path = os.path.join(BASE, rel)
+        if not os.path.exists(path):
+            print('  %-34s 文件不存在，跳过' % rel)
+            continue
+        css = extract_css(path, kind)
+        if not css.strip():
+            print('  %-34s 无样式可抽，跳过' % rel)
+            continue
+        seen += 1
+        users, fails = check_source(css)
+        total_users += len(users)
+        base = os.path.basename(rel.rstrip('/')) or 'main.css'
+        all_fails.extend('[%s] %s' % (base, f) for f in fails)
+        print('  %-34s 无限动画 %d 个，未覆盖 %d' % (rel, len(users), len(fails)))
 
     print()
-    if fails:
+    if seen == 0:
+        print('RESULT: SKIP  无可扫源')
+        return 0
+    if total_users == 0:
+        print('RESULT: SKIP  未找到任何无限动画 —— 不计入 PASS（防止「没测到」被当「通过」）')
+        return 0
+    if all_fails:
         print('RESULT: FAIL')
-        for f in fails:
+        for f in all_fails:
             print('  -', f)
         return 1
-    print('RESULT: PASS  %d 个无限动画全部有 reduced-motion 覆盖' % checked)
+    print('RESULT: PASS  %d 个无限动画全部有 reduced-motion 覆盖（%d 个源）'
+          % (total_users, seen))
     return 0
-
 
 if __name__ == '__main__':
     sys.exit(main())
