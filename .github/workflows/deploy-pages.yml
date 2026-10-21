@@ -80,6 +80,7 @@ jobs:
           python tools/dead_css_decl_test.py
           python tools/reverse_dead_css.py
           python tools/reverse_cjk_scope.py
+          python tools/reverse_design_merch_pct.py
           python tools/tracking_center_test.py
           python tools/secret_leak_test.py
           python tools/admin_colspan_test.py

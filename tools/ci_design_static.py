@@ -162,21 +162,32 @@ def main():
     # 变成行高而非容器高 → 图片溢出压住下方标签。
     GRID_PCT = []
     _mshot = re.search(r'(?:^|\n)\s*\.merch-shot\{([^}]*)\}', css)
+    _row_locked = False
     if _mshot:
         # 先剥注释再规范化空白：规则里有中文注释，直接 replace(' ','') 会把注释一起带上
         _body = re.sub(r'/\*.*?\*/', '', _mshot.group(1), flags=re.S)
         _body = re.sub(r'\s+', '', _body)
-        if 'grid-template-rows:100%' not in _body:
+        _row_locked = 'grid-template-rows:100%' in _body
+        if not _row_locked:
             GRID_PCT.append('.merch-shot 是 grid 但未锁行高')
     # 只看普通格（选择器恰为 .merch-shot img）；特写大格 .is-feature 有自己的规则，
     # 它的百分比是相对 420px 大容器，合理。
+    #
+    # 轮95 修正：百分比 max-height 是否危险，**取决于行高有没有锁**，
+    # 不是无条件禁止。A/B 实测（同页造 locked/unlocked 两容器）：
+    #   锁行高 grid-template-rows:100% -> img 196px，不溢出（百分比基准=容器高，正确）
+    #   未锁行高                       -> img 345px，越 shot 底 138px 并压住标签
+    # 即轮16 的因果是「未锁行高 => 百分比基准错」，
+    # 而旧代码把它实现成两条独立规则，误伤「已锁行高 + 百分比」这个安全组合。
+    # 现在只在未锁行高时判红百分比 —— 真正会溢出的组合防护力度不变。
     for _m in re.finditer(r'(?:^|\n)\s*\.merch-shot img\{([^}]*)\}', css):
-        if re.search(r'max-height:\s*[\d.]+%', _m.group(1)):
-            GRID_PCT.append('.merch-shot img 使用百分比 max-height')
+        if (re.search(r'max-height:\s*[\d.]+%', _m.group(1))
+                and not _row_locked):
+            GRID_PCT.append('.merch-shot img 用百分比 max-height 且行高未锁（基准会落到隐式行高）')
             break
     if GRID_PCT:
         fails.append('商品图布局有溢出风险：' + '; '.join(GRID_PCT[:2]))
-    print('[%s] 商品图 grid 行高已锁 + max-height 非百分比' % (
+    print('[%s] 商品图 grid 行高已锁 + 百分比 max-height 基准正确' % (
         'PASS' if not GRID_PCT else 'FAIL'))
 
     # 装饰性头像不得把标题文字塞进 alt（轮17）
