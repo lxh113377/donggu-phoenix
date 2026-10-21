@@ -442,12 +442,25 @@ select:focus-visible,.login-card input:focus-visible{outline:2px solid var(--gol
     $(sel).innerHTML = html;
   }
 
+  /* 空态单元格的 colspan 必须跟实际表头列数走。
+   * 实测浏览器会把超列数的 colspan clamp 到列数（视觉无差异），
+   * 但硬编码数字会随加列静默漂移，且误导读代码的人（轮87）。
+   * 服务多表的 fillTable 原先写死 colspan=9，而两张表实际是 3 / 4 列。 */
+  function colCountOf(node) {
+    var t = node ? (node.closest ? node.closest('table') : null) : null;
+    if (!t) { return 1; }
+    var head = t.querySelector('thead tr');
+    return head ? head.cells.length : 1;
+  }
+
   function fillTable(sel, rows) {
-    $(sel).innerHTML = rows.length ? rows.map(function (r) {
+    var box = $(sel);
+    var span = colCountOf(box);
+    box.innerHTML = rows.length ? rows.map(function (r) {
       return '<tr>' + r.map(function (c, i) {
         return '<td' + (i ? ' class="mono"' : '') + '>' + escapeHtml(String(c)) + '</td>';
       }).join('') + '</tr>';
-    }).join('') : '<tr><td colspan="9" style="color:var(--fg-faint)">暂无数据</td></tr>';
+    }).join('') : '<tr><td colspan="' + span + '" style="color:var(--fg-faint)">暂无数据</td></tr>';
   }
 
   /* ---------- 图表（Canvas 手绘，零依赖） ---------- */
@@ -587,7 +600,7 @@ select:focus-visible,.login-card input:focus-visible{outline:2px solid var(--gol
   function renderEvents() {
     var tb = $('#tbl-events tbody');
     if (!state.rows.length) {
-      tb.innerHTML = '<tr><td colspan="8" style="color:var(--fg-faint)">暂无记录</td></tr>';
+      tb.innerHTML = '<tr><td colspan="' + colCountOf(tb) + '" style="color:var(--fg-faint)">暂无记录</td></tr>';
     } else {
       tb.innerHTML = state.rows.map(function (r) {
         var ev = r.event;
