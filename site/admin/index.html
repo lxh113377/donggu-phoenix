@@ -423,9 +423,15 @@ select:focus-visible,.login-card input:focus-visible{outline:2px solid var(--gol
     var rows = Math.max(langs.length, screens.length);
     var html = '';
     for (var i = 0; i < rows; i++) {
-      var l = langs[i] || { l: '', n: '' }, s = screens[i] || { s: '', n: '' };
-      html += '<tr><td>' + (l.l || '') + '</td><td class="mono">' + fmt(l.n) + '</td>' +
-        '<td class="mono">' + (s.s || '') + '</td><td class="mono">' + fmt(s.n) + '</td></tr>';
+      /* 两个列表长度不同（语言约 5 种、屏幕档 24 种），
+       * 缺失侧必须显式给 '—'：原先写 {n:''} 再走 fmt，
+       * 而 fmt 是 (n||0) —— 空值被渲染成 0，
+       * 于是出现「语言空白 + 610 次」的假数据行（轮92 目视发现）。 */
+      var l = langs[i], sc = screens[i];
+      html += '<tr><td>' + (l ? escapeHtml(l.l || '(未知)') : '—') + '</td>' +
+        '<td class="mono">' + (l ? fmt(l.n) : '—') + '</td>' +
+        '<td class="mono">' + (sc ? escapeHtml(sc.s || '(未知)') : '—') + '</td>' +
+        '<td class="mono">' + (sc ? fmt(sc.n) : '—') + '</td></tr>';
     }
     $('#tbl-dev tbody').innerHTML = html;
   }
