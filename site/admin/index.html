@@ -133,6 +133,14 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
   .brand b{font-size:var(--fs-m)}
   main{padding:16px 14px 50px}
 }
+/* 键盘焦点指示（轮80，WCAG 2.4.7）：主站有全局 :focus-visible，后台此前一条都没有，
+ * 而 select/input 的 outline:none 会抹掉默认焦点环 -> Tab 到筛选框看不到焦点。
+ * 特异性：select{outline:none} 是 (0,0,1)，:focus-visible (0,1,0) 可压过；
+ * 但 .login-card input (0,1,1) 高于全局规则，故单独再列一条。放在样式表末尾保证后者胜。
+ * offset 用 2px（主站 4px）：后台顶栏控件密集，4px 会互相重叠。 */
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:3px}
+select:focus-visible,.login-card input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
 @media (prefers-reduced-motion:reduce){
   .dot{animation:none}
   .btn,.btn:active{transition:none}
