@@ -70,27 +70,60 @@ def unescape_js(s):
     return ESCAPES.sub(' ', s)
 
 
+def _js_string_literals(text):
+    """从 JS 源码里抽含中文的字符串字面量。
+
+    必须只抽字面量而不是整段扫：JS 里大量半角逗号/冒号是语法符号，
+    整段扫会海量误报。
+    """
+    t = re.sub(r'/\*.*?\*/', ' ', text, flags=re.S)
+    t = re.sub(r'//[^\n]*', ' ', t)
+    out = []
+    # 两条正则各自只排除自己那种引号：
+    # HTML 模板串常含另一种引号（'<td colspan="9">暂无数据</td>'），
+    # 若同时排除两种就漏掉最常承载中文 UI 文案的那类字面量（轮83）。
+    # 量词必须是 {0,600}：{1,600} 无法识别空串 ''，
+    # 会让 join('') : '<串>' 这种写法的引号配对整体错位，真串漏检（轮83）
+    for rx in (r"'([^'\n]{0,600})'", r'"([^"\n]{0,600})"'):
+        for m in re.finditer(rx, t):
+            seg = m.group(1)
+            if re.search(CJK, seg):
+                out.append(unescape_js(seg))
+    return out
+
+
+def _scan_html_file(path):
+    """一个 HTML：可见文本 + 内联 <script> 的中文字面量。
+
+    轮83 前只取可见文本（把 <script> 整段剥掉），
+    于是内联脚本里的对外文案（JSON-LD 的 name/description 等）漏检。
+    """
+    raw = open(path, encoding='utf-8', errors='ignore').read()
+    no_comment = re.sub(r'<!--.*?-->', ' ', raw, flags=re.S)
+    scripts = re.findall(r'<script[^>]*>(.*?)</script>', no_comment,
+                         flags=re.S | re.I)
+    visible = re.sub(r'<(script|style)[^>]*>.*?</\1>', ' ', no_comment,
+                     flags=re.S | re.I)
+    chunks = [H.unescape(re.sub(r'<[^>]+>', ' ', visible))]
+    for body in scripts:
+        chunks.extend(_js_string_literals(body))
+    return chunks
+
+
 def scan_text():
-    """部署面会渲染的文本。"""
+    """部署面会呈现的中文文本：主站 + 后台 + 数据脚本。"""
     chunks = []
-    hp = os.path.join(SITE, 'index.html')
-    if os.path.exists(hp):
-        s = open(hp, encoding='utf-8', errors='ignore').read()
-        s = re.sub(r'<!--.*?-->', ' ', s, flags=re.S)
-        s = re.sub(r'<(script|style)[^>]*>.*?</\1>', ' ', s, flags=re.S | re.I)
-        chunks.append(H.unescape(re.sub(r'<[^>]+>', ' ', s)))
+    for rel in ('index.html', os.path.join('admin', 'index.html')):
+        hp = os.path.join(SITE, *rel.split('/'))
+        if os.path.exists(hp):
+            chunks.extend(_scan_html_file(hp))
     d = os.path.join(SITE, 'assets', 'data')
     if os.path.isdir(d):
         for f in sorted(os.listdir(d)):
-            if not f.endswith('.js'):
-                continue
-            t = open(os.path.join(d, f), encoding='utf-8', errors='ignore').read()
-            t = re.sub(r'/\*.*?\*/', ' ', t, flags=re.S)
-            t = re.sub(r'//[^\n]*', ' ', t)
-            for m in re.finditer(r"['\"]([^'\"\n]{1,600})['\"]", t):
-                seg = m.group(1)
-                if re.search(CJK, seg):
-                    chunks.append(unescape_js(seg))
+            if f.endswith('.js'):
+                t = open(os.path.join(d, f), encoding='utf-8',
+                         errors='ignore').read()
+                chunks.extend(_js_string_literals(t))
     return ' '.join(chunks)
 
 
