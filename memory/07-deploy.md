@@ -29,7 +29,7 @@ wrangler pages deploy site --project-name donggu-phoenix --commit-dirty=true
 - 影响面比 GitHub 更大：连此前正常的 `donggu-phoenix.pages.dev` 也取不到
   -> 判定为**本机网络整体劣化**，不是仓库或站点故障
 
-### 待办（网络恢复后按序做）
+### 待办（已于 2026-10-21 22:10 全部完成，记录保留）
 1. push 本地 2 个未推送提交：
    - `af40f31` JS 语法判据改扩展名法（只改 tools/，不影响站点）
    - `3f3ab65` 轮96 台账（只改 memory/）
@@ -39,7 +39,7 @@ wrangler pages deploy site --project-name donggu-phoenix --commit-dirty=true
    这正是 U-301 记的那类「本地绿 CI 红」，必须看 CI 而不是只看本地）。
 3. CI 绿后 GitHub Pages 才会部署，届时核验两面对齐。
 
-### 当前两版本面不一致（重要：扫码入口是 GitHub Pages）
+### 当时的两版本面不一致（已解决，记录保留）
 | 面 | 版本 | 含轮96 站点修复 |
 |---|---|---|
 | Cloudflare pages.dev | a962d2a | 是（特写卡解码尺寸 + CSS max-height + build 47）|
@@ -55,3 +55,22 @@ wrangler pages deploy site --project-name donggu-phoenix --commit-dirty=true
 GitHub Pages 面访问后台会走「此外端没有后端」提示分支 —— 这是设计如此，
 不是本轮引入的问题。但主站展示以二维码指向的 GitHub Pages 为主入口，
 两面的**站点**内容应当一致。
+## 轮96 收尾回执（2026-10-21 22:10）
+
+### 网络已恢复
+- 直连可推（本轮 3 次 push 均走直连成功），代理 7897 仍不稳
+- api.github.com 亦恢复，CI 日志可取
+
+### 待办已全部完成
+1. 已推送 3 个提交：af40f31（JS 判据扩展名法）、3f3ab65（轮96 台账）、325d2b9（07 卷受阻记录）
+2. CI 在 node v20.20.2 上跑通扩展名法：13 个 JS 全 ok，
+   日志见 run 39613710447（此前误判过一次，这次拿的是日志证据）
+3. GitHub Pages 已同步：BUILD 47 / --build 47 / 普通卡 max-height 100%，
+   与 Cloudflare 面完全一致
+
+### 期间发现并修掉的真事故（我自己的提交遗漏）
+上一条 a962d2a 改了三处版本号，但 git add 时漏了 main.css，
+推上去变成 CSS --build=46 vs HTML BUILD=47，版本对账守卫判红，
+两次 CI 失败 + Deploy 被跳过。
+教训：改多文件时 git add 必须逐条核对路径，不能凭「我记得加了」。
+补提交 0bc9361 后 CI 恢复 success。
