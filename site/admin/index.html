@@ -12,8 +12,8 @@
 :root{
   --bg:#0B0908; --panel:#141110; --panel-2:#1B1714;
   --line:#2A2420; --line-soft:#231E1A;
-  --fg:#EDE6DC; --fg-dim:#B9AEA2; --fg-faint:#7E746A;
-  --red:#B3202C; --red-hi:#D94331; --gold:#D4A24E; --gold-dim:#9C7B3F;
+  --fg:#EDE6DC; --fg-dim:#B9AEA2; --fg-faint:#8B8075;
+  --red:#B3202C; --red-hi:#EA4835; --gold:#D4A24E; --gold-dim:#9C7B3F;
   --ok:#5FA860;
   --fs-2xs:.6875rem; --fs-xs:.75rem; --fs-s:.8125rem; --fs-base:.875rem; --fs-m:1rem; --fs-l:1.25rem;
 }
@@ -472,7 +472,7 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
     var iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
 
     ctx.strokeStyle = '#231E1A';
-    ctx.fillStyle = '#7E746A';
+    ctx.fillStyle = '#8B8075'   /* 与 --fg-faint 同步（AA 达标色，轮75） */;
     ctx.font = '10px ui-monospace,Consolas,monospace';
     ctx.lineWidth = 1;
     var steps = 4;
@@ -503,7 +503,7 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
       ctx.arc(p[0], p[1], 1.8, 0, 6.2832);
       ctx.fill();
     });
-    ctx.fillStyle = '#7E746A';
+    ctx.fillStyle = '#8B8075'   /* 与 --fg-faint 同步（AA 达标色，轮75） */;
     [0, 7, 14, 21, 29].forEach(function (idx) {
       var label = days[idx].key.slice(5);
       ctx.fillText(label, pad.l + iw * (idx / 29) - (idx === 29 ? 26 : 10), h - 6);
@@ -523,7 +523,7 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
     var bw = iw / 24;
 
     ctx.strokeStyle = '#231E1A';
-    ctx.fillStyle = '#7E746A';
+    ctx.fillStyle = '#8B8075'   /* 与 --fg-faint 同步（AA 达标色，轮75） */;
     ctx.font = '10px ui-monospace,Consolas,monospace';
     for (var g = 0; g <= 4; g++) {
       var y = pad.t + ih - ih * g / 4;
@@ -544,7 +544,7 @@ footer{padding:18px 20px;border-top:1px solid var(--line-soft);color:var(--fg-fa
         ctx.fillText(String(n), x + bw / 2 - 6, y - 3);
       }
     });
-    ctx.fillStyle = '#7E746A';
+    ctx.fillStyle = '#8B8075'   /* 与 --fg-faint 同步（AA 达标色，轮75） */;
     for (var hh = 0; hh < 24; hh += 4) {
       ctx.fillText(String(hh).padStart(2, '0'), pad.l + bw * hh + bw / 2 - 6, h - 6);
     }
