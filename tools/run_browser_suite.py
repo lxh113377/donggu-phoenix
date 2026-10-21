@@ -81,13 +81,23 @@ def server_alive():
         return False
 
 
-def ab_alive(timeout=25):
-    """探 agent-browser daemon 是否可响应（短超时，不卡住整个套件）。"""
+def ab_alive(timeout=2.0):
+    """探 agent-browser daemon 是否可响应 —— 纯 TCP，无子进程。
+
+    轮70 教训：旧版用 subprocess 跑 agent-browser eval，
+    Windows 下 CLI 卡住时 subprocess 超时不生效（等孙进程释放管道），
+    预检自己挂起 5+ 分钟 —— 防挂起的机制必须结构上不可能挂起。
+    daemon 进程死 -> 端口没人听 -> 立刻 ConnectionRefused，绝不阻塞。
+    """
+    import socket
+    port_file = os.path.join(os.path.expanduser('~'), '.agent-browser', 'default.port')
     try:
-        out = subprocess.run([PS, '-NoProfile', '-Command', 'agent-browser eval "1+1"'],
-                             capture_output=True, text=True, timeout=timeout,
-                             encoding='utf-8', errors='replace')
-        return '2' in (out.stdout or '')
+        port = int(open(port_file, encoding='utf-8').read().strip())
+    except Exception:
+        return False
+    try:
+        with socket.create_connection(('127.0.0.1', port), timeout=timeout):
+            return True
     except Exception:
         return False
 
@@ -99,6 +109,38 @@ def needs_daemon(script_path):
     except Exception:
         return False
     return 'agent-browser' in src and 'headless=new' not in src
+
+
+STAMP = os.path.join(BASE, '_qa', 'gate_runs.json')
+
+
+def load_stamps():
+    try:
+        import json as _json
+        return _json.load(open(STAMP, encoding='utf-8'))
+    except Exception:
+        return {}
+
+
+def save_stamp(script, status, dur):
+    """记录本次真实执行的时间戳（只有实际跑过的才记）。"""
+    import json as _json
+    d = load_stamps()
+    d[script] = {'ts': int(time.time()), 'status': status, 'dur': round(dur, 1)}
+    os.makedirs(os.path.dirname(STAMP), exist_ok=True)
+    _json.dump(d, open(STAMP, 'w', encoding='utf-8'), indent=1, sort_keys=True)
+
+
+def age_str(script, stamps):
+    e = stamps.get(script)
+    if not e:
+        return '从未跑过'
+    days = (time.time() - e['ts']) / 86400.0
+    if days < 1:
+        return '%d 小时前' % max(0, int(days * 24))
+    if days < 30:
+        return '%d 天前' % int(days)
+    return '%d 天前(**过期**)' % int(days)
 
 
 def do_status():
@@ -119,10 +161,12 @@ def do_status():
             rows.append((script, 'NEEDS-DAEMON', desc))
         else:
             rows.append((script, 'RUNNABLE', desc))
-    print('浏览器判据活性（--status，未实际执行）')
+    print('浏览器判据活性（--status，未实际执行，含上次执行时效）')
     print('=' * 72)
+    stamps = load_stamps()
     for script, st, desc in rows:
-        print('  %-34s %-13s %s' % (script.replace('tools/', ''), st, desc[:34]))
+        print('  %-34s %-13s %-14s %s' % (
+            script.replace('tools/', ''), st, age_str(script, stamps), desc[:30]))
     print('=' * 72)
     n_dead = sum(1 for _s, st, _d in rows if st == 'DEAD')
     n_run = sum(1 for _s, st, _d in rows if st in ('RUNNABLE', 'NEEDS-DAEMON'))
@@ -195,6 +239,8 @@ def main():
             status = 'FAIL'
             reason = ''
         results.append((script, status, desc, reason))
+        if status in ('PASS', 'FAIL'):
+            save_stamp(script, status, dur)   # 只有真跑过才记时效
         print('%-34s %-6s %5.1fs  %s' % (script.replace('tools/', ''), status, dur, desc))
         if status == 'FAIL':
             for line in out.splitlines():
@@ -225,6 +271,8 @@ def main():
             n_pass, len(results)))
         return 0
     print('RESULT: PASS  %d 项浏览器判据全部通过' % n_pass)
+    print('  （各项执行时间已写入 _qa/gate_runs.json；'
+          '引用结论前先用 --status 看时效）')
     return 0
 
 
