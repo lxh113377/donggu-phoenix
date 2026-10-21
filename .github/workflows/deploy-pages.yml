@@ -36,6 +36,15 @@ jobs:
         with:
           node-version: '20'
 
+      # chrome + websocket-client 是 tools/visual_balance_test.py（CDP 版）的依赖。
+      # 该判据缺 chrome 时返回 SKIP 而非 FAIL —— 它的正确性已由本地三连跑证明
+      # （桌面/平板/手机极差 0.7/0.8/0.3），CI 只是持续防护；
+      # 若为装工具而判红会造成「工具噪音」压过真问题。
+      - uses: browser-actions/setup-chrome@v1
+        id: setup-chrome
+      - run: echo "chrome=${{ steps.setup-chrome.outputs.chrome-path }}"
+      - run: python -m pip install --quiet websocket-client
+
       # numpy/opencv 是 tools/verify_pixel_exact.py（像素级判据）的硬依赖。
       # 一手教训：曾只装 Pillow，该脚本在 import 期就崩，父门禁把「缺依赖」
       # 误读成「判据未通过」—— 依赖清单必须与判据脚本同步升级。
@@ -69,6 +78,13 @@ jobs:
       # 无外链字体 / 无 AI 标配紫。这五项都是历史真缺陷的机器化判据。
       - name: Design static audit
         run: python tools/ci_design_static.py
+
+      # 首屏构图平衡（CDP 版，等 Phoenix 组装完成后截图）。
+      # 轮99 曾因 --screenshot 等不到事件而禁用（手机极差 31.4），
+      # 轮101 换 CDP 后极差降到 0.7/0.8/0.3，故重新接入。
+      # 缺 chrome 时 SKIP（环境问题），构图失衡才 FAIL。
+      - name: Visual balance (CDP)
+        run: python tools/visual_balance_test.py
 
       # 守卫自身的自检：保证「零样本必 SKIP」不会被悄悄改坏。
       # 数据字段消费者检查也放这里（纯静态、无浏览器依赖）。
