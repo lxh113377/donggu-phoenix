@@ -43,10 +43,14 @@ websocket-client（本机已装）。缺失时判据明确报 SKIP 而非假装�
 Chrome 版本不同、粒子系统无固定种子（每次构图本就不同）、
 assemble 完成时机与字体渲染也有差别。
 
-**CI 桌面 23.6% 距 25% 阈值仅剩 1.4 个百分点余量。**
-若因 Chromium 版本变化导致桌面 FAIL，应先对比本地读数
-（本地若仍在 6~7%，则是渲染环境差异而非产品构图变差），
-不要直接改产品。这是轮99「偶发 FAIL 的门禁比没有更糟」的延续观察点。
+**轮102 已定位真因：不是渲染环境差异，而是低端机降级。**
+phoenix.js:32 的 lowEnd 判定（hardwareConcurrency<=4 或 deviceMemory<=4）
+在 CI runner 上成立 -> 粒子从 2600 压到 900 -> 构图整体变暗、
+右侧更空。诊断数字可自证：CI 亮像素 3.20% vs 本地 5.68%（比值 0.56），
+彩色 2.75% vs 4.44%，右亮 2.37% vs 5.67%。
+判据现已输出 lowEnd/degraded/粒子数，读数自带「完整态/降级态」上下文。
+低端态下差异偏大是预期，不据此判产品失衡；产品降级逻辑本身不动
+（那是为低端机性能有意做的）。
 """
 import base64
 import json
@@ -334,6 +338,24 @@ def main():
                             ok = True
                             break
                         time.sleep(0.4)
+                    # 轮102：读出降级状态，读数必须自带「完整态/降级态」上下文，
+                    # 否则低端环境的偏大差异会被误判成产品失衡
+                    degraded = {}
+                    for expr, key in (
+                            ('!!(window.__phoenix&&window.__phoenix.lowEnd)',
+                             'lowEnd'),
+                            ('!!(window.__phoenix&&window.__phoenix._degraded)',
+                             'degraded'),
+                            ('(window.__phoenix&&window.__phoenix.count)||0',
+                             'count')):
+                        try:
+                            r2 = pws.call('Runtime.evaluate',
+                                          {'expression': expr,
+                                           'returnByValue': True}, timeout=15)
+                            degraded[key] = r2.get('result', {}).get(
+                                'result', {}).get('value')
+                        except Exception:
+                            degraded[key] = '?'
                     if not ok:
                         print('[%s %dx%d] SKIP  凤凰未组装完成（state=%s），'
                               '该视口读数不可用' % (label, vw, vh, st))
@@ -371,6 +393,12 @@ def main():
                       % (diag['bright'], diag['colorful'],
                          diag['leftBright'], diag['rightBright'],
                          diag['bandTop'], diag['bandBottom']))
+                print('    凤凰状态: lowEnd=%s degraded=%s 粒子数=%s'
+                      % (degraded.get('lowEnd'), degraded.get('degraded'),
+                         degraded.get('count')))
+                if degraded.get('lowEnd') or degraded.get('degraded'):
+                    print('    （低端降级态：粒子数被压到 900，构图偏暗、'
+                          '差异偏大是预期，不据此判产品失衡 —— 见 phoenix.js:32）')
                 if bad and axis == 'h':
                     fails.append('%s %dx%d：%s重量差异 %.1f%% > 25%%'
                                  % (label, vw, vh, n1, diff))
