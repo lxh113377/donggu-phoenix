@@ -4065,3 +4065,11 @@ C 的破坏点选择有讲究：`ar-scenes.js:55` 的报错文案自己就列了
 ### 一句话
 把「演示时数字不能归零」从一句口头承诺，变成三条判据 + 九类故障注入。
 **决定会退化，判据不会忘事** —— 这次连「不许再加实时刷新」都写成了机器检查。
+
+### 补记：CI 首跑判红与修复（同轮）
+run 39731354518 的 Guard self-test 判红，Deploy 被跳过。
+日志唯一真失败行：「缺少文件：/home/runner/.../tools/make_static_admin_data.py」
+（其余 RESULT: FAIL 全是我自己注入的故障样本，属预期输出）。
+根因＝判据内部混用绝对/相对路径，Linux 上双重拼接（U-342）。
+修法：统一相对正斜杠 + 内部断言 + 用 posixpath 在 Windows 上模拟 Linux 语义复验。
+本地复跑 admin_static_data_test → PASS（5 条约束）。

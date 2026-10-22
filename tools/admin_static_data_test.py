@@ -42,6 +42,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gate_guard import verdict, emit
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 一律用「相对仓库根 + 正斜杠」的路径形态。
+# 一手事故（轮109，CI run 39731354518 判红而本机全绿）：GEN 原先写成绝对路径，
+# 与同列表里其它相对项混用。Windows 上 os.path.join(BASE, 绝对路径) 会直接返回
+# 绝对路径所以看不出来；Linux 上 split('/') 得到以空串开头的段，拼出
+# BASE + BASE + tools/... 这种双重路径，必然「文件不存在」——
+# 典型「本地绿、CI 红」，且红的是判据自己而不是产品。
+GEN_REL = 'tools/make_static_admin_data.py'
 GEN = os.path.join(BASE, 'tools', 'make_static_admin_data.py')
 ADMIN = 'site/admin/index.html'
 ANALYTICS = 'site/assets/js/analytics.js'
@@ -219,7 +226,13 @@ def main():
         return 1
     print('[PASS] 自检 6 类退化样本全部能被抓到（尺子有效）')
 
-    missing = [rel for rel in (ADMIN, ANALYTICS, INDEX, DATA_ADMIN, DATA_FOOTER, GEN)
+    want = (ADMIN, ANALYTICS, INDEX, DATA_ADMIN, DATA_FOOTER, GEN_REL)
+    # 守卫：这个列表只接受相对正斜杠路径，混进绝对路径就当场报错，
+    # 而不是等到 CI 才以「文件不存在」的面目暴露（防上面那个坑复发）
+    for rel in want:
+        assert not os.path.isabs(rel) and '\\' not in rel, \
+            '判据内部路径形态不统一（应为相对 + 正斜杠）：%s' % rel
+    missing = [rel for rel in want
                if not os.path.exists(os.path.join(BASE, *rel.split('/')))]
     if missing:
         print('RESULT: FAIL\n  - 缺少文件：' + ', '.join(missing))

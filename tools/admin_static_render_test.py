@@ -211,6 +211,7 @@ def main():
 
     fails = []
     checked = 0
+    skipped_vp = []
     again = None
     try:
         # ---- A~D + 附带项：两个视口各测一遍 ----
@@ -237,6 +238,14 @@ def main():
                 a = json.loads(raw)
             finally:
                 chrome.close_page(tid)
+
+            # 设备模拟没生效时不能按产品缺陷判红：CI 的 chromium 若忽略
+            # setDeviceMetricsOverride，窄屏断言会得到与本机不同的读数。
+            # 环境缺口 != 产品缺陷（轮74 归因纪律）；该视口记 SKIP，不计入 checked。
+            if abs(a['iw'] - vw) > 2:
+                print('  vw=%-5s 设备模拟未生效（innerWidth=%s）—— 该视口 SKIP，不计入 PASS' % (vw, a['iw']))
+                skipped_vp.append(vw)
+                continue
 
             checked += 1
             print('  vw=%-5s zone=%-6s 卡片 %d 张 · 资源 %d 项 · 接口请求 %d · 溢出=%s · 触控 %d 个（不足 %d）' % (
@@ -309,6 +318,15 @@ def main():
         finally:
             chrome.close_page(tid)
 
+        if skipped_vp:
+            print('  （%d 个视口因设备模拟未生效未取证：%s）' % (
+                len(skipped_vp), ', '.join(str(x) for x in skipped_vp)))
+        if len(skipped_vp) == len(VIEWPORTS):
+            # 一个视口都没测到就不能算通过（gate_guard 的零样本规矩）
+            print()
+            print('RESULT: SKIP  全部 %d 个视口设备模拟未生效 —— 未测不等于通过'
+                  % len(VIEWPORTS))
+            return 0
         print()
         for f in fails:
             print('  -', f)
