@@ -4403,3 +4403,70 @@ n_run = sum(st in ('RUNNABLE','NEEDS-DAEMON'))   # 旧
 两次都是「判定输出变好看了就以为对了」。
 
 唯一救回来的是那条抽查实跑 —— **判据的读数不是它的输出，是它的行为。**
+
+## 轮118 结果（2026-10-22 · ab_compat 兼容层 + 两条判据迁移，覆盖 15→17）
+
+### 一、背景：轮117 纠正假覆盖后，12 条判据从未跑过
+它们仍写成 `ps('agent-browser <cmd>')`，而该二进制在本机不存在。
+逐条重写成本高、易引入新错。
+
+### 二、方案：命令翻译层，而非逐条重写（U-365）
+勘察后发现只用 **4 个动词**且形态高度一致：
+
+| agent-browser | CDP 映射 |
+|---|---|
+| `open "URL"` | `ch.navigate(page, url)` |
+| `set viewport W H` | `Emulation.setDeviceMetricsOverride` |
+| `wait --load` | `readyState complete` + 引擎就绪 + 0.6s 给 rAF |
+| `eval "JS"` | `page.eval_js(js)` |
+| `eval (Get-Content -Raw file)` | 读文件后 eval |
+
+**设计约束：不静默降级** —— 不支持的动词必须抛 `AbCompatError` 点名，
+绝不返回空串冒充成功（否则又是一次哑判据）。
+
+### 三、迁移中踩到的三个坑（U-366）
+**① 猜选择器**：判据写 `querySelector('header')`，实测返回 null ——
+真实是 `<header class="nav" id="nav">`，应为 `'header.nav'`。
+
+**② 引号构造**：原版 PowerShell 三引号形态照搬进 Python 后，生成的 JS 缺尾部引号、字符串未闭合（`node --check` 当场报红）。
+
+**③ 双层 `json.loads`**：原版 `json.loads(json.loads(out))` 是 agent-browser 把 eval 结果再套一层引号的特性；
+CDP 只返一层，再解析必然失败 —— **读数明明是合法 JSON 却全 PARSE FAIL**。
+
+> 迁移不是照抄。旧实现里每个看似多余的写法，都可能是旧工具的补偿；换工具后要逐个复核。
+
+### 四、判据的断言也必须对着源码语义写（U-367，差点改坏产品）
+迁移 `ar_scenes` 时我最初把集章断言写成「切过场景就必须集章」，
+实测 `stamps=[]` 全红。读源码才发现落章在 `ar.js:395 complete()` ——
+**播完才 push，切场景不会落章**。
+
+> 若我没读源码、而是「修产品让切场景也落章」，就把一个正确的激励设计改坏了。
+> 判据报红时先分清「产品坏了」还是「判据的断言错了」——后者更常见。
+
+### 五、两条判据迁移成果（U-368）
+
+**anchor_offset_test**（8 个锚点跳转后是否被顶栏遮住）
+- 原版：依赖失效二进制 + 只 print 无 RESULT/退出码 + 靠隐式默认页无显式 open
+- 实测：8 个锚点全部 `top=88 > header=82`，均未被遮住，`RESULT: PASS`
+
+**ar_scenes_test**（AR 三场景切换 + 集章）
+- 原版同样的哑判据问题
+- 实测：场景 3 段 `['craft','red','phoenix']`、切换按钮 3 个、三段切换全 OK、
+  集章 `stamps=['craft','red','phoenix']`（播完 3 段），`RESULT: PASS`
+
+**活动判定同步加豁免**：源码用了 `ab_compat` 即视为已迁移 ——
+否则兼容层版判据仍保留 `AB.run('agent-browser ...')` 字面形态，会被继续判成 NEEDS-DAEMON（迁移白做）。
+
+**覆盖率：可跑 15 → 17 / 待迁移 12 → 10。**
+
+### 读数
+- 全量静态门禁 **44/44 PASS**
+- `browser_test_lint` 93 条 PASS
+- 反向验证 7 类样本全过（新增 G：用了 ab_compat → 非依赖）
+- 台账 368 号唯一连续；sync 0/0
+
+### 一句话
+本轮把「12 条从未跑过的判据」这个窟窿补了 2 条，更重要的是找到了一条可复制的路径：
+**翻译协议层，而不是重写每一条判据**。
+
+剩下 10 条待迁移，其中 AR 3 条是核心功能，下轮继续。
