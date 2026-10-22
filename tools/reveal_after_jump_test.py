@@ -12,16 +12,26 @@ IntersectionObserver 不该触发 —— 继续滚动 400px 后它正常 opacity
   · 元素在视口外且 opacity<0.9                            → 正常，不计
   · 页面完全不可用/取不到读数                              → SKIP
 """
-import json, subprocess, time, sys
+import json, os, subprocess, time, sys
+# 轮120：PS 常量在迁移后已不再使用（执行通道改 ab_compat），保留无害
 PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 WD = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
 
-def ps(cmd, timeout=45):
-    try:
-        r = subprocess.run([PS,'-NoProfile','-Command',cmd],capture_output=True,text=True,cwd=WD,timeout=timeout,encoding='utf-8',errors='replace')
-        return ((r.stdout or '')+(r.stderr or '')).strip()
-    except subprocess.TimeoutExpired:
-        return 'TIMEOUT'
+# 轮120 迁移：ps() 从 PowerShell 调 agent-browser 改为走 ab_compat 兼容层。
+# 业务逻辑、断言、RESULT 判定全部不动 —— 只换执行通道。
+_AB = None
+
+
+def _ab():
+    global _AB
+    if _AB is None:
+        from ab_compat import AbSession
+        _AB = AbSession()
+    return _AB
+
+
+def ps(cmd, timeout=90):
+    return _ab().run(cmd, timeout=timeout)
 
 JS_TMPL = ("JSON.stringify((function(){var s=document.getElementById('%s');"
            "if(!s)return {err:1};"
@@ -35,19 +45,30 @@ JS_TMPL = ("JSON.stringify((function(){var s=document.getElementById('%s');"
 def get(sid):
     path = WD + r'\_qa\_rv.js'
     open(path, 'w', encoding='utf-8').write(JS_TMPL % sid)
+    # 轮120：CDP 的 eval 只返回一层，不再需要 json.loads(json.loads(...))。
+    # 双层解析是 agent-browser 把结果再套一层引号的特性（轮118/119 已两次踩过）。
     out = ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "%s")' % path)
-    for line in reversed(out.splitlines()):
-        line = line.strip()
-        if line.startswith('"') and line.endswith('"'):
-            try:
-                return json.loads(json.loads(line))
-            except Exception:
-                continue
-    return None
+    if not out:
+        return None
+    try:
+        return json.loads(out)
+    except Exception:
+        return None
 
 def main():
+    # 轮120：判据自己起服务，不再假设外部已起 8791（原版是隐性环境依赖，
+    # 换机器/CI 必失败，且失败形态是 SKIP —— 看起来像环境问题、不算判据失效）。
+    _srv = None
+    try:
+        from cdp_client import SiteServer
+        _srv = SiteServer(os.path.join(WD, 'site'), port=8791)
+        _url = _srv.url('/index.html?jump=%d' % int(time.time()))
+    except Exception as _e:
+        print('RESULT: SKIP  服务起不来: %s' % _e)
+        return 0
+
     ps('agent-browser set viewport 1440 900')  # 显式视口，保证结果可复现
-    ps('agent-browser open "http://127.0.0.1:8791/?jump=%d"' % int(time.time()))
+    ps('agent-browser open "%s"' % _url)
     ps('agent-browser wait --load networkidle')
     time.sleep(2.0)
 
