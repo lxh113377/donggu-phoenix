@@ -62,6 +62,10 @@ SUITE = [
     ('tools/contrast_audit.py', False, '两视口文本对比度（headless 直连）'),
     ('tools/admin_contrast_test.py', False, '后台仪表盘对比度（需 pages dev）'),
     ('tools/admin_responsive_test.py', False, '后台响应式与触控 44px（需 pages dev）'),
+    # 轮109：后台静态化后新增。两条都自起进程内静态服务（零接口），
+    # 不像上面两条依赖 wrangler pages dev + D1。
+    ('tools/admin_static_render_test.py', True, '后台静态页真渲染 + 刷新不变（CDP，自起服务）'),
+    ('tools/reverse_admin_static.py', False, '后台静态化两条判据的反向验证（9 类故障注入）'),
     ('tools/runtime_health_test.py', False, '运行时健康（无泄漏/累积/循环叠加）'),
     ('tools/engine_behavior_test.py', False, '引擎行为（密度自适应+HUD节流实测）'),
     ('tools/defer_regression_test.py', False, 'defer 后运行时不回归'),

@@ -4,7 +4,7 @@
 
 **线上地址**：https://donggu-phoenix.pages.dev/（全球 CDN，后端同域）
 **备用地址**：https://lxh113377.github.io/donggu-phoenix/
-**管理后台**：https://donggu-phoenix.pages.dev/admin/（密钥登录，看访问数据全貌）
+**管理后台**：https://donggu-phoenix.pages.dev/admin/（演示用静态数据，无需登录，任何人可看）
 **访问统计**：Cloudflare Pages Functions + D1，匿名聚合（详见下方「访问统计与隐私」）
 **交付说明**：[`docs/交付说明.md`](docs/交付说明.md) ｜ **体验与 AR 方案**：[`docs/体验设计与AR方案.md`](docs/体验设计与AR方案.md) ｜ **AR 分镜**：[`docs/ar-storyboard.md`](docs/ar-storyboard.md)
 
@@ -45,7 +45,8 @@ python tools\make_ar_assets.py
 ## 技术
 
 - 前端：HTML + CSS + 原生 JS，零依赖、零构建；后端：Cloudflare Pages Functions + D1（SQLite）
-- 访问统计：`functions/api/` 下两个端点 —— `POST /api/track` 匿名写入、`GET /api/stats` 聚合读出；页脚实时显示「开馆至今 N 位访客 · M 次到访」
+- 访问统计（真实采集侧未变）：`functions/api/` 下两个端点 —— `POST /api/track` 匿名写入、`GET /api/stats` 聚合读出，数据进 D1
+- 展示侧（2026-10-22 改）：页脚与后台读的是**一次生成的静态演示样本**，不直连数据库 —— 演示现场不会因为后端读不到而把访问量显示成零。详见 `docs/后台演示数据说明.md`
 - 凤凰动画：Canvas 2D 粒子系统（2600 粒子，桌面 200+ fps）
 - AR 展陈：三段共 152 秒，全部 Canvas 2D 实时绘制；零 3D 模型、零第三方库、零外部请求
 - 一木成像：造像轮廓由参数化剖面 `halfWidth(u, 进度)` 定义，开坯是沿像身推进的波前，木料与神像**同一条进度轴**；工序器具（斧 / 凿槌 / 毛笔 / 金箔镊）与年轮、木屑、背光全部代码绘制
@@ -54,19 +55,40 @@ python tools\make_ar_assets.py
 - 二维码：`qrcode` 生成 + OpenCV 回读自检
 - 部署：GitHub Actions → Pages；Cloudflare Pages 备用
 
-## 管理后台
+## 管理后台（演示用静态页）
 
-- 入口：`/admin/`（仅 pages.dev 主站有效；github.io 纯静态端会显示无后端提示）
-- 登录：管理密钥存 Cloudflare Pages secret（`ADMIN_KEY`），本地开发用 `.dev.vars`（已 gitignore）；密钥只存浏览器 `sessionStorage`，关窗即退出
-- 功能：累计/今日/14 天指标卡、30 天趋势折线、今日逐时柱状、AR 场景热度、来源/国家/语言/屏幕分布、访问明细分页与过滤、CSV 一键导出
-- 防护：`_middleware` 统一鉴权（401）、同 IP 15 分钟失败 20 次限流（429）、密钥未配置时 503 显式提示
+- 入口：`/admin/`。**两个部署面都能看**（pages.dev 与 github.io），本地双击
+  `site/admin/index.html` 也能看 —— 页面零请求、零登录、零接口
+- 数据：`site/assets/data/admin-stats.js`，由 `python tools/make_static_admin_data.py`
+  一次生成。按周统计，窗口 2026-09-01 ~ 2026-11-09（十个整周），
+  累计浏览 12,700 / 全部事件 18,591，两种读法都落在 1 万~2 万
+- 页面内容：指标卡 6 张、按周折线、周内逐日柱状（可切周）、AR 场景热度、
+  访客来源、周次汇总表、国家/语言/屏幕档排行、CSV 一键导出（本地生成）
+- 为什么不做成实时：后台原先直读 D1，一旦库被清空或读不到，刷新一次页面
+  访问量就归零 —— 演示场合最坏的事故形态。静态样本让数字与后端可用性解耦
+- 防退化判据（三条，均已进 CI）：
+  · `tools/admin_static_data_test.py` —— 数据漂移 / 口径越界 / 求和不自洽 /
+    退回实时读接口（源码层，纯静态）
+  · `tools/admin_static_render_test.py` —— 真浏览器验证数字确实渲染出来，
+    并断言**刷新三次读数不变**（行为层，对着那个 bug 写）
+  · `tools/reverse_admin_static.py` —— 往沙箱里注入 9 类退化，证明上两条真有牙
+- 口径、生成与回滚方式：`docs/后台演示数据说明.md`
 
+### 真实统计链路（保留，只是演示面不再读它）
+
+- 采集：`POST /api/track` 匿名写入 D1；查询：`GET /api/stats`（公开聚合）
+- 管理接口：`functions/api/admin/*` 仍在，需 `ADMIN_KEY`（存 Cloudflare Pages
+  secret，本地开发用 `.dev.vars`，已 gitignore）。想直查数据库：
+  `wrangler d1 execute donggu-analytics --remote --command "SELECT ..."`
+- 防护：`_middleware` 统一鉴权（401）、同 IP 15 分钟失败 20 次限流（429）、
+  密钥未配置时 503 显式提示
 ## 访问统计与隐私
 
 - **采集范围**：事件名（进页 / AR 场景 / 唤凤）、路径、随机访客号（`localStorage` 的 `dg-vid`，16 位随机十六进制，可随时清除）、语言、屏幕档；地理（国家 / 城市 / 时区）与 UA 由 Cloudflare 边缘按请求头记录。**不含**任何可输入内容、姓名、联系方式，无跨站跟踪、无 Cookie。
 - **部署面边界**：统计仅在 `*.pages.dev` 域名生效；GitHub Pages 备用端无 Functions，前端探测后整段休眠，一个请求都不发。
 - **接口边界**：`POST /api/track` 白名单字段 + 长度截断 + 同源校验 + 批量上限 20 条；任何异常都静默降级（`ok:false`），绝不影响访客浏览。
 - **数据查看**：`GET /api/stats` 返回累计 / 今日 / 近 14 天序列 / 场景热度 / 热门路径的匿名聚合；明细可经 `wrangler d1 execute donggu-analytics --remote --command "SELECT ..."` 查询。
+- **展示口径**：页脚与后台显示的是静态演示样本并明写「演示样本」，**不是真实访问量**；真实数字只经上面的接口/CLI 读取。
 
 ## 降级链
 

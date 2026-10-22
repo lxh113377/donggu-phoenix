@@ -8,6 +8,24 @@
 
 ## [未发布]
 
+### 变更（轮109 · 2026-10-22 · 后台与页脚改静态演示数据）
+- **管理后台不再需要密钥登录**，也不再读数据库：改为单文件静态演示页，
+  数据来自一次生成的样本（按周统计，窗口 2026-09-01 ~ 2026-11-09 十个整周，
+  累计浏览 12,700 / 全部事件 18,591，两种读法都落在 1 万~2 万）。
+  现在 pages.dev、github.io 与本地双击 `site/admin/index.html` 三处都能看到，
+  且**刷新多少次数字都不变** —— 修的是「演示现场后端读不到就把访问量显示成零」这个事故形态。
+- 主站页脚访问计数同样改读静态样本，并明写「演示样本」不冒充真实访问量；
+  此前它在 github.io 备用端因域名闸整段休眠、根本不显示，现在两面与离线都能看到。
+- 真实采集链路（`POST /api/track`、`GET /api/stats`、`functions/api/admin/*`、D1）
+  一行未动，只是演示面不再读它；要恢复实时的回滚方式记在 `memory/04-decisions.md`。
+- 新增三条判据并接入 CI（36 → 39 条）：`admin_static_data_test.py`（数据漂移 /
+  口径越界 / 求和不自洽 / 退回实时读接口）、`admin_static_render_test.py`
+  （真浏览器验证数字确实渲染 + 断言刷新不变）、`reverse_admin_static.py`
+  （注入 9 类退化证明前两条真有牙）。本地浏览器套件 24 → 26 条。
+- 字体子集重建（`tools/build_fonts.py`）：新文案带来 19 个新汉字，
+  `zcool-display.woff2` 225,588 → 224,808 字节（后台静态化删掉的旧文案更多，净减 780B）。
+
+
 ### 新增（轮85 · U-01 现场收口 + U-02 文创实物化）
 - **真机前哨判据** `tools/preflight_device_test.py` + `tools/preflight_device.mjs`：CDP 直连，
   三档移动端 profile（微信 iOS / iPhone Safari / 微信 Android）× 真 CSS 视口 × 4G 限速 × CPU 4x 降频，

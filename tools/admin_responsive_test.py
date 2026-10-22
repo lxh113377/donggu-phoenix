@@ -25,7 +25,8 @@ find_chrome / free_port / read_admin_key / start_pages_dev / dump_dom
 chrome 偶发空输出重试逻辑，不重复实现（重复实现就会各自漂移）。
 
 ## 守卫
-  · zone != dash -> FAIL（登录没成功时读数无意义）
+  · zone != dash -> FAIL
+    轮109 起后台无登录，zone 表达的是「静态数据是否渲染到位」，不再是登录成功。
   · 零样本 -> SKIP，不判 PASS
   · pages dev 起不来 / 无读数 -> SKIP 且明确「未测不等于通过」
 """
@@ -195,7 +196,7 @@ def main():
             print('  vw=%-5s zone=%-5s scrollW=%-5s 触控目标 %d 个，不足 %dpx 的 %d' % (
                 a['vw'], a['zone'], a['scrollW'], a['checked'], MIN_PX, len(a['small'])))
             if a['zone'] != 'dash':
-                fails.append('vw=%s zone=%s（登录未生效，读数无意义）' % (a['vw'], a['zone']))
+                fails.append('vw=%s zone=%s（未进 dash：数据未渲染，读数无意义）' % (a['vw'], a['zone']))
                 continue
             if a['overflow']:
                 fails.append('vw=%d 横向溢出 scrollW=%d > iw=%d' % (

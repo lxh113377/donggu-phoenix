@@ -1,0 +1,22 @@
+{
+  "generator": "tools/make_static_admin_data.py",
+  "seed": 20261108,
+  "window": {
+    "start": "2026-09-01",
+    "end": "2026-11-09",
+    "weeks": 10,
+    "days": 70
+  },
+  "totals": {
+    "pv": 12700,
+    "uv": 10374,
+    "events": 18591,
+    "scenes": 4382,
+    "summon": 1509
+  },
+  "sha256": {
+    "docs/后台演示数据说明.md": "ed2d59dc11f9dac839c9693cc60d063be0d5d293be51ca12aca690de99bf9fb0",
+    "site/assets/data/admin-stats.js": "97c7a94b200d5aede4b5dd92f77aaac47eca88fc27cb15f1e451759a31f9c37c",
+    "site/assets/data/footer-stats.js": "8321701181a326dd512032a7087ff8971eaa13f6cbc884013deb32e71759854f"
+  }
+}

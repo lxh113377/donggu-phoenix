@@ -2,12 +2,16 @@
 """tools/admin_contrast_test.py —— 后台对比度判据（headless + pages dev，本地跑）。
 
 ## 为什么单独一条，而不是并进 contrast_audit
-contrast_audit 测主站：静态、无鉴权，进程内起个静态服务就能读。
-后台不同：
-  · 数据来自 Functions + D1，纯静态服务下只会停在登录卡，测不到仪表盘；
-  · 需要 X-Admin-Key 才能进 dash。
-所以本判据用 npx wrangler pages dev 起带后端的本地面，再用同源 iframe
-注入 sessionStorage 密钥，走**真实登录渲染路径**。
+它测的是后台这一页，主站判据扫不到它（轮75 立的口径）。
+
+## 2026-10-22 轮109 之后的实情（改这段话的原因）
+后台已改为**静态演示页**：无登录、无接口（见 admin_static_data_test.py 的 D 条）。
+所以本判据不再需要 wrangler pages dev + D1 —— 但它仍然照跑不误，因为：
+  · 探针注入的 sessionStorage 密钥现在没人读，页面无条件进 dash 态；
+  · zone 守卫因此变成「页面渲染到位」的断言，不再是「登录生效」的断言。
+保留它的价值：4 视口逐元素 computed style 对比度，是 admin_static_render_test
+（只看结构与墨迹）覆盖不到的一维。密钥读不到时它走 SKIP，不影响本地套件。
+若日后后台恢复实时读，本判据的 zone 语义要一并改回。
 
 ## 轮75 的起因
 后台此前零对比度覆盖（contrast_audit 只测 /site/index.html）。
@@ -27,7 +31,7 @@ canvas 内绘制的文字（图表轴标签、刻度）getComputedStyle 读不�
   · chrome 偶发 rc=0 但 stdout 空 -> 重试（U-193）
   · 零样本不判 PASS（轮9/15/22）
   · pages dev 起不来 -> SKIP 并说明，不判绿
-  · zone != dash -> 判 FAIL（登录没生效时读数无意义）
+  · zone != dash -> 判 FAIL（轮109 后＝静态数据未渲染，读数无意义）
 """
 import json
 import os
@@ -239,7 +243,7 @@ def main():
         return 0
     key = read_admin_key()
     if not key:
-        print('RESULT: SKIP  读不到 .dev.vars 的 ADMIN_KEY（后台需登录态才能测）')
+        print('RESULT: SKIP  读不到 .dev.vars 的 ADMIN_KEY（探针注入用的历史遗留密钥；轮109 后后台已无登录，缺它也能测静态页，但沿用「未取证不等于通过」一律 SKIP）')
         return 0
 
     port = free_port()
@@ -284,7 +288,7 @@ def main():
                 print('      - %-18s %.2f < %.1f  %spx  %s' % (
                     b['txt'], b['ratio'], b['need'], b['fs'], b['color']))
             if a['zone'] != 'dash':
-                fails.append('vw=%s 未进 dash（zone=%s），登录未生效，读数无意义'
+                fails.append('vw=%s 未进 dash（zone=%s），静态数据未渲染，读数无意义'
                              % (a['vw'], a['zone']))
             elif a['bad']:
                 fails.append('vw=%d：%d 处文本对比度不达 AA' % (a['vw'], len(a['bad'])))

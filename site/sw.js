@@ -37,7 +37,12 @@
  * 跨版本对账锚点仍是 CSS --build(38) ⇄ HTML BUILD(38)。 */
 /* v44（2026-10-21，统计端）：管理后台修复版缓冲期清理——昨晚有语法损坏版 admin
  * 被部分访客 networkFirst 缓存兜住过，bump 强制删旧缓存保干净版。 */
-var VERSION = 'v49';
+/* v50（2026-10-22，演示静态化）：后台与页脚改为读一次生成的静态演示样本，
+ * PRECACHE 新增 assets/data/footer-stats.js，且 analytics.js 内容变了。
+ * 清单与内容都变 —— 不 bump 则老访客的 SW 仍 cache-first 供旧 analytics.js，
+ * 页脚会继续读 /api/stats（本项目第 5 次踩同一坑，见 v2/v4/v6/v37/v40 注释）。
+ * 跨版本对账锚点仍是 CSS --build(47) ⇄ HTML BUILD(47)：main.css 本次未改。 */
+var VERSION = 'v50';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [
@@ -49,6 +54,7 @@ var PRECACHE = [
   'assets/data/culture.js',
   'assets/data/ar-data.js',
   'assets/data/statue-profile.js',
+  'assets/data/footer-stats.js',
   'assets/img/statue-cut.webp',
   'assets/js/phoenix.js',
   'assets/js/wood-to-statue.js',
