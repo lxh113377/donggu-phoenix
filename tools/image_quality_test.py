@@ -14,9 +14,8 @@
   · 显示宽高比与原始宽高比偏差 < 5%（变形）
   · 放大倍数 <= 1.3（模糊）
 """
-import json, subprocess, time, sys
-PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
-WD = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
+import json, subprocess, time, sys, os
+WD = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 轮121 迁移：ps() 从 PowerShell 调 agent-browser 改为 ab_compat 兼容层。
 # 紧跟着的 JS 常量是判据本体，绝不能连带删掉（轮120 批量改造栽在这）。

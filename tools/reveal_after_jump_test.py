@@ -14,8 +14,7 @@ IntersectionObserver 不该触发 —— 继续滚动 400px 后它正常 opacity
 """
 import json, os, subprocess, time, sys
 # 轮120：PS 常量在迁移后已不再使用（执行通道改 ab_compat），保留无害
-PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
-WD = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
+WD = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 轮120 迁移：ps() 从 PowerShell 调 agent-browser 改为走 ab_compat 兼容层。
 # 业务逻辑、断言、RESULT 判定全部不动 —— 只换执行通道。

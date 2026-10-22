@@ -28,7 +28,6 @@ import os
 import subprocess
 import sys
 
-PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 

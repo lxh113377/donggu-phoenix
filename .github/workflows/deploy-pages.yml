@@ -95,6 +95,56 @@ jobs:
       - name: AR playback (core function, CDP)
         run: python tools/ar_playback_test.py
 
+
+      # 轮124：浏览器套件全量接入（此前 27 条中只有 5 条挂 CI，其余 22 条从未在 CI 跑过）。
+      # 背景：轮117 发现「--status 报 27/27 全绿但实际 12 条从未有读数」；
+      # 轮118-123 逐条迁移到 CDP 后 27 条都能真跑，但「本机能跑」不等于「CI 有守护」——
+      # 若只在本机跑，改动破坏某维度时 CI 不会红，问题要等人工发现。
+      #
+      # 本机实测 22 条合计 424 秒（7.1 分钟）。下列 17 条合计约 5 分钟，全部自足
+      # （自起 SiteServer + 自起 chrome，零公网、零 wrangler、零 D1）。
+      # 未接入的 5 条及原因：
+      #   offline_live_test / preflight_device_test  —— 需公网（断网复验、线上两面）
+      #   admin_contrast_test / admin_responsive_test —— 需 wrangler pages dev + D1
+      #   reverse_ar_playback —— 118 秒（起 4 次 chrome），代价过高，留本地套件
+      #
+      # 缺 chrome 时各自 SKIP（环境问题），真坏才 FAIL。
+      - name: Browser suite (17 CDP gates)
+        run: |
+          # 9 视口无横向溢出/越界/首屏裁切
+          python tools/multi_viewport_test.py
+          # 手机首屏锁一屏
+          python tools/hero_height_test.py
+          # 装饰环在画布内
+          python tools/ring_containment_test.py
+          # 进场元素全部触发（22 个）
+          python tools/reveal_coverage_test.py
+          # 跳转后进场不失效（8 段）
+          python tools/reveal_after_jump_test.py
+          # 锚点未被顶栏遮住（8 个）
+          python tools/anchor_offset_test.py
+          # 2 种缩放等效视口无溢出/越界/字号可读
+          python tools/zoom_test.py
+          # 4 视口触控目标 >= 44px
+          python tools/touch_target_test.py
+          # 2 视口文本对比度全部达标
+          python tools/contrast_audit.py
+          # 85 张图无变形/模糊/加载失败
+          python tools/image_quality_test.py
+          # AR 核心功能 7 项
+          python tools/ar_e2e_test.py
+          # AR 三场景切换 + 集章
+          python tools/ar_scenes_test.py
+          # 集章生效 + 持久化 + 防重复
+          python tools/ar_stamp_test.py
+          # AR 焦点闭环 7 项（a11y）
+          python tools/ar_focus_test.py
+          # defer 后功能回归 5 项
+          python tools/defer_regression_test.py
+          # 运行时健康（无泄漏/累积/叠加）
+          python tools/runtime_health_test.py
+          # 引擎行为（密度自适应 + HUD 节流）
+          python tools/engine_behavior_test.py
       # 守卫自身的自检：保证「零样本必 SKIP」不会被悄悄改坏。
       # 数据字段消费者检查也放这里（纯静态、无浏览器依赖）。
       - name: Guard self-test

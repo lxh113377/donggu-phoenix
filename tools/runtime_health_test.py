@@ -31,7 +31,6 @@ import subprocess
 import sys
 import time
 
-PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 一次调用内完成「三轮开关 + 采样」，避免多次 eval 的往返与状态漂移

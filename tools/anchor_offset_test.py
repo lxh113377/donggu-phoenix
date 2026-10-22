@@ -15,7 +15,7 @@ import os
 import sys
 import time
 
-WD = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
+WD = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(WD)
 sys.path.insert(0, os.path.join(WD, 'tools'))
 
