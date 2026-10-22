@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:52;
+  --build:53;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -222,7 +222,7 @@ body::after{
 
 /* ---------- ⑥ Hero ---------- */
 .hero{position:relative;min-height:100svh;display:flex;align-items:center;overflow:hidden;
-  padding:clamp(92px,12vh,140px) 0 clamp(56px,9vh,96px)}
+  padding:clamp(92px,12vh,var(--sp-7)) 0 clamp(56px,9vh,96px)}
 #stage{position:absolute;inset:0;width:100%;height:100%;z-index:0}
 
 .hero-grid{
@@ -530,7 +530,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 }
 .carve-rail button b{display:block;font-family:var(--font-latin);font-size:var(--fs-2xs);letter-spacing:.3em;
   color:var(--fg-faint);font-weight:400}
-.carve-rail button span{display:block;margin-top:8px;font-family:var(--font-display);font-size:var(--fs-md);
+.carve-rail button span{display:block;margin-top:var(--sp-1);font-family:var(--font-display);font-size:var(--fs-md);
   letter-spacing:.1em;color:var(--fg-dim)}
 .carve-rail button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
   background:linear-gradient(90deg,var(--she-gold),var(--she-vermilion));transform:scaleX(0);
@@ -557,7 +557,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   background:var(--line-soft);border:1px solid var(--line-soft);margin-bottom:var(--sp-4)}
 .ar-route-item{background:var(--she-ink);padding:clamp(20px,2.4vw,30px);position:relative;overflow:hidden}
 .ar-route-item b{font-family:var(--font-latin);font-size:var(--fs-2xs);letter-spacing:.32em;color:var(--she-gold)}
-.ar-route-item h3{margin:14px 0 8px;font-family:var(--font-display);font-weight:400;font-size:var(--fs-lg);letter-spacing:.1em}
+.ar-route-item h3{margin:14px 0 var(--sp-1);font-family:var(--font-display);font-weight:400;font-size:var(--fs-lg);letter-spacing:.1em}
 .ar-route-item p{margin:0;font-size:var(--fs-base);color:var(--fg-dim);line-height:1.9}
 .ar-route-item::after{content:"";position:absolute;left:0;top:0;width:1px;height:100%;
   background:linear-gradient(to bottom,var(--she-gold),transparent);opacity:.35}
@@ -577,7 +577,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .ar-card .en{font-family:var(--font-latin);font-size:var(--fs-2xs);letter-spacing:.2em;color:var(--fg-faint);margin:0;text-transform:uppercase}
 .ar-card .kick{font-family:var(--font-sans);font-size:var(--fs-xs);letter-spacing:.12em;color:var(--she-vermilion)}
 .ar-card .tagline{margin:0;font-size:var(--fs-base);color:var(--fg-dim);line-height:1.95}
-.ar-card ol{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px}
+.ar-card ol{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:var(--sp-1)}
 .ar-card ol li{position:relative;padding-left:26px;font-size:var(--fs-sm);color:var(--fg-dim)}
 .ar-card ol li::before{content:"";position:absolute;left:6px;top:.75em;width:5px;height:5px;
   border-radius:50%;background:var(--she-gold);opacity:.8}
@@ -648,7 +648,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 
 .ar-dots{position:absolute;top:74px;left:0;right:0;z-index:5;display:flex;justify-content:center;
   gap:var(--sp-hair);flex-wrap:wrap;padding:0 16px}
-.ar-dots button{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:var(--radius-pill);
+.ar-dots button{display:inline-flex;align-items:center;gap:var(--sp-1);padding:9px 16px;border-radius:var(--radius-pill);
   border:1px solid var(--line-soft);background:rgba(11,9,8,.55);backdrop-filter:blur(8px);
   font-family:var(--font-sans);font-size:var(--fs-xs);letter-spacing:.14em;color:var(--fg-dim);
   transition:all .35s var(--ease);min-height:40px}
@@ -666,7 +666,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .ar-copy h3{margin:0;font-family:var(--font-display);font-weight:400;font-size:var(--fs-lg);letter-spacing:.08em}
 .ar-chapter-en{margin:4px 0 10px;font-family:var(--font-latin);font-size:var(--fs-2xs);
   letter-spacing:.2em;color:var(--fg-faint);text-transform:uppercase}
-.ar-copy p{margin:0 0 8px;font-size:var(--fs-base);line-height:1.95;color:var(--fg-dim)}
+.ar-copy p{margin:0 0 var(--sp-1);font-size:var(--fs-base);line-height:1.95;color:var(--fg-dim)}
 .ar-copy .ar-body-en{font-family:var(--font-sans);font-size:var(--fs-xs);line-height:1.8;color:var(--fg-faint)}
 .ar.beat .ar-chapter-wrap{animation:arBeat .9s var(--ease)}
 @keyframes arBeat{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -701,7 +701,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 /* 念读中的脉动点：infinite 动画，必须在文末 prefers-reduced-motion 块登记（
    reduced_motion_test 会逐条比对选择器，漏一条即判红） */
 .ar-btn.narrate.on::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
-  background:#17110c;margin-right:8px;vertical-align:middle;animation:narrPulse 1.4s var(--ease) infinite;}
+  background:#17110c;margin-right:var(--sp-1);vertical-align:middle;animation:narrPulse 1.4s var(--ease) infinite;}
 @keyframes narrPulse{0%,100%{opacity:.25}50%{opacity:.9}}
 .ar-meta{margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
   font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.1em;color:var(--fg-faint)}
@@ -718,7 +718,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   .ar-copy h2{font-size:clamp(var(--fs-lg),5.4vw,var(--fs-2xl))}
   .ar-copy p{font-size:var(--fs-sm)}
   .ar-dots{top:66px;gap:6px}
-  .ar-dots button{padding:8px 12px;font-size:var(--fs-2xs)}
+  .ar-dots button{padding:var(--sp-1) 12px;font-size:var(--fs-2xs)}
   .ar-btn{padding:10px 15px;font-size:var(--fs-2xs)}
 }
 @media (prefers-reduced-motion:reduce){
@@ -743,9 +743,9 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   background:linear-gradient(90deg,var(--accent),transparent);
   transition:width 1s var(--ease-out)}
 .culture-card::after{content:none}
-.culture-card:hover{background:linear-gradient(90deg,rgba(255,255,255,.028),transparent 62%);padding-left:clamp(8px,1.4vw,22px)}
+.culture-card:hover{background:linear-gradient(90deg,rgba(255,255,255,.028),transparent 62%);padding-left:clamp(var(--sp-1),1.4vw,22px)}
 .culture-card:hover::before{width:min(100%,560px)}
-.culture-card > div:first-child{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.culture-card > div:first-child{display:flex;flex-direction:column;gap:var(--sp-1);align-items:flex-start}
 .culture-card .no{
   font-family:var(--font-latin);font-size:clamp(2rem,3.6vw,3.25rem);line-height:.9;letter-spacing:.02em;
   color:color-mix(in srgb,var(--accent) 72%,transparent);
@@ -758,7 +758,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   word-break:keep-all;overflow-wrap:anywhere}
 .culture-card p{margin:0;color:var(--fg-dim);font-size:var(--fs-base);line-height:2;text-wrap:pretty;
   max-width:44em}
-.culture-card .notes{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;grid-column:3;align-self:start}
+.culture-card .notes{display:flex;flex-wrap:wrap;gap:var(--sp-1);margin-top:18px;grid-column:3;align-self:start}
 .culture-card .notes span{font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.12em;
   padding:5px 11px;border:1px solid var(--line-soft);border-radius:var(--radius-pill);color:var(--fg-faint)}
 @media (max-width:860px){
@@ -783,7 +783,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   border:1px solid var(--line);margin-bottom:20px;background:#1b1512}
 .craft-card h3{margin:0;font-family:var(--font-display);font-weight:400;font-size:var(--fs-2xl);letter-spacing:.12em}
 .craft-card .role{font-family:var(--font-sans);font-size:var(--fs-xs);letter-spacing:.14em;
-  color:var(--she-gold);margin:8px 0 20px}
+  color:var(--she-gold);margin:var(--sp-1) 0 20px}
 .craft-card blockquote{margin:0 0 24px;padding:16px 0 16px 20px;border-left:2px solid var(--she-vermilion);
   font-family:var(--font-display);font-size:var(--fs-md);color:var(--fg);line-height:1.9}
 .craft-card dl{margin:0;display:grid;gap:12px}
@@ -889,7 +889,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   white-space:nowrap;transition:transform .4s var(--ease)}
 .road-item:hover .go-mark{transform:translateX(6px)}
 @media (max-width:760px){
-  .road-item{grid-template-columns:minmax(0,1fr);gap:8px;padding-left:clamp(34px,8vw,48px)}
+  .road-item{grid-template-columns:minmax(0,1fr);gap:var(--sp-1);padding-left:clamp(34px,8vw,48px)}
   .road-item .go-mark{display:none}
 }
 
@@ -984,7 +984,7 @@ section.foot{padding-top:var(--sec-y-loose)}
   max-width:26em;
 }
 .qr-fallback[hidden]{display:none}
-.qr-fallback b{display:block;margin-bottom:8px;color:var(--she-gold);font-weight:400;font-size:var(--fs-md)}
+.qr-fallback b{display:block;margin-bottom:var(--sp-1);color:var(--she-gold);font-weight:400;font-size:var(--fs-md)}
 .qr-fallback strong{font-family:var(--font-latin);font-weight:400;letter-spacing:.03em;
   color:var(--she-gold-light);word-break:break-all;font-size:var(--fs-base)}
 
@@ -1108,7 +1108,7 @@ section.foot{padding-top:var(--sec-y-loose)}
  * 修法：手机断点锁一屏高度，画布吃剩余空间而非固定 58svh。
  * 注意：本段必须放在基础 .hero-visual 规则之后，否则会被 clamp 的 min-height 覆盖。 */
 @media (max-width:900px){
-  .hero{height:100svh;min-height:100svh;padding-top:84px;padding-bottom:8px;align-items:stretch}
+  .hero{height:100svh;min-height:100svh;padding-top:84px;padding-bottom:var(--sp-1);align-items:stretch}
   .hero-grid{height:100%;align-content:center;grid-template-rows:auto minmax(150px,1fr);gap:2px}
   .hero-visual{min-height:0;height:100%}
   .hero-visual canvas{height:100%!important;width:100%!important}
