@@ -184,6 +184,14 @@ jobs:
           python tools/secret_leak_test.py
           python tools/admin_colspan_test.py
           python tools/reverse_admin_colspan.py
+          # 轮127（U-401）：后台 canvas 绘制色必须等于 :root 里的 CSS 令牌。
+          # 这条不变量是代码注释自己声明的（「canvas 内文字 getComputedStyle 读不到，
+          # 对比度判据覆盖不到，颜色须手工对齐」）—— 声明了却没人守，
+          # 与 U-395「memory 4KB 硬限没人守」同族。
+          # 漂移路径很现实：有人为对比度调亮 --gold，忘了同步 canvas 里的
+          # '#D4A24E' -> 图与卡片配色分叉，肉眼很难发现，且现有判据全绿。
+          # 自带两项尺子自检：canvas 乱用非令牌色、只改令牌不改图，都要被抓到。
+          python tools/admin_canvas_tokens_test.py
 
           # 轮109（2026-10-22，老大报的「数据突然跌下去」）：后台与页脚改为静态演示样本。
           # 这条守住决定本身：数据漂移、口径越界、求和不自洽，
