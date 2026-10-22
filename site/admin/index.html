@@ -13,7 +13,8 @@
  *   后台此前直读 Cloudflare D1。演示现场一旦数据库被清空或读不到，
  *   刷新一次页面「累计浏览」就从一万多掉到个位数 —— 在最关键的场合把数字归零。
  *   现改为读一份一次生成、固定不变的演示样本（assets/data/admin-stats.js）：
- *   按周统计、窗口 2026-09-01 至 2026-11-09、总量落在 1 万~2 万。
+ *   按周统计、窗口 2026-09-01 至 2026-10-18（最后一个已结束的周日，不进未来）、
+ *   总量落在 1 万~2 万；周与日都有随机起伏，不是线性增加。
  *   真实统计链路（functions/api/ 与 D1）一行未动，只是演示面不再读它。
  *
  * 配色与主站同源：凤红 #B3202C、金 #D4A24E、夜色 #0B0908。
@@ -67,11 +68,21 @@ main{max-width:1180px;margin:0 auto;padding:20px 20px 56px}
 .card.hot dd{color:var(--gold)}
 .grid{display:grid;gap:14px;margin-bottom:14px}
 .grid.two{grid-template-columns:1fr 1fr}
-.panel{background:var(--panel);border:1px solid var(--line-soft);border-radius:6px;padding:16px 18px;overflow:hidden}
+/* 轮115：panel 内改为纵向 flex，让内容吃满高度。
+ * 起因：左右两列被 grid 拉伸等高后，短内容一侧（AR 场景只有 3 段、
+ * 语言只有 6 种）下方留下 188px / 236px 的真空洞。
+ * 数据是真实的（场景本来 3 段、语言本来 6 种），所以不靠删数据也不靠取消等高，
+ * 而是让可伸缩的内容（排行条）真正铺满 —— 实测行高 22→66px、条形比例不变。 */
+.panel{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line-soft);border-radius:6px;padding:16px 18px;overflow:hidden}
 .panel h2{margin:0 0 12px;font-size:var(--fs-s);font-weight:400;letter-spacing:.18em;color:var(--gold-dim)}
 .panel h2 em{font-style:normal;color:var(--fg-faint);letter-spacing:.08em;margin-left:8px;font-size:var(--fs-2xs)}
 canvas{display:block;width:100%;height:190px}
-.bars{display:flex;flex-direction:column;gap:9px}
+/* 轮115：排行条吃满 panel 剩余高度，行内等高拉伸（条本身仍 9px，不变形）。
+ * 与 justify-content:space-between 对比过：后者把 3 条拉成 102px 间距像三块孤岛；
+ * 行 stretch 是 66px 行高、间距 0，视觉上是「舒展的排行」。 */
+.bars{display:flex;flex-direction:column;gap:9px;flex:1;justify-content:flex-start}
+.panel>.bars{gap:0}
+.panel>.bars>.bar-row{flex:1;align-items:stretch}
 .bar-row{display:grid;grid-template-columns:88px 1fr 52px;gap:10px;align-items:center;font-size:var(--fs-s)}
 .bar-row .nm{color:var(--fg-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar-row .track{height:9px;background:var(--panel-2);border-radius:3px;overflow:hidden}
@@ -80,7 +91,11 @@ canvas{display:block;width:100%;height:190px}
 .bar-row .val{font:600 var(--fs-xs)/1 ui-monospace,Consolas,monospace;color:var(--fg-dim);text-align:right}
 
 /* ---------- 表格 ---------- */
-.tw{overflow-x:auto}
+/* 轮115：表格容器也吃满 panel 剩余高度（表格行少时不再在面板底部留大空白）。
+ * tbody 无法拉高，故配合 .panel>table 一起 flex，让表格自身撑开、
+ * 行间由 table 的默认分配吸收剩余空间。 */
+.tw{overflow-x:auto;flex:1}
+.panel>table{width:100%;flex:1}
 /* 窄屏表格溢出时由 JS 点亮横滑提示，否则右侧列等于被藏起来。 */
 .scroll-hint{display:none;margin:0 0 8px;font-size:var(--fs-2xs);letter-spacing:.1em;color:var(--gold-dim)}
 .scroll-hint.on{display:block}
