@@ -22,7 +22,17 @@ jobs:
     name: Verify site
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth 是 tools/cache_bump_guard.py 的硬前提：
+      # 主判据要比对 HEAD 与其父提交的 sw.js VERSION，而 reverse_cache_bump.py
+      # 还要喂 4 个真实历史提交（最远 637931a = HEAD 往前第 6 个）。
+      # 默认浅克隆只有 1 个提交，两者都跑不了（轮134 我先写 fetch-depth: 2，
+      # 自查发现深度 2 仍取不到反向验证要的提交，会把 CI 点红，故改 0）。
+      # 两条判据在取不到历史时都**判 FAIL 而非 SKIP** ——
+      # 缺历史是我们自己配的管线契约缺失（轮133 结论：SKIP 只能留给真正的
+      # 环境前提如没有 chrome；拿 SKIP 掩盖配置缺失就是假守护）。
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -219,6 +229,16 @@ jobs:
           #  自检三项：改回字面 rem / 引用不存在的令牌 / 现状不误报 —— S3 当场
           #  抓出过本判据自己漏解析流体令牌 --fs-hero 的误报，自检确有牙。
           python tools/type_scale_discipline_test.py
+          # 轮134（U-433）：改了 cache-first 资源必须同时 bump SW VERSION。
+          # sw.js 自己的注释就写着「本项目第 4 次踩同一坑」，是代码声明过的不变量。
+          # 量近 40 个提交抓到 1 次未记账违规：637931a（轮128 我自己）改了
+          # PRECACHE 内的 footer-stats.js 却没 bump —— 后果不是「不够新」而是
+          # 直接违背老大口径：footer-stats.js 走 cache-first，老访客继续拿旧样本，
+          # 页脚仍显示 13,000 / 4,780 这类 10 的倍数。
+          # 反向验证用真实历史提交喂判据（637931a 必须判红；fddd12d/d4a502a/4b3428f
+          # 必须放过），不是造样本 —— 抓不到真实违规就是恒真的安慰剂。
+          python tools/cache_bump_guard.py
+          python tools/reverse_cache_bump.py
 
           # 轮109（2026-10-22，老大报的「数据突然跌下去」）：后台与页脚改为静态演示样本。
           # 这条守住决定本身：数据漂移、口径越界、求和不自洽，
