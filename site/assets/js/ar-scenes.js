@@ -8,8 +8,31 @@
 (function (global) {
   'use strict';
   var TAU = Math.PI * 2;
-  var FONT_KAI = "Kaiti SC, KaiTi, STKaiti, Songti SC, serif";
-  var FONT_SANS = "system-ui, PingFang SC, Microsoft YaHei, sans-serif";
+  /* 字体栈以 CSS 的 :root 为唯一权威源。
+   * 一手问题（轮138）：原先这里硬抄了一份 FONT_KAI/FONT_SANS，
+   * 与 main.css 的 --font-kai/--font-sans **集合相同但顺序不同** ——
+   * 装了 STKaiti 与 Kaiti SC 的机器（macOS）上，DOM 楷体与 canvas 楷体
+   * 会解析到不同字族，同一页面两套楷体。
+   * （未加引号的多词族名本身合法，实测浏览器读回时自动补引号，
+   *   所以问题只在重复定义，不在语法。）
+   * 兜底刻意用通用族名（serif/sans-serif）而不是抄一份具体字族列表 ——
+   * 抄了就等于把重复定义留在原地，本判据要消除的正是它。
+   * 读不到变量时不缓存，下一帧重试，所以兜底最多影响一帧。
+   * 读取结果缓存，避免每帧调 getComputedStyle（那是实打实的性能开销）。 */
+  var _fontStacks = {};
+  function fontStack(varName, fallback) {
+    if (_fontStacks[varName]) { return _fontStacks[varName]; }
+    var v = '';
+    try {
+      v = getComputedStyle(document.documentElement)
+            .getPropertyValue(varName).trim();
+    } catch (e) { v = ''; }
+    if (!v) { return fallback; }        // 读不到不缓存，下次再试
+    _fontStacks[varName] = v;
+    return v;
+  }
+  var FALLBACK_KAI = 'serif';      // 不抄具体字族：抄了就又是两份定义
+  var FALLBACK_SANS = 'sans-serif';
   var SIN = Math.sin, COS = Math.cos;
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function ease(t) { t = clamp(t, 0, 1); return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
@@ -92,7 +115,7 @@
     ctx.arc(0, 0, r * 0.83, 0, TAU);
     ctx.stroke();
     ctx.fillStyle = rgba(color, 0.95);
-    ctx.font = "600 " + Math.round(r * 0.62) + "px " + FONT_KAI;
+    ctx.font = "600 " + Math.round(r * 0.62) + "px " + fontStack('--font-kai', FALLBACK_KAI);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(text, 0, r * 0.04);
@@ -124,7 +147,7 @@
       for (i = 0; i < labels.length; i++) {
         var y = top + i * 68;
         var on = i <= idx;
-        ctx.font = (i === idx ? "13px " : "12px ") + FONT_SANS;
+        ctx.font = (i === idx ? "13px " : "12px ") + fontStack('--font-sans', FALLBACK_SANS);
         ctx.fillStyle = i === idx ? "rgba(242,233,220,.92)" : (on ? "rgba(242,233,220,.5)" : "rgba(242,233,220,.24)");
         ctx.fillText(labels[i], x - 18, y);
         ctx.beginPath();
@@ -547,11 +570,11 @@
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = "rgba(122,20,32,.85)";
-      ctx.font = "600 " + Math.round(S * 0.03) + "px " + FONT_KAI;
+      ctx.font = "600 " + Math.round(S * 0.03) + "px " + fontStack('--font-kai', FALLBACK_KAI);
       ctx.textAlign = "center";
       ctx.fillText("黄公略", mx, mbase - S * 0.19);
       ctx.fillStyle = "rgba(246,241,231,.6)";
-      ctx.font = "11px " + FONT_SANS;
+      ctx.font = "11px " + fontStack('--font-sans', FALLBACK_SANS);
       ctx.fillText("1901 - 1931", mx, mbase - S * 0.155);
       ctx.fillStyle = "rgba(212,162,76,.9)";
       for (var flw = 0; flw < 5; flw++) {
@@ -575,7 +598,7 @@
     ctx.save();
     ctx.globalAlpha = 0.14;
     ctx.fillStyle = "rgba(232,183,97,1)";
-    ctx.font = "600 " + Math.round(S * 0.12) + "px " + FONT_KAI;
+    ctx.font = "600 " + Math.round(S * 0.12) + "px " + fontStack('--font-kai', FALLBACK_KAI);
     if (w >= 900) {
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
@@ -852,7 +875,7 @@
           ctx.lineWidth = 1.4;
           ctx.stroke();
         }
-        ctx.font = (active ? "600 11.5px " : "11px ") + FONT_SANS;
+        ctx.font = (active ? "600 11.5px " : "11px ") + fontStack('--font-sans', FALLBACK_SANS);
         ctx.textAlign = "center";
         ctx.fillStyle = active ? "rgba(242,233,220,.95)" : "rgba(242,233,220,.55)";
         // 窄屏把标签放在圆点上方，避免压住下一段标题
