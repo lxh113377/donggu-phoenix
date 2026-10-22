@@ -1,22 +1,23 @@
 {
   "generator": "tools/make_static_admin_data.py",
-  "seed": 20261108,
+  "seed": 20261144,
   "window": {
     "start": "2026-09-01",
-    "end": "2026-11-09",
-    "weeks": 10,
-    "days": 70
+    "end": "2026-10-18",
+    "weeks": 7,
+    "days": 48,
+    "demoDay": "2026-10-22"
   },
   "totals": {
-    "pv": 12700,
-    "uv": 10374,
-    "events": 18591,
-    "scenes": 4382,
-    "summon": 1509
+    "pv": 13000,
+    "uv": 10413,
+    "events": 19541,
+    "scenes": 4780,
+    "summon": 1761
   },
   "sha256": {
-    "docs/后台演示数据说明.md": "ed2d59dc11f9dac839c9693cc60d063be0d5d293be51ca12aca690de99bf9fb0",
-    "site/assets/data/admin-stats.js": "97c7a94b200d5aede4b5dd92f77aaac47eca88fc27cb15f1e451759a31f9c37c",
-    "site/assets/data/footer-stats.js": "8321701181a326dd512032a7087ff8971eaa13f6cbc884013deb32e71759854f"
+    "docs/后台演示数据说明.md": "d055d50f0a5deb7119d41675a25b11dffc244eae34b218201824987b86cadfd4",
+    "site/assets/data/admin-stats.js": "5226f78ca8feb46aa40a2f5df060c67db7b40e882ce02061b97d6753ffc64ec5",
+    "site/assets/data/footer-stats.js": "11024426dc9206516a3c581dfad4bb8f3a8f525caf1a32e51fdc72b72a911d0b"
   }
 }

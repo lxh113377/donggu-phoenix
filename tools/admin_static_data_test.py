@@ -31,6 +31,7 @@ python 是 LibreOffice 自带那份，它**无法 spawn 自己**（WinError 5）
 注释里的字面量不是行为：D 条扫描前先剥注释 —— 本文件与 analytics.js 的
 说明里都写着 /api/stats 这个词，不剥会把自己判红（与 U-22/U-24/U-126 同源）。
 """
+import datetime as dt
 import hashlib
 import importlib.util
 import json
@@ -57,8 +58,9 @@ DATA_ADMIN = 'site/assets/data/admin-stats.js'
 DATA_FOOTER = 'site/assets/data/footer-stats.js'
 
 WINDOW_START = '2026-09-01'
-WINDOW_END = '2026-11-09'
-N_WEEKS = 10
+WINDOW_END = '2026-10-18'      # 最后一个已结束的周日（见生成器 docstring 的取舍）
+N_WEEKS = 7                    # 7 个日历周（首周 6 天，因 9-01 是周二）
+DEMO_DAY = '2026-10-22'        # 生成基准日：窗口右界不得晚于它
 LO, HI = 10000, 20000
 
 
@@ -122,8 +124,16 @@ def sums_ok(d):
         rows = [x for x in d['days'] if x['week'] == w['idx']]
         if sum(x['pv'] for x in rows) != w['pv']:
             bad.append('第 %d 周逐日相加 != 该周浏览' % w['idx'])
-        if len(rows) != 7:
-            bad.append('第 %d 周不是七个整日（实得 %d）' % (w['idx'], len(rows)))
+        want = w.get('days', 7)
+        if len(rows) != want:
+            # 文案必须点出「整周/天数不符」这两件事之一：反向验证 A7 依赖它归因
+            bad.append('第 %d 周不是整周：逐日 %d 天 != 声明 %d 天' % (
+                w['idx'], len(rows), want))
+        # 首周因 9-01 是周二而合法地只有 6 天；其余每周必须是 7 天
+        if w['idx'] > 1 and want != 7:
+            bad.append('第 %d 周不是整周（%d 天）' % (w['idx'], want))
+    if sum(x['pv'] for x in d.get('days', [])) != t['pv']:
+        bad.append('逐日浏览相加 != 累计浏览')
     return bad
 
 
@@ -135,13 +145,76 @@ def window_ok(d):
         bad.append('统计窗口不是 %s ~ %s（实得 %s ~ %s）' % (
             WINDOW_START, WINDOW_END, w['start'], w['end']))
     if len(d['weeks']) != N_WEEKS:
-        bad.append('不是 %d 个整周（实得 %d）' % (N_WEEKS, len(d['weeks'])))
+        bad.append('不是 %d 个日历周（实得 %d）' % (N_WEEKS, len(d['weeks'])))
+    # 「日期要现实」：右界不许超过基准日，且必须落在周日（否则末周残缺、图上又要塌）
+    try:
+        end_d = dt.date.fromisoformat(w['end'])
+        demo_d = dt.date.fromisoformat(DEMO_DAY)
+        if end_d > demo_d:
+            bad.append('窗口右界 %s 晚于基准日 %s（出现未来日期）' % (end_d, demo_d))
+        if end_d.weekday() != 6:
+            bad.append('窗口右界 %s 不是周日（末周会残缺，曲线末端又要塌）' % end_d)
+    except ValueError as e:
+        bad.append('窗口日期无法解析：%s' % e)
+    # 每天的日期也不得进未来
+    fut = [x['date'] for x in d.get('days', []) if x.get('date') and x['date'] > DEMO_DAY]
+    if fut:
+        bad.append('有 %d 天落在未来（例：%s）' % (len(fut), fut[0]))
     for nm, v in (('累计浏览', d['totals']['pv']),
                   ('全部事件', d['totals']['events'])):
         if not LO <= v <= HI:
             bad.append('%s %d 不在 %d~%d 区间' % (nm, v, LO, HI))
     return bad
 
+
+def trend_problems(d):
+    """F 条：周/日序列不得是「线性增加」那种一眼假。
+
+    老大原话：「浏览量线性增加太假了，不够随机」。
+    所以判据不能只看总量对不对，必须看形态：
+      · 不许严格单调（那是直线）
+      · 必须有涨有跌，且方向反转 >= 2 次（只有一次拐点还是折线）
+      · 峰谷比 1.45 ~ 3.2（太小像平线，太大像数据断裂）
+      · 最大单周环比 <= 55%
+      · 逐日取值不能过于集中（周内等分会露馅）
+    返回不符项列表。
+    """
+    bad = []
+    v = [w["pv"] for w in d["weeks"]]
+    n = len(v)
+    if n < 4:
+        return ["周数太少（%d），无法判断走势" % n]
+    if all(v[i] > v[i - 1] for i in range(1, n)):
+        bad.append("周序列严格单调递增 —— 这就是「线性增加太假」")
+    if all(v[i] < v[i - 1] for i in range(1, n)):
+        bad.append("周序列严格单调递减 —— 看着像热度崩塌")
+    ups = sum(1 for i in range(1, n) if v[i] > v[i - 1])
+    downs = n - 1 - ups
+    if ups < 1 or downs < 1:
+        bad.append("周序列只有单一方向（涨 %d / 跌 %d）" % (ups, downs))
+    rev = sum(1 for i in range(2, n)
+              if (v[i] - v[i - 1]) * (v[i - 1] - v[i - 2]) < 0)
+    if rev < 2:
+        bad.append("周序列方向反转只有 %d 次，走势仍像一条斜线" % rev)
+    ratio = max(v) / float(min(v))
+    if ratio < 1.45:
+        bad.append("周峰谷比只有 %.2f，起伏不明显（<1.45 接近平线）" % ratio)
+    if ratio > 3.2:
+        bad.append("周峰谷比 %.2f 过大，像事故不是波动" % ratio)
+    mx = max(abs(v[i] / float(v[i - 1]) - 1) for i in range(1, n))
+    if mx > 0.55:
+        bad.append("最大单周环比 %.0f%% 太夸张（>55%% 像数据断裂）" % (mx * 100))
+    dpv = [x["pv"] for x in d.get("days", [])]
+    if len(dpv) >= 7:
+        if len(set(dpv)) < max(5, len(dpv) // 6):
+            bad.append("逐日浏览量取值过于集中（%d 种），像周内等分" % len(set(dpv)))
+        drev = sum(1 for i in range(2, len(dpv))
+                   if (dpv[i] - dpv[i - 1]) * (dpv[i - 1] - dpv[i - 2]) < 0)
+        if drev < len(dpv) // 3:
+            bad.append("逐日方向反转仅 %d 次，日曲线太平" % drev)
+        if min(dpv) < 60:
+            bad.append("有单日浏览低于 60（%d），看着像断档" % min(dpv))
+    return bad
 
 def staticity_problems(admin_html, analytics_js, index_html):
     """D 条：后台与页脚不得再走实时接口 / 登录 / 定时器。入参须已剥注释。"""
@@ -192,18 +265,29 @@ def selftest():
     d = {'meta': {'window': {'start': WINDOW_START, 'end': WINDOW_END}},
          'totals': _fake_totals(),
          'weeks': [{'idx': 1, 'pv': 90, 'uv': 60, 'events': 150}],
-         'days': [{'week': 1, 'pv': 90}]}
+         'days': [{'week': 1, 'pv': 90, 'date': '2026-09-01'}]}
     if not any('周浏览相加' in x for x in sums_ok(d)):
         bad.append('C 条自检：周次与累计不等未被抓到')
     d_full = json.loads(json.dumps(d))
-    d_full['weeks'] = [{'idx': 1, 'pv': 100, 'uv': 60, 'events': 150}]
+    d_full['weeks'] = [{'idx': 1, 'pv': 100, 'uv': 60, 'events': 150, 'days': 6},
+                      {'idx': 2, 'pv': 100, 'uv': 60, 'events': 150, 'days': 3}]
     d_full['totals']['langs'] = [{'l': 'zh', 'n': 100}]
-    if not any('七个整日' in x for x in sums_ok(d_full)):
-        bad.append('C 条自检：整周不满七天未被抓到')
+    if not any('整周' in x for x in sums_ok(d_full)):
+        bad.append('C 条自检：第 2 周只有 3 天（非整周）未被抓到')
     d2 = json.loads(json.dumps(d))
     d2['meta']['window']['start'] = '2026-08-01'
     if not any('统计窗口' in x for x in window_ok(d2)):
         bad.append('B 条自检：窗口左界越界未被抓到')
+    # F 条自检：等差递增（线性）必须判红
+    d_lin = {"weeks": [{"idx": i + 1, "pv": 1000 + i * 100} for i in range(6)],
+             "days": [{"pv": 150 + (i % 5) * 20} for i in range(40)]}
+    if not any("线性增加" in x or "单调递增" in x for x in trend_problems(d_lin)):
+        bad.append("F 条自检：等差递增的周序列未被抓到")
+    # F 条自检：只涨不跌也必须红
+    d_mono = {"weeks": [{"idx": i + 1, "pv": 900 + i * 70} for i in range(6)],
+              "days": [{"pv": 150 + i * 3} for i in range(40)]}
+    if not trend_problems(d_mono):
+        bad.append("F 条自检：单调序列未被抓到")
     d3 = json.loads(json.dumps(d))
     d3['totals'] = _fake_totals(9999)
     if not any('不在' in x for x in window_ok(d3)):
@@ -300,6 +384,13 @@ def main():
     print('[%s] 静态性：后台与页脚零接口、零登录、零定时器' % (
         'PASS' if not bd else 'FAIL'))
     fails.extend('退回实时更新的风险：' + x for x in bd)
+
+    # F) 形态：不许是线性增加那种假（老大第二次要求第一条）
+    checked += 1
+    bf = trend_problems(d)
+    print("[%s] 形态：周序列非单调、有涨有跌、峰谷比适中（非线性）" % (
+        "PASS" if not bf else "FAIL"))
+    fails.extend("形态不像随机流量：" + x for x in bf)
 
     # E) 页脚与后台同源同数
     checked += 1

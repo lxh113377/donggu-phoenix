@@ -57,8 +57,8 @@ DATA = os.path.join('site', 'assets', 'data', 'admin-stats.js')
 FOOTER = os.path.join('site', 'assets', 'data', 'footer-stats.js')
 ANALYTICS = os.path.join('site', 'assets', 'js', 'analytics.js')
 
-DATE_RX = '"date": "(2026-11-\\d\\d)"'
-DAY_RX = '\\{\\s*"date": "%s",[\\s\\S]*?\\},'
+DATE_RX = r'"date": "(2026-10-\d\d)"'
+DAY_RX = r'\{\s*"date": "%s",[\s\S]*?\},'
 
 bad = []
 skipped = []
@@ -111,9 +111,9 @@ with mutate_sandbox(require_clean=False) as sb:
 with mutate_sandbox(require_clean=False) as sb:
     p = sb.path(DATA)
     t = open(p, encoding='utf-8').read()
-    assert '"2026-11-09"' in t, 'A2 前提：找不到窗口右界'
+    assert '"2026-10-18"' in t, 'A2 前提：找不到窗口右界'
     open(p, 'w', encoding='utf-8', newline='').write(
-        t.replace('"2026-11-09"', '"2026-12-20"', 1))
+        t.replace('"2026-10-18"', '"2026-12-20"', 1))
     expect_fail(sb, DATA_TEST, 'A2 窗口越出十一月初', '统计窗口')
 
 with mutate_sandbox(require_clean=False) as sb:
@@ -164,7 +164,7 @@ with mutate_sandbox(require_clean=False) as sb:
     except Exception as e:
         raise AssertionError('A7 造的错必须是「少一天」而不是「JSON 坏掉」：%s' % e)
     open(p, 'w', encoding='utf-8', newline='').write(t2)
-    expect_fail(sb, DATA_TEST, 'A7 末周缺一整天', '七个整日')
+    expect_fail(sb, DATA_TEST, 'A7 末周缺一整天', '整周')
 
 # ---------- 判据 B：真浏览器渲染 ----------
 with mutate_sandbox(require_clean=False) as sb:
