@@ -154,16 +154,17 @@ def main():
     if not chrome:
         print('RESULT: SKIP  找不到 chrome.exe')
         return 0
-    key = read_admin_key()
-    if not key:
-        print('RESULT: SKIP  读不到 .dev.vars 的 ADMIN_KEY')
-        return 0
-
+    # 轮125：后台已静态化（轮109），不再需要 wrangler pages dev + D1。
+    # 改用进程内 SiteServer —— 与 CI 同一条路，零 npx、零 D1、零公网。
+    key = read_admin_key() or ''
     port = free_port()
-    print('起 pages dev 于端口 %d ...' % port)
-    proc = start_pages_dev(port)
-    if proc is None:
-        print('RESULT: SKIP  pages dev 启动失败 —— 未测不等于通过')
+    print('起进程内静态服务于端口 %d（无需 wrangler/D1）...' % port)
+    _srv = None
+    try:
+        from cdp_client import SiteServer
+        _srv = SiteServer(os.path.join(BASE, 'site'), port=port)
+    except Exception as _e:
+        print('RESULT: SKIP  静态服务起不来: %s —— 未测不等于通过' % _e)
         return 0
     dst = os.path.join(BASE, 'site', '_admin_probe_resp.html')
     try:
@@ -221,10 +222,10 @@ def main():
               % (len(rows), total_checked, MIN_PX))
         return 0
     finally:
+        # 轮125：proc 已改 SiteServer，关服务不再 kill 子进程
         try:
-            proc.terminate()
-            time.sleep(1)
-            proc.kill()
+            if _srv is not None:
+                _srv.stop()
         except Exception:
             pass
 

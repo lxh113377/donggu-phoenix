@@ -129,6 +129,12 @@ jobs:
           python tools/touch_target_test.py
           # 2 视口文本对比度全部达标
           python tools/contrast_audit.py
+          # 轮125：后台这两条原需 wrangler pages dev + D1（Win 上靠 npx），
+          # 但后台已于轮109 静态化 —— 注释里自己写着「不再需要 wrangler」。
+          # 改为进程内 SiteServer 后，零 npx/零 D1/零公网，故可进 CI。
+          # 覆盖：后台 2 视口 453 处对比度 + 4 视口 8 个触控目标。
+          python tools/admin_contrast_test.py
+          python tools/admin_responsive_test.py
           # 85 张图无变形/模糊/加载失败
           python tools/image_quality_test.py
           # AR 核心功能 7 项
