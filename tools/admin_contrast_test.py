@@ -51,18 +51,27 @@ SEL = ('p,li,dd,dt,figcaption,blockquote,h1,h2,h3,h4,th,td,span,b,em,'
 
 
 def find_chrome():
-    root = os.path.join(os.path.expanduser('~'), '.agent-browser', 'browsers')
-    if os.path.isdir(root):
-        for d in sorted(os.listdir(root), reverse=True):
-            exe = os.path.join(root, d, 'chrome.exe')
-            if os.path.exists(exe):
-                return exe
-    for p in (r'C:\Program Files\Google\Chrome\Application\chrome.exe',
-              r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'):
+    r"""找 chrome 可执行文件。
+
+    轮132：原实现只查 chrome.exe 与 C:\Program Files，在 Linux CI 上
+    必返回 None -> 本判据与 import 它的 admin_responsive_test 一起打
+    「找不到 chrome.exe」并 SKIP —— 等于后台对比度/触控两个维度
+    在 CI 上从未被检查过（轮124 修了另外 3 条，这 2 条是漏网的）。
+    改为委托 cdp_client.find_chrome（Win 用 where、Linux 用 which，
+    含 chromium 回退）。
+    """
+    try:
+        from cdp_client import find_chrome as _fc
+        p = _fc()
+        if p:
+            return p
+    except Exception:
+        pass
+    for p in ('/usr/bin/chromium', '/usr/bin/google-chrome',
+              '/usr/bin/chromium-browser', '/opt/google/chrome/chrome'):
         if os.path.exists(p):
             return p
     return None
-
 
 def read_admin_key():
     p = os.path.join(BASE, '.dev.vars')
