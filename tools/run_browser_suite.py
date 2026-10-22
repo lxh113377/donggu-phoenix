@@ -53,6 +53,12 @@ SUITE = [
     ('tools/multi_viewport_test.py', True, '9 视口横向+纵向完整性'),
     ('tools/reveal_coverage_test.py', True, '进场元素全部可见'),
     ('tools/visual_balance_test.py', True, '首屏视觉重量平衡'),
+    # 轮133：凤凰粒子色必须等于其目标点应有的颜色。
+    # 起因：_build 抽稀分支取色用了点的 2i 偏移，而 cols 每点占 3 个（应为 3i），
+    # 实测桌面档 400 粒中 328 错配、平均色距 217。canvas 内的颜色
+    # 对比度/视觉平衡/令牌一致性三类判据都读不到 —— 属无人守的视觉不变量。
+    # 自带注入错色的尺子自检（反向验证已内置，不再单列 reverse 脚本）。
+    ('tools/phoenix_color_fidelity_test.py', True, '凤凰粒子色保真（含注入自检）'),
     ('tools/hero_height_test.py', True, '手机首屏锁一屏'),
     ('tools/ring_containment_test.py', True, '装饰环在画布内'),
     ('tools/anchor_offset_test.py', True, '锚点偏移正确'),

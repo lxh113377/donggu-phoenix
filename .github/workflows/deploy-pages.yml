@@ -151,6 +151,14 @@ jobs:
           python tools/runtime_health_test.py
           # 引擎行为（密度自适应 + HUD 节流）
           python tools/engine_behavior_test.py
+          # 轮133（U-418）：凤凰粒子色必须等于其目标点应有的颜色。
+          # 起因：_build 抽稀分支取色用了点的 2i 偏移，而 cols 每点占 3 个（应为 3i），
+          # 实测桌面档 400 粒中 328 错配、平均色距 217.5（满值 765）。
+          # canvas 内的颜色，对比度判据（只看 CSS 计算样式）、视觉平衡判据（只看亮暗分布）、
+          # 令牌一致性判据（只匹配字符串字面量，而粒子色是插值数字）全都读不到 ——
+          # 属 U-395/401/408 同族：视觉不变量无人守。
+          # 自带「注入 12 个错色必须报出 12 个」的尺子自检，故不单列 reverse 脚本。
+          python tools/phoenix_color_fidelity_test.py
       # 守卫自身的自检：保证「零样本必 SKIP」不会被悄悄改坏。
       # 数据字段消费者检查也放这里（纯静态、无浏览器依赖）。
       - name: Guard self-test

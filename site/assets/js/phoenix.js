@@ -194,10 +194,17 @@
     if (pts.length / 2 > this.maxParticles) {
       var _keep = [], _keepC = [], _step2 = (pts.length / 2) / this.maxParticles;
       for (var _i = 0; _i < this.maxParticles; _i++) {
-        var _pi = Math.floor(_i * _step2) * 2;
+        var _k = Math.floor(_i * _step2);        // 点序号（不是数组下标）
+        var _pi = _k * 2;                        // pts 是扁平 [x,y,...]，每点 2 个
+        var _ci = _k * 3;                        // cols 是扁平 [r,g,b,...]，每点 3 个
         if (_pi + 1 >= pts.length) { break; }
         _keep.push(pts[_pi], pts[_pi + 1]);
-        if (cols && cols.length > _pi + 2) { _keepC.push(cols[_pi], cols[_pi + 1], cols[_pi + 2]); }
+        /* 轮133 修：原先取色用 cols[_pi]（即 2i 偏移），与点序号不同步 ——
+         * 低端档抽稀时（采样 2600 点 -> 900 粒）每个粒子都拿到别处的颜色，
+         * 实测平均色距 217（满值 765）、400 粒中 328 粒错配，凤凰配色被打乱。
+         * 高密度档不触发（total <= maxParticles 时整个分支跳过），所以桌面看不出来。
+         * 必须各用自己的偏移：pts 用 2i、cols 用 3i。 */
+        if (cols && cols.length > _ci + 2) { _keepC.push(cols[_ci], cols[_ci + 1], cols[_ci + 2]); }
       }
       pts = _keep;
       cols = _keepC.length === _keep.length / 2 * 3 ? _keepC : null;
