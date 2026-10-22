@@ -18,12 +18,21 @@ import json, subprocess, time, sys
 PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 WD = r'C:\Users\37533\Desktop\workspace\项目\新建文件夹'
 
-def ps(cmd, timeout=45):
-    try:
-        r = subprocess.run([PS,'-NoProfile','-Command',cmd],capture_output=True,text=True,cwd=WD,timeout=timeout,encoding='utf-8',errors='replace')
-        return ((r.stdout or '')+(r.stderr or '')).strip()
-    except subprocess.TimeoutExpired:
-        return 'TIMEOUT'
+# 轮121 迁移：ps() 从 PowerShell 调 agent-browser 改为 ab_compat 兼容层。
+# 紧跟着的 JS 常量是判据本体，绝不能连带删掉（轮120 批量改造栽在这）。
+_AB = None
+
+
+def _ab():
+    global _AB
+    if _AB is None:
+        from ab_compat import AbSession
+        _AB = AbSession()
+    return _AB
+
+
+def ps(cmd, timeout=90):
+    return _ab().run(cmd, timeout=timeout)
 
 JS = r'''(function(){
   var out = {total:0, bad:[]};
@@ -48,21 +57,50 @@ JS = r'''(function(){
 })()'''
 
 def check_at(anchor_id, js_path):
+    # 轮121：先滚过全站触发所有懒加载，再回到目标区域检查。
+    # 起因：判据对 hero/totem/carve-sec/merch/craft 逐个 scrollIntoView + 检查，
+    # 但 loading="lazy" 的图（craft-liu/craft-lei/qr.png）分布在别的区域，
+    # 滚到 A 区时 B 区的懒图还没被触发 -> naturalWidth=0 -> 误报 not-loaded。
+    # 实测证据：初始三图 complete=false/nw=0（lazy），
+    #           滚过 merch/craft/scan 后全部 complete=true/nw=320/320/540。
+    # 产品一直是对的，是判据口径错了 —— 不能因为判据红就改产品。
+    # 注意：不能用 setInterval 做滚动 —— eval 立即返回、定时器还没跑，
+    # 判据就已经进下一步了（第一版就是这么白做的）。必须同步分步滚动。
+    for _y in (600, 1200, 1800, 2400, 3000, 3600, 4200, 4800, 5400,
+               6000, 6600, 7200, 7800, 8400, 9000, 9600, 10200, 10800):
+        ps('agent-browser eval "window.scrollTo(0,%d);1"' % _y)
+        time.sleep(0.22)
+    ps('agent-browser eval "window.scrollTo(0,0);1"')
+    time.sleep(1.5)   # 给懒加载 + decode 时间
     ps('agent-browser eval "document.getElementById(\'%s\').scrollIntoView();1"' % anchor_id)
-    time.sleep(2.2)   # 留足 decode 时间，且**停留在该区域**
+    time.sleep(2.0)   # 留在该区域，确认 decode 完成
     out = ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "%s")' % js_path)
-    for line in reversed(out.splitlines()):
-        line = line.strip()
-        if line.startswith('"') and line.endswith('"'):
-            try:
-                return json.loads(json.loads(line))
-            except Exception:
-                continue
-    return None
+    # 轮121：CDP 的 eval 只返回一层，不再需要 json.loads(json.loads(...))。
+    # 双层解析是 agent-browser 把结果再套一层引号的特性（已三次踩过）。
+    if not out:
+        return None
+    try:
+        return json.loads(out)
+    except Exception:
+        return None
+
+# 轮121：判据自己起服务，不再假设外部已起 8791（隐性环境依赖，失败形态是 SKIP）
+_SRV = None
+
 
 def main():
+    global _SRV
+    import os as _os
+    try:
+        from cdp_client import SiteServer
+        _SRV = SiteServer(_os.path.join(WD, 'site'), port=8791)
+        _u = _SRV.url('/index.html?img=%d' % int(time.time()))
+    except Exception as _e:
+        print('RESULT: SKIP  服务起不来: %s' % _e)
+        return 0
+
     ps('agent-browser set viewport 1440 900')
-    ps('agent-browser open "http://127.0.0.1:8791/?img=%d"' % int(time.time()))
+    ps('agent-browser open "%s"' % _u)
     ps('agent-browser wait --load networkidle')
     time.sleep(2.0)
 
@@ -79,6 +117,18 @@ def main():
         total += d['total']
         bad.extend(d['bad'])
         print('%-10s 图片 %d 张，问题 %d' % (anchor, d['total'], len(d['bad'])))
+
+    # 轮121：退出前关掉兼容层会话与自起服务
+    try:
+        if _AB:
+            _AB.close()
+    except Exception:
+        pass
+    try:
+        if _SRV:
+            _SRV.stop()
+    except Exception:
+        pass
 
     print()
     if total == 0:
