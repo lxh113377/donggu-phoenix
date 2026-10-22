@@ -4807,3 +4807,75 @@ CDP 直接返回单层 JSON 字符串，**永远进不了那个分支** → 探�
 六轮之后，同一个 27 变成了真的。
 
 **诚实的读数不会让项目看起来更差，它只是让问题终于可见。**
+
+## 轮124 结果（2026-10-22 · 17 条判据真正接入 CI，覆盖 5→22 个受守护维度）
+
+### 一、发现的缺口：接进套件 ≠ 有 CI 守护（U-390）
+轮123 完成 27/27 全迁移后，我检查了 CI 实际挂了哪些：
+
+```
+套件 27 条；CI 直接挂的: 5 条  未挂的: 22 条
+```
+
+**「本机能跑」不等于「CI 在守」** —— 若只在本机跑，改动破坏某维度时 CI 不会红，
+问题要等人工发现。这是轮117「判据存在但跑不了」的下一步形态。
+
+### 二、先量成本再决定接什么（U-391）
+22 条本机实测合计 **424 秒（7.1 分钟）**，分三档：
+
+| 分组 | 耗时 | 判据 |
+|---|---|---|
+| 慢（>30s） | 258s | reverse_ar_playback 118s、offline_live 52s、image_quality 44s、preflight_device 43s |
+| 中（10-30s） | 129s | ar_e2e、ar_scenes、reveal_after_jump、ar_stamp、reveal_coverage、engine_behavior、defer_regression、ar_focus、anchor_offset |
+| 快（<10s） | 37s | runtime_health、zoom、admin_contrast、admin_responsive、multi_viewport、contrast_audit、touch_target、hero_height、ring_containment |
+
+**接入 17 条**（约 200 秒 / 3.3 分钟），全部自起 SiteServer + chrome，零公网/零 wrangler/零 D1。
+
+不接 5 条：`offline_live`/`preflight_device`（需公网）、`admin_contrast`/`admin_responsive`（需 wrangler+D1）、`reverse_ar_playback`（118s 代价过高）。
+
+### 三、跨平台移植：Windows 假设逐个清除（U-392）
+CI 是 Linux、本机是 Windows，接入前查到 12 条含 Windows 假设：
+
+**① 硬编码 `WD = r'C:\Users\...'`（6 条）** —— Linux 必崩 → 改为由 `__file__` 推导
+**② 遗留 `PS = powershell.exe` 常量（8 条）** —— 死代码，已清理
+**③ 我修 import 时写坏一行**（`import json, subprocess, time, sys` 后加 `, os`）——
+   被「改完立即实跑」当场抓到
+
+> 批量/脚本化改动的每一步都要实跑验证 —— **编译通过不等于跑得对**。
+
+### 四、「接进去」和「真在跑」是两件事（U-393，本轮最重要）
+17 条接入且 CI 全绿后，我**回读日志**发现 **3 条返回 `RESULT: SKIP 找不到 chrome.exe`**：
+`multi_viewport_test` / `touch_target_test` / `contrast_audit`。
+
+**本机都 PASS，CI 上根本没执行。**
+
+> 若不回读日志，这次接入会被记成「17 条已接入」——**实际只有 14 条真的在跑**。
+
+根因：这 3 条各自实现了一份 `find_chrome()`，只查 `chrome.exe` 与 `C:\Program Files\...`，
+Linux 上必然 None。而 `cdp_client.find_chrome` 本就跨平台（Win 用 `where`、Linux 用 `which`，
+含 chromium 回退），是轮101 前的旧代码没跟着迁过来。
+
+修法：3 条改为优先委托 `cdp_client.find_chrome` + 非 Windows 绝对路径兜底。
+
+### 五、里程碑：17 个维度真正有了 CI 守护（U-394）
+修复后回读 CI 日志逐条确认，**全部 `RESULT: PASS`、chrome 相关 SKIP 归零**：
+
+```
+9 视口无溢出 / 手机首屏锁一屏 / 装饰环在画布内 / 22 进场元素全触发
+8 段跳转后无隐藏 / 8 锚点未被遮 / 缩放无溢出 / 4 视口触控 ≥44px
+237 处对比度达标 / 85 张图无变形 / AR 核心 7 项 / AR 三场景+集章
+落章+持久化 / AR 焦点闭环 / defer 回归 5 项 / 运行时健康 4 项 / 引擎行为 2 项
+```
+
+### 读数
+- CI 受守护维度：**5 → 22 条**（新增 17 条）
+- CI 耗时 **8m0s**（公开仓库无分钟限制）
+- 全量静态门禁 **61/61 PASS**；`browser_test_lint` 93 条 PASS
+- 台账 394 号唯一连续；sync 0/0
+
+### 一句话
+本轮最值钱的动作不是「接入 17 条」，而是**接入之后回读日志**。
+
+CI 绿了、17 条都 PASS —— 但日志里有 3 条写着 SKIP。
+
+**绿灯只说明「没有东西判红」，不说明「所有东西都检查过」。**
