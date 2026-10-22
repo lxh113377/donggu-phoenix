@@ -39,6 +39,7 @@
 需要本地服务 http://127.0.0.1:8791（python -m http.server 8791 --directory site）。
 """
 import os
+import re
 import subprocess
 import sys
 import time
@@ -129,7 +130,32 @@ def needs_daemon(script_path):
         src = open(script_path, encoding='utf-8', errors='ignore').read()
     except Exception:
         return False
-    return 'agent-browser' in src and 'headless=new' not in src
+    # 轮117：旧规则是「agent-browser in src and not headless=new」，
+    # 纯按字样判定 —— 会把已迁移到 CDP 的判据误判成 DEAD。实证：
+    # tools/ar_playback_test.py 轮108 已换 CDP（实跑 rc=0、有 RESULT: PASS），
+    # 但它 docstring 为解释「旧版为什么坏」必须写 agent-browser 这个词，
+    # 且 CDP 版不含 headless=new（走 cdp_client.Chrome 封装），
+    # 两条件同时成立被永久判 DEAD，还附「历史 PASS 不得引用」警告 ——
+    # 一句解释性文字把可用判据判死了。
+    #
+    # 新规则：只有**实际执行 agent-browser 命令**才算依赖它。
+    # 判据是「有没有调用」，不是「提没提这个词」。
+    if 'agent-browser' not in src:
+        return False
+    # 有调用痕迹才认定依赖。本仓真实形态有两种：
+    #   ① ps('agent-browser open ...')  —— 命令是字符串字面量的开头
+    #   ② subprocess.run(['agent-browser', ...])
+    # 只出现在注释/docstring 正文里的不算（轮117 的 ar_playback_test 正是这种）。
+    # 上一版正则只找 subprocess/os.system/Popen 后跟 agent-browser，
+    # 漏掉了 ① 这种本仓最普遍的形态，会把真依赖判成 RUNNABLE（又一次假绿）。
+    for line in src.splitlines():
+        code = line.split('#', 1)[0]          # 剥掉行内注释
+        if 'agent-browser' not in code:
+            continue
+        # agent-browser 紧跟引号（单/双/三引号）即视为命令实参
+        if re.search(r'''['"](\s*)agent-browser''', code):
+            return True
+    return False
 
 
 STAMP = os.path.join(BASE, '_qa', 'gate_runs.json')
@@ -190,12 +216,19 @@ def do_status():
             script.replace('tools/', ''), st, age_str(script, stamps), desc[:30]))
     print('=' * 72)
     n_dead = sum(1 for _s, st, _d in rows if st == 'DEAD')
-    n_run = sum(1 for _s, st, _d in rows if st in ('RUNNABLE', 'NEEDS-DAEMON'))
+    n_need = sum(1 for _s, st, _d in rows if st == 'NEEDS-DAEMON')
+    # 轮117：可跑只算 RUNNABLE。旧版把 NEEDS-DAEMON 也算进「可跑」，
+    # 于是 27/27 全绿 —— 而 NEEDS-DAEMON 的实际含义是「依赖一个已经死掉的
+    # daemon，跑不出读数」。把它计入可跑，就是在统计层面制造假通过
+    # （本仓 U-160/204/237/265/307/322 同类病第 7 例）。
+    n_run = sum(1 for _s, st, _d in rows if st == 'RUNNABLE')
     n_miss = sum(1 for _s, st, _d in rows if st == 'MISSING')
-    print('可跑 %d / 依赖已死 daemon %d / 文件缺失 %d / 共 %d' % (
-        n_run, n_dead, n_miss, len(rows)))
-    if n_dead:
-        print('警告：DEAD 项**未被验证**，其历史 PASS 读数不得当作当前结论引用。')
+    print('可跑 %d / 待迁移(依赖死 daemon) %d / 依赖已死 %d / 文件缺失 %d / 共 %d' % (
+        n_run, n_need, n_dead, n_miss, len(rows)))
+    if n_need or n_dead:
+        print('警告：NEEDS-DAEMON / DEAD 项**未被验证**，'
+              '其历史 PASS 读数不得当作当前结论引用；'
+              '涉及维度在迁移前视为无覆盖。')
     return 0
 
 

@@ -55,8 +55,19 @@ def main():
             s = open(f, encoding='utf-8', errors='ignore').read()
         except Exception:
             continue
-        # 只查浏览器测试
-        if 'agent-browser' not in s:
+        # 只查**真会启动浏览器**的测试（轮117 收紧）。
+        # 旧写法只要正文里出现 agent-browser 字样就算浏览器测试 ——
+        # 于是 reverse_suite_status.py 把该词当测试样本数据写在用例里，
+        # 就被判「反向验证缺防缓存」。判据是「有没有调用」，不是「提没提」。
+        # 真实启动痕迹：命令字面量以 agent-browser 开头（本仓惯例 ps('agent-browser …')），
+        # 或 subprocess 里调 chrome/chromium。
+        launches = False
+        for _ln in s.splitlines():
+            _code = _ln.split('#', 1)[0]
+            if re.search(r'''['\"](\s*)agent-browser''', _code):
+                launches = True
+                break
+        if not launches:
             continue
         if '127.0.0.1' not in s and 'lxh113377' not in s:
             continue
