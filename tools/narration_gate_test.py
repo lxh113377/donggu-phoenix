@@ -43,8 +43,12 @@ def strip_comments(s):
     例外：本文件的云端 TTS 判据用剥注释后的文本 —— 注释里写「不用 translate.googleapis」
     这种说明句不该把 CI 判红，但真的把 URL 写进字符串就必红。
     """
-    s = re.sub(r"/\\*.*?\\*/", " ", s, flags=re.S)
-    s = re.sub(r"//[^\\n]*", " ", s)
+    # 轮133 修：原先 raw 字符串里把星号转义双写了。raw 里那等于
+    # 「反斜杠出现 0 次或多次」，整个正则退化成 斜杠-任意-斜杠，
+    # 于是把代码里的除号当成块注释开头，一路吃到下一个斜杠才停，
+    # 静默吃掉真实代码。与 engine_polish_test 同一 bug（两处同源复制）。
+    s = re.sub(r"/\*.*?\*/", " ", s, flags=re.S)
+    s = re.sub(r"//[^\n]*", " ", s)
     return s
 
 

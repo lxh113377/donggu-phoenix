@@ -111,7 +111,10 @@
       var x = 0.5 + Math.cos(a) * rr * 0.9;
       var y = 0.5 + Math.sin(a) * rr;
       pts.push(x, y);
-      cols.push(211, 79, 43);
+      // 轮133 修：原为 (211,79,43)，是首版带进来的单字符笔误 ——
+      // 品牌朱红 --she-vermilion 是 #D94F2B = (217,79,43)，_colorAt 的翼尖
+      // 端点也用的 217；这里 G/B 都对、只有 R 少 6。全站 211 只出现这一处。
+      cols.push(217, 79, 43);
     }
     this._build(pts, cols, 1);
   };

@@ -33,6 +33,7 @@ _colorAt() 复算应有颜色，与实际 r/g/b 比对：
 """
 import json
 import os
+import re
 import sys
 import time
 
@@ -49,6 +50,7 @@ PROBE = """(function(cfg){
   var tamper = cfg.tamper || 0;   // 自检用：改坏前 N 个粒子的颜色
   var exact = 0, near = 0, wrong = 0, n = 0, dsum = 0, worst = 0;
   var samp = [];
+  var seen = {};
   for (var i = 0; i < P.particles.length; i++) {
     var p = P.particles[i];
     if (typeof p.tx !== 'number' || typeof p.ty !== 'number') { continue; }
@@ -64,14 +66,43 @@ PROBE = """(function(cfg){
       wrong++;
       if (samp.length < 3) { samp.push({i:i, actual:[ar,ag,ab], should:w, dist:d}); }
     }
+    seen[ar + ',' + ag + ',' + ab] = 1;
   }
-  return JSON.stringify({ready:true, checked:n, exact:exact, near:near,
+  /* 兜底态识别：_fallback() 给所有粒子统一一个颜色（SVG 采样失败时的解析式
+   * 轮廓兜底），此时「色 == 该位置应有颜色」这个口径根本不适用 —— 没有
+   * 剪影可忠实。轮133 实测：兜底态下按原口径会报 2600/2600 错配，
+   * 是判据误报而非产品缺陷。故单独成一支：兜底态改测
+   * 「那个统一色是否等于品牌朱红」，并如实回报 mode。 */
+  var distinct = Object.keys(seen).length;
+  var mode = distinct <= 1 ? 'fallback' : 'sampled';
+  return JSON.stringify({ready:true, mode:mode, distinctColors:distinct,
+                         flatColor:(distinct <= 1 && P.particles.length)
+                           ? [P.particles[0].r, P.particles[0].g,
+                              P.particles[0].b] : null,
+                         checked:n, exact:exact, near:near,
                          wrong:wrong, avgDist:+(dsum/Math.max(1,n)).toFixed(2),
                          worst:worst, samples:samp,
                          maxParticles:P.maxParticles, lowEnd:!!P.lowEnd});
 })"""
 
 MIN_CHECKED = 50
+# 品牌朱红 --she-vermilion = #D94F2B（兜底态下所有粒子应为此色）。
+# 不写死：从 main.css 的 :root 现读，令牌改了判据自动跟上。
+VERMILION_FALLBACK = (217, 79, 43)
+
+
+def brand_vermilion():
+    css = os.path.join(SITE, 'assets', 'css', 'main.css')
+    try:
+        s = open(css, encoding='utf-8', errors='ignore').read()
+        i = s.find(':root')
+        m = re.search(r'--she-vermilion\s*:\s*#([0-9a-fA-F]{6})', s[i:])
+        if m:
+            h = m.group(1)
+            return tuple(int(h[k:k + 2], 16) for k in (0, 2, 4))
+    except Exception:
+        pass
+    return VERMILION_FALLBACK
 
 
 def main():
@@ -86,6 +117,9 @@ def main():
 
     srv = None
     ch = None
+    # 过了环境关卡（chrome 有、服务起得来、页面能导航、__phoenix 注册了）
+    # 之后任何异常都是判据自身或站点的真故障，必须 FAIL，不得再记 SKIP。
+    past_env = False
     try:
         srv = SiteServer(SITE)
         if not srv.ok:
@@ -99,6 +133,7 @@ def main():
                 print('RESULT: SKIP  __phoenix 未注册（引擎没加载）')
                 return 0
             time.sleep(5.0)   # 等装配动画与抽稀完成
+            past_env = True   # 此后进入测量阶段
 
             d = json.loads(page.eval_js(PROBE + '({tamper:0})', timeout=30))
             if not d.get('ready'):
@@ -117,10 +152,21 @@ def main():
                       % (s['i'], s['actual'], s['should'], s['dist']))
 
             fails = []
+            mode = d.get('mode', 'sampled')
+            print('  渲染模式 %s（%s）' % (
+                mode, '位置颜色口径适用' if mode == 'sampled'
+                else '无剪影可忠实，改测统一色是否品牌朱红'))
             if d['checked'] < MIN_CHECKED:
                 fails.append('只受检 %d 个粒子（< %d），样本不足不判通过'
                              % (d['checked'], MIN_CHECKED))
-            if d['wrong']:
+            if mode == 'fallback':
+                fc = tuple(d.get('flatColor') or [])
+                if fc != brand_vermilion():
+                    fails.append('兜底态统一色 %s 不是品牌朱红 %s'
+                                 % (fc, brand_vermilion()))
+                else:
+                    print('  兜底色核对：%s == --she-vermilion 一致' % (fc,))
+            elif d['wrong']:
                 fails.append('%d 个粒子颜色与其目标点应有颜色不符'
                              '（抽稀/重建时取色索引错位）' % d['wrong'])
 
@@ -154,9 +200,16 @@ def main():
             except Exception:
                 pass
     except Exception as e:
-        print('RESULT: SKIP  探针异常（环境问题）：%s: %s'
-              % (type(e).__name__, str(e)[:110]))
-        return 0
+        if not past_env:
+            # 环境关卡之前：确实没条件测，SKIP（但未测不等于通过）
+            print('RESULT: SKIP  环境前提缺失（未进入测量）：%s: %s'
+                  % (type(e).__name__, str(e)[:110]))
+            return 0
+        # 环境关卡之后：判据自身或站点的真故障，伪装成环境问题就是假守护
+        print('RESULT: FAIL  已进入测量后异常 —— 判据自身或站点故障，'
+              '不得记 SKIP')
+        print('  %s: %s' % (type(e).__name__, str(e)[:200]))
+        return 1
     finally:
         if ch:
             try:
