@@ -153,8 +153,14 @@ def selftest():
     """S1 去掉兜底必须报出被藏内容；S2 保留兜底必须 0 命中。"""
     bad = []
     orig = io.open(ENTRY, encoding='utf-8', newline='').read()
-    tmp_name = '_nojs_probe_tmp.html'
+    # 名字必须落在 .gitignore 的 site/_probe_*.html 里：
+    # 判据写的是「剥掉兜底的首页副本」，进程被杀时 finally 不执行，
+    # 残留会被 git add site/ 提交，且 wrangler 部署整个 site/ 目录，
+    # 会把这份无兜底副本公开上传。
+    tmp_name = '_probe_nojs_tmp.html'
     tmp = os.path.join(SITE, tmp_name)  # 绝对路径仅用于读写，探针传文件名
+    if os.path.exists(tmp):
+        os.remove(tmp)          # 先清上次崩溃的残留，避免读到旧文件
     try:
         # S1：剥掉 noscript 样式与看门狗，还原成轮140 修复前的形态
         stripped = re.sub(r'<noscript><style>.*?</style></noscript>\n?',
@@ -197,6 +203,23 @@ def selftest():
     return bad
 
 
+def stray_probe_files():
+    """列出 site/ 下残留的判据临时探针页。
+
+    实测（轮140）：这类残留不会被 orphan_asset_test 或 verify_site 拦，
+    而 .gitignore 只防提交、不防部署 —— wrangler 上传整个 site/，
+    一份「剥掉兜底的首页副本」就这样被公开。
+    """
+    out = []
+    for f in os.listdir(SITE):
+        if not f.endswith('.html') or not f.startswith('_'):
+            continue
+        if (f.startswith('_probe_') or f.startswith('_admin_probe')
+                or f.startswith('_admin_diag')):
+            out.append(f)
+    return sorted(set(out))
+
+
 def main():
     try:
         from cdp_client import find_chrome
@@ -236,8 +259,16 @@ def main():
               '（共 %d 字）—— 缺无 JS 兜底' % (len(d['hidden']),
                                                d['hiddenChars']))
         return 1
+    stray = stray_probe_files()
+    if stray:
+        print('RESULT: FAIL  site/ 下有判据临时探针页残留：%s'
+              '—— 进程被杀时 finally 不执行；这类文件不会被'
+              ' orphan_asset/verify_site 拦，且 .gitignore 不防部署'
+              '（wrangler 上传整个 site/）' % ', '.join(stray))
+        return 1
     print('RESULT: PASS  禁用 JS 时正文内容无一处被 opacity 藏住，'
-          '且自检证明「去掉兜底就会报红」（判据有牙，不是恒绿）')
+          '且自检证明「去掉兜底就会报红」（判据有牙，不是恒绿）；'
+          '临时探针页无残留')
     return 0
 
 

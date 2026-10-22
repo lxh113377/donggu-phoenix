@@ -15,6 +15,8 @@ __pycache__/
 # 把密钥永久写进公开仓库（轮73 真踩过这个险，判据见 tools/secret_leak_test.py）。
 site/_admin_probe*.html
 site/_admin_diag*.html
+# 判据在 site/ 下写的临时探针页（崩溃残留不得提交、不得部署）
+site/_probe_*.html
 # 素材原件（保留在本地，避免仓库过大；发布用 site/ 内已优化版本）
 素材/*.jpg
 素材/*.png
