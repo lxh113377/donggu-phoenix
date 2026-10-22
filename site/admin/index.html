@@ -40,8 +40,6 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px
 .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-right:auto}
 .brand b{font-size:var(--fs-l);letter-spacing:.14em;color:var(--fg)}
 .brand span{font-size:var(--fs-xs);letter-spacing:.22em;color:var(--gold-dim)}
-.badge{display:inline-flex;align-items:center;padding:3px 9px;border:1px solid var(--gold-dim);
-  border-radius:3px;font-size:var(--fs-2xs);letter-spacing:.14em;color:var(--gold)}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;min-height:44px;border:1px solid var(--line);
   border-radius:4px;background:var(--panel);color:var(--fg-dim);font-size:var(--fs-s);
   letter-spacing:.06em;transition:border-color .2s,color .2s,background .2s;user-select:none}
@@ -56,11 +54,6 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px
 main{max-width:1180px;margin:0 auto;padding:20px 20px 56px}
 .zone{display:none}
 .zone.on{display:block}
-.notice{margin:0 0 18px;padding:12px 16px;background:var(--panel);
-  border:1px solid var(--line-soft);border-left:3px solid var(--gold-dim);
-  border-radius:6px;font-size:var(--fs-s);color:var(--fg-dim);line-height:1.75}
-.notice b{color:var(--gold);font-weight:400;letter-spacing:.06em}
-.notice code{font:var(--fs-xs)/1.6 ui-monospace,Consolas,monospace;color:var(--fg-dim)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-bottom:18px}
 .card{padding:16px 18px;background:var(--panel);border:1px solid var(--line-soft);border-radius:6px}
 .card dt{margin:0;font-size:var(--fs-2xs);letter-spacing:.2em;color:var(--fg-faint)}
@@ -148,8 +141,7 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 <body>
 
 <header>
-  <div class="brand"><b>访问后台</b><span>畲 · 凤鸣东固</span>
-    <span class="badge">演示数据 · 静态不更新</span></div>
+  <div class="brand"><b>访问后台</b><span>畲 · 凤鸣东固</span></div>
   <button class="btn" id="btn-export" type="button">导出 CSV</button>
 </header>
 
@@ -166,13 +158,6 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
 <!-- 仪表盘 -->
 <main id="dash" class="zone">
-  <p class="notice">
-    <b>这是演示样本，不是真实访问量。</b>
-    数值一次生成、固定不变，刷新页面不会归零也不会跳动。
-    统计窗口 <span id="win-range">—</span>，按周聚合；
-    真实数据仍在 Cloudflare D1，口径与重生成方式见 docs 内的《后台演示数据说明》。
-  </p>
-
   <dl class="cards" id="cards"></dl>
 
   <div class="grid two">
@@ -566,7 +551,6 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   }
   zone('dash');
   state.week = D.weeks.length - 1;      // 默认落在最近一周（现场演示先看峰值）
-  $('#win-range').textContent = D.meta.window.start + ' 至 ' + D.meta.window.end;
   renderCards();
   renderWeekTable();
   renderWeekSelect();
