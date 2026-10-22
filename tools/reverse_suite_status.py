@@ -54,6 +54,14 @@ CASES = [
     ('F 完全不含',
      'import os' + chr(10) + 'print(1)',
      False),
+    # 轮118 新增分支：已改用 ab_compat 兼容层的判据不再依赖 daemon。
+    # 它源码里仍保留 AB.run('agent-browser ...') 的字面形态（兼容层输入协议），
+    # 若不认 ab_compat，会把已迁移的判据继续判成 NEEDS-DAEMON（迁移白做）。
+    ('G 用了 ab_compat 兼容层',
+     'from ab_compat import AbSession' + chr(10)
+     + 'AB = AbSession()' + chr(10)
+     + 'AB.run(' + Q + CMD + ' open x' + Q + ')',
+     False),
 ]
 
 bad = []
@@ -73,4 +81,5 @@ print()
 if bad:
     print('RESULT: FAIL  ' + '; '.join(bad))
     sys.exit(1)
-print('RESULT: PASS  6 类样本分类全部正确（含真调用+headless=new 这条旧版漏判）')
+print('RESULT: PASS  %d 类样本分类全部正确（含真调用+headless=new 这条旧版漏判、'
+      'ab_compat 兼容层这条迁移豁免）' % len(CASES))

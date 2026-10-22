@@ -148,6 +148,11 @@ def needs_daemon(script_path):
     # 只出现在注释/docstring 正文里的不算（轮117 的 ar_playback_test 正是这种）。
     # 上一版正则只找 subprocess/os.system/Popen 后跟 agent-browser，
     # 漏掉了 ① 这种本仓最普遍的形态，会把真依赖判成 RUNNABLE（又一次假绿）。
+    # 轮118：已改用 ab_compat 兼容层的判据**不再依赖 daemon**。
+    # 它们仍保留命令名の字面形态（那是兼容层的输入协议），但底下走 CDP ——
+    # 若仍按「引号紧跟命令名」判定，会把已迁移的判据继续判成 NEEDS-DAEMON。
+    if 'ab_compat' in src:
+        return False
     for line in src.splitlines():
         code = line.split('#', 1)[0]          # 剥掉行内注释
         if 'agent-browser' not in code:
