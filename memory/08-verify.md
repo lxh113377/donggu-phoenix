@@ -4879,3 +4879,77 @@ Linux 上必然 None。而 `cdp_client.find_chrome` 本就跨平台（Win 用 `w
 CI 绿了、17 条都 PASS —— 但日志里有 3 条写着 SKIP。
 
 **绿灯只说明「没有东西判红」，不说明「所有东西都检查过」。**
+
+## 轮125 结果（2026-10-22 · 后台两条判据去 wrangler，CI 覆盖 17→19）
+
+### 一、推翻自己上一轮刚写的决定（U-395）
+轮124 我以「需 wrangler pages dev + D1」为由，把 `admin_contrast` /
+`admin_responsive` 排除在 CI 外。这轮复查发现**该判据自己的注释就写着不需要**：
+
+> 第 9 行（轮109 写）：后台已改静态演示页、无登录无接口，
+> 「所以本判据不再需要 wrangler pages dev + D1 —— 但它仍然照跑不误」
+
+前提早已不成立，是代码没跟着改。上一轮「不接 5 条」清单里，有 2 条其实能接。
+
+> **排除一条判据的理由要当场核实，不能沿用旧注释/旧印象。**
+
+### 二、改造三处（两条同法）
+| 处 | 旧 | 新 |
+|---|---|---|
+| 启动 | `start_pages_dev`（npx wrangler + 本地 D1） | `SiteServer`（进程内） |
+| 密钥 | `read_admin_key` 缺失即 SKIP | `or ''`（轮109 后无登录） |
+| 清理 | `proc.terminate()/kill()` | `_srv.stop()` |
+
+### 三、一次 SKIP 的逐层查证（U-396）
+改完首跑报「SKIP 无读数（重试 5 次仍空）」。没有回滚，逐层查证：
+
+| 查证 | 结果 |
+|---|---|
+| SiteServer 服务 /admin/ | HTTP 200 / 26791 字节 |
+| 探针文件可访问 | HTTP 200 |
+| find_chrome | 找到 |
+| dump_dom attempts=1/2/5 | 全 OK(2)，0.6~2.5 秒 |
+| spy 跑完整 main | **PASS 453 处全达标** |
+| 真实命令连跑 3 次 | **3 次全 PASS，读数一致** |
+
+结论：那次 SKIP 是 chrome 偶发空输出（U-193 同类），
+`dump_dom` 的 5 次重试本就能吸收 —— **不是改造引入的缺陷**。
+
+> 两个方向的错都要防：既不能因一次 SKIP 就回滚正确的改造，
+> 也不能因「手工跑通了」就直接宣布没问题 —— 连跑 3 次看稳定性。
+
+### 四、CI 覆盖 17 → 19 条
+仍不接 3 条：`offline_live` / `preflight_device`（需公网）、
+`reverse_ar_playback`（118 秒，代价过高留本地）。
+
+实测：`admin_contrast` 2 视口 453 处对比度全达标；
+`admin_responsive` 4 视口无溢出、8 个触控目标均 ≥ 44px。
+
+### 五、新发现的更大问题：记忆文件全面超限（U-397 待办）
+查 `memory/` 字节数，**6 个文件超 4KB 硬限**：
+
+| 文件 | 大小 | 性质 |
+|---|---|---|
+| 08-verify.md | 263.1 KB | append-only 验证日志 |
+| 09-upgrade-ledger.md | 191.0 KB | append-only 台账 |
+| 03-status.md | 23.8 KB | active-core（U-209 已记） |
+| 05-next-steps.md | 13.2 KB | active-core |
+| 04-decisions.md | 5.4 KB | active-core |
+| 07-deploy.md | 4.4 KB | active-core |
+
+需按 bigfile_governance 区分：active-core 真拆、append-only 走归档。
+**且 08/09 与并行端共同写入，拆分需协调，不能单方面动**
+（否则对方继续往旧路径追加 → 记忆分裂）。
+
+### 读数
+- 全量静态门禁 **63/63 PASS**；lint 93 条；套件 27/27 可跑
+- CI 守护维度：静态 44 + 浏览器 19 + 原挂 5 = 63 条
+- 台账 397 号唯一连续；sync 0/0
+
+### 一句话
+本轮我做了一件不舒服的事：**推翻自己上一轮刚写的决定**。
+
+上一轮我列了「不接 5 条」的清单并说明理由，看起来很完整。
+但其中 2 条的理由是照抄旧注释，没去核实它是否还成立。
+
+**一份看起来自洽的排除清单，比没有清单更危险** —— 它会让人不再去看。
