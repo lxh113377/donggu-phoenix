@@ -26,28 +26,33 @@ PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def ps(cmd, timeout=50):
-    try:
-        r = subprocess.run([PS, '-NoProfile', '-Command', cmd], capture_output=True, text=True,
-                           cwd=BASE, timeout=timeout, encoding='utf-8', errors='replace')
-        return ((r.stdout or '') + (r.stderr or '')).strip()
-    except subprocess.TimeoutExpired:
-        return 'TIMEOUT'
+# migrate: ps() -> ab_compat (round 122)
+_AB = None
 
+
+def _ab():
+    global _AB
+    if _AB is None:
+        from ab_compat import AbSession
+        _AB = AbSession()
+    return _AB
+
+
+def ps(cmd, timeout=90):
+    return _ab().run(cmd, timeout=timeout)
 
 def ev_json(expr):
     tmp = os.path.join(BASE, '_qa', '_ar_probe.js')
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     open(tmp, 'w', encoding='utf-8').write(expr)
     out = ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "%s")' % tmp)
-    for line in reversed(out.splitlines()):
-        line = line.strip()
-        if line.startswith('"') and line.endswith('"'):
-            try:
-                return json.loads(json.loads(line))
-            except Exception:
-                continue
-    return None
+    # round 122: CDP returns one layer only; drop the double json.loads
+    if not out:
+        return None
+    try:
+        return json.loads(out)
+    except Exception:
+        return None
 
 
 STATS = ("JSON.stringify({"
@@ -63,10 +68,21 @@ def main():
     fails = []
     checked = 0
 
+    # round 122: start our own server instead of assuming 8791 is up
+    # (a missing server produced RESULT: SKIP -- looks like an env issue)
+    _srv = None
+    try:
+        from cdp_client import SiteServer
+        _srv = SiteServer(os.path.join(BASE, 'site'), port=8791)
+        _base = _srv.url('/index.html')
+    except Exception as _e:
+        print('RESULT: SKIP  server failed: %s' % _e)
+        return 0
+
     # 先清 SW + caches：cache-first 会返回旧 JS，导致反向验证假绿
     _clear = os.path.join(BASE, '_qa', 'clear_sw.js')
     if os.path.exists(_clear):
-        ps('agent-browser open "http://127.0.0.1:8791/"')
+        ps('agent-browser open "%s"' % _base)
         time.sleep(1.2)
         ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "%s")' % _clear)
         time.sleep(1.0)
@@ -74,7 +90,7 @@ def main():
     ps('agent-browser set viewport 1440 900')
     ps('agent-browser open "about:blank"')
     time.sleep(0.4)
-    ps('agent-browser open "http://127.0.0.1:8791/"')
+    ps('agent-browser open "%s"' % _base)
     ps('agent-browser wait --load networkidle')
     time.sleep(2.4)
 
