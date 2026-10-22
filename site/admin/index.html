@@ -17,13 +17,18 @@
  *   总量落在 1 万~2 万；周与日都有随机起伏，不是线性增加。
  *   真实统计链路（functions/api/ 与 D1）一行未动，只是演示面不再读它。
  *
- * 配色与主站同源：凤红 #B3202C、金 #D4A24E、夜色 #0B0908。
+ * 配色与主站同源：凤红 #B3202C、金 #D4A24C、夜色 #0B0908。
+ * （轮131 校正：原先注释与 --gold 都写成 D4A24E 结尾，比主站
+ *  main.css 的 --she-gold 多 2 —— 注释却自称「与主站同源」。
+ *  主站是权威源，故后台全部对齐到主站值，含 canvas 里的硬编码。
+ *  注：本行刻意不写完整十六进制字面量，因为 tools 里的批量对齐脚本
+ *  会连注释一起替换（本轮实测吃过一次），写半截可避免被改写。）
  * 对比度由 tools/admin_contrast_test.py 守着（AA：正文 4.5 / 大字 3.0）。 */
 :root{
   --bg:#0B0908; --panel:#141110; --panel-2:#1B1714;
   --line:#2A2420; --line-soft:#231E1A;
   --fg:#EDE6DC; --fg-dim:#B9AEA2; --fg-faint:#8B8075;
-  --red:#B3202C; --red-hi:#EA4835; --gold:#D4A24E; --gold-dim:#9C7B3F;
+  --red:#B3202C; --red-hi:#EA4835; --gold:#D4A24C; --gold-dim:#9C7B3F;
   --ok:#5FA860;
   --fs-2xs:.6875rem; --fs-xs:.75rem; --fs-s:.8125rem; --fs-base:.875rem; --fs-m:1rem; --fs-l:1.25rem;
 }
@@ -98,7 +103,7 @@ td{padding:8px 10px;border-bottom:1px solid var(--line-soft);font-size:var(--fs-
   white-space:nowrap;vertical-align:top}
 td.mono{font-family:ui-monospace,Consolas,monospace;font-size:var(--fs-xs)}
 td.num{font-family:ui-monospace,Consolas,monospace;font-size:var(--fs-xs);text-align:right}
-tr:hover td{background:rgba(212,162,78,.03)}
+tr:hover td{background:rgba(212,162,76,.03)}
 select{padding:6px 10px;background:var(--panel-2);color:var(--fg-dim);border:1px solid var(--line);
   border-radius:4px;font-size:var(--fs-s);outline:none;min-height:44px;line-height:1.4}
 select:active{border-color:var(--gold-dim)}
@@ -475,15 +480,15 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     });
     ctx.beginPath();
     pts.forEach(function (p, i) { if (i) { ctx.lineTo(p[0], p[1]); } else { ctx.moveTo(p[0], p[1]); } });
-    ctx.strokeStyle = '#D4A24E';
+    ctx.strokeStyle = '#D4A24C';
     ctx.lineWidth = 1.8;
     ctx.stroke();
     ctx.lineTo(pad.l + iw, pad.t + ih);
     ctx.lineTo(pad.l, pad.t + ih);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(212,162,78,.10)';
+    ctx.fillStyle = 'rgba(212,162,76,.10)';
     ctx.fill();
-    ctx.fillStyle = '#D4A24E';
+    ctx.fillStyle = '#D4A24C';
     pts.forEach(function (p) {
       ctx.beginPath();
       ctx.arc(p[0], p[1], 2.2, 0, 6.2832);
