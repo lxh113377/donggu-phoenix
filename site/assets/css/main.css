@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:51;
+  --build:52;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -276,7 +276,7 @@ body::after{
 }
 .hero-lead{
   margin:clamp(26px,3.4vw,34px) 0 0;max-width:26em;white-space:pre-line;
-  font-size:clamp(var(--fs-base),1.35vw,1.031rem);color:var(--fg-dim);line-height:2.05;
+  font-size:clamp(var(--fs-base),1.35vw,var(--fs-md));color:var(--fg-dim);line-height:2.05;
   opacity:0;animation:rise 1.1s var(--ease) .6s forwards;
 }
 @media (max-width:900px){.hero-lead{margin-inline:auto}}
