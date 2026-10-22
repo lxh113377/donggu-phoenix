@@ -59,6 +59,20 @@ PAIRS = [
 LABEL_TO_MAIN = {'凤红': '--she-red', '金': '--she-gold', '夜色': '--she-ink'}
 
 
+def strip_comments(t):
+    """剥掉 CSS/JS 块注释、HTML 注释与行首 //。
+
+    残留扫描必须先剥注释：注释里允许出现旧值（本轮就刻意写了
+    「原先注释与 --gold 都写成 D4A24E 结尾」来说明改了什么）。
+    若不剥，将来任何人写一条带 #D4A24E 的说明注释就会把判据点红 ——
+    那是靠巧合才绿的判据，不是可靠的判据。
+    """
+    t = re.sub(r'/\*.*?\*/', '', t, flags=re.S)
+    t = re.sub(r'<!--.*?-->', '', t, flags=re.S)
+    t = re.sub(r'^\s*//.*$', '', t, flags=re.M)
+    return t
+
+
 def norm(h):
     h = h.lstrip('#')
     if len(h) == 3:
@@ -115,7 +129,12 @@ def check_no_stale(admin_src, adm_tok):
         return ['后台解析不到 --gold']
     r_, g_, b_ = (int(gold[i:i + 2], 16) for i in (1, 3, 5))
     stale = []
+    # 行号仍按原文算：先剥注释得到「干净文本」，但为了报出可读的行号，
+    # 这里在原文上匹配、再用干净文本判断该位置是否落在注释里。
+    _clean = strip_comments(admin_src)
     for m in re.finditer(r'#[0-9a-fA-F]{6}\b', admin_src):
+        if m.group(0) not in _clean:
+            continue   # 该字面量只存在于注释中，不算代码残留
         v = norm(m.group(0))
         # 与品牌金只差 1~4 且不在令牌表里 -> 判定为残留旧值
         if v != gold and v not in adm_tok.values():
@@ -183,6 +202,20 @@ def selftest(main_src, adm_src):
               % ('ok' if hit2 else 'X', '被抓到' if hit2 else '没抓到（文档漂移无人守）'))
         if not hit2:
             bad.append('S2 未抓到注释漂移')
+
+    # S4：注释里出现旧值（带 #）不得被当成代码残留
+    s4 = adm_src.replace('配色与主站同源',
+                         '配色与主站同源（历史值 #D4A24E）', 1)
+    if s4 == adm_src:
+        bad.append('S4 构造失败：改不动注释')
+    else:
+        b4 = check_no_stale(s4, parse_root_from(s4))
+        hit4 = not any('残留旧值' in x for x in b4)
+        print('  [%s] S4 注释里写 #D4A24E -> %s'
+              % ('ok' if hit4 else 'X',
+                 '不误报（正确）' if hit4 else '被当成代码残留（靠巧合才绿的判据）'))
+        if not hit4:
+            bad.append('S4 注释里的旧值被误判成代码残留')
 
     # S3：当前状态不得误报
     b3, _, _ = run_check(main_src, adm_src)
