@@ -113,14 +113,24 @@ VIEWPORTS = [(1440, 900), (390, 844)]
 
 
 def find_chrome():
-    root = os.path.join(os.path.expanduser('~'), '.agent-browser', 'browsers')
-    if os.path.isdir(root):
-        for d in sorted(os.listdir(root), reverse=True):
-            exe = os.path.join(root, d, 'chrome.exe')
-            if os.path.exists(exe):
-                return exe
-    for p in (r'C:\Program Files\Google\Chrome\Application\chrome.exe',
-              r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'):
+    r"""找 chrome 可执行文件。
+
+    轮124：原实现只查 Windows 路径（chrome.exe / C:\Program Files\...），
+    在 CI 的 Linux 上必返回 None -> 判据打印「找不到 chrome.exe」并 SKIP，
+    等于该维度没有 CI 守护（实测 CI 日志里确实 SKIP）。
+    改为复用 cdp_client.find_chrome（已跨平台：Win 用 where、Linux 用 which，
+    且含 chromium 回退）。
+    """
+    try:
+        from cdp_client import find_chrome as _fc
+        p = _fc()
+        if p:
+            return p
+    except Exception:
+        pass
+    # 兜底：仍保留非 Windows 绝对路径尝试
+    for p in ('/usr/bin/chromium', '/usr/bin/google-chrome',
+                  '/opt/google/chrome/chrome'):
         if os.path.exists(p):
             return p
     return None
