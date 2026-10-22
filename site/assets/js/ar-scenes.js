@@ -575,7 +575,12 @@
       ctx.fillText("黄公略", mx, mbase - S * 0.19);
       ctx.fillStyle = "rgba(246,241,231,.6)";
       ctx.font = "11px " + fontStack('--font-sans', FALLBACK_SANS);
-      ctx.fillText("1901 - 1931", mx, mbase - S * 0.155);
+      /* 生卒年（轮141 校正）：原写 "1901 - 1931"，与 ar-data.js
+       * 本章解说「年仅 33 岁」自相矛盾（1931-1901=30）。
+       * 权威依据：人民日报 2024-09-27《黄公略烈士遗骸在江西吉安安葬》
+       * 「黄公略 1898 年出生于湖南湘乡…1931 年 9 月 15 日…突遭敌机袭击，
+       * 不幸中弹牺牲，时年 33 岁」。取 1898，与 33 岁一致。 */
+      ctx.fillText("1898 - 1931", mx, mbase - S * 0.155);
       ctx.fillStyle = "rgba(212,162,76,.9)";
       for (var flw = 0; flw < 5; flw++) {
         ctx.beginPath();
