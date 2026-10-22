@@ -85,7 +85,12 @@ def main():
         p = os.path.join(MEMDIR, f)
         if not os.path.isfile(p):
             continue
-        size = os.path.getsize(p)
+        # 用 LF 归一字节而非 os.path.getsize：Windows 工作树若被 git
+        # 转成 CRLF，同一文件在 CI(Linux/LF) 上会少 (行数) 字节，
+        # 导致基线被误判「收紧」或「变大」。归一后两平台恒等。
+        # （实测本仓 memory/*.md 目前都是纯 LF，此处是防今后漂移。）
+        with open(p, 'rb') as _fh:
+            size = len(_fh.read().replace(b'\r\n', b'\n'))
         kind = classify(f)
         rows.append((f, kind, size))
 

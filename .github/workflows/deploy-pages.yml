@@ -202,6 +202,13 @@ jobs:
           # （本仓已 5 次遇到「只会报 PASS 的判据」）。故与主判据同挂 CI。
           python tools/reverse_admin_static.py
           python tools/ledger_id_test.py
+          # 轮125（U-395~397）：memory/ 的 4KB 硬限此前**没有任何机器检查**，
+          # 结果实测 6 个文件超限、最大 263KB —— 规则写着没人守就会一路漂移。
+          # 棘轮式：存量超限记入基线（不判红，因拆分需与并行端协调），
+          # 但禁止继续变大；基线建立后新增的超限文件直接 FAIL；
+          # 谁把它拆小，基线自动收紧。反向验证 5 类情形全部按预期。
+          python tools/memory_size_test.py
+          python tools/reverse_memory_size.py
           # 轮74：环境缺口归因的反向验证。CI 上 C1（classify_child 单测）跑，
           # C2-C5 因无本机 LibreOffice 故障现场而显式 SKIP —— SKIP 不等于通过。
           python tools/reverse_env_attribution.py
