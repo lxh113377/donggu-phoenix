@@ -136,29 +136,36 @@ def start_server():
 
 
 def dump_dom(chrome, port, path, vb=33000, win='900,3200'):
-    udd = os.path.join(tempfile.gettempdir(), 'chr_tt_%d' % random.randint(0, 10**6))
-    cmd = [chrome, '--headless=new', '--disable-gpu', '--hide-scrollbars',
-           '--force-device-scale-factor=1', '--force-prefers-reduced-motion',
-           '--window-size=' + win, '--user-data-dir=' + udd,
-           '--virtual-time-budget=%d' % vb, '--dump-dom',
-           'http://127.0.0.1:%d/%s' % (port, path)]
-    dom = ''
-    try:
-        r = subprocess.run(cmd, capture_output=True, text=True,
-                           encoding='utf-8', errors='replace', timeout=150)
-        dom = r.stdout or ''
-    except subprocess.TimeoutExpired:
-        return None
-    finally:
-        shutil.rmtree(udd, ignore_errors=True)
-    m = re.search(r'<title>(.*?)</title>', dom, re.S)
-    raw = (m.group(1) if m else '') or ''
-    if not raw or raw == 'pending':
-        return None
-    try:
-        return json.loads(raw)
-    except Exception:
-        return None
+    url = 'http://127.0.0.1:' + str(port) + '/' + path
+    base = [chrome, '--headless=new', '--disable-gpu', '--hide-scrollbars',
+            '--force-device-scale-factor=1', '--force-prefers-reduced-motion',
+            '--window-size=' + win]
+    # 轮107：chrome 偶发 rc=0 但 stdout 为空（U-193），单次调用会误判成
+    # 「无读数」。此前迁到 chrome 直连时漏了重试，
+    # 导致 touch_target / contrast 双双报 SKIP/FAIL 而产品并无变化。
+    for attempt in range(5):
+        udd = os.path.join(tempfile.gettempdir(),
+                           'chr_tt_' + str(random.randint(0, 10**6)))
+        cmd = base + ['--user-data-dir=' + udd,
+                      '--virtual-time-budget=' + str(vb), '--dump-dom', url]
+        dom = ''
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True,
+                               encoding='utf-8', errors='replace', timeout=150)
+            dom = r.stdout or ''
+        except subprocess.TimeoutExpired:
+            dom = ''
+        finally:
+            shutil.rmtree(udd, ignore_errors=True)
+        m = re.search(r'<title>(.*?)</title>', dom, re.S)
+        raw = (m.group(1) if m else '') or ''
+        if raw and raw != 'pending':
+            try:
+                return json.loads(raw)
+            except Exception:
+                return None
+        time.sleep(1.5)
+    return None
 
 
 def write(path, content):

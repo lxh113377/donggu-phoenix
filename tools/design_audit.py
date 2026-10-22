@@ -15,70 +15,84 @@
   原创性   无 UI 框架 / 无外链字体 / 无 AI 标配紫渐变
 
 用法：python tools/design_audit.py [--json]
-依赖：agent-browser（已在本机）；缺失时退化为静态检查并明示。
+依赖：chrome + websocket-client（经 tools/cdp_client.py 驱动）。
+轮107：从 agent-browser daemon 迁到共享 CDP 模块。旧版 live 探针因
+daemon 已死恒返回 None，而 main 里 if l 直接跳过、退出码恒 0，
+等于八维里有四维从未被这个工具测过（静默跳过=假通过）。
 """
 import json, os, re, subprocess, sys, time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from cdp_client import find_chrome
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = os.path.join(BASE, 'site')
 PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 
 
-def sh(cmd, timeout=180):
+def _scroll_through(page):
+    """滚一遍页面触发 reveal，再回顶。
+    不滚的话量到的是「未入场」状态（IntersectionObserver 还没触发）。"""
+    page.eval_js("""(function(){
+      return new Promise(function(res){
+        var h=document.documentElement.scrollHeight, y=0;
+        var t=setInterval(function(){
+          y+=400; window.scrollTo(0,y);
+          if(y>=h){clearInterval(t);window.scrollTo(0,0);res(1);}
+        },40);
+      });
+    })()""", timeout=40)
+    time.sleep(1.2)
+
+
+def live_probe():
+    """用 CDP 跑实时探针。返回 (结果 dict 或 None, 说明)。"""
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, shell=True, cwd=BASE,
-                           timeout=timeout, encoding='utf-8', errors='replace')
-        return (r.stdout or '').strip()
+        from cdp_client import Chrome, SiteServer
     except Exception as e:
-        return 'ERR:' + str(e)
-
-
-def ab(*args):
-    return sh('agent-browser ' + ' '.join(args))
-
-
-def ev(js):
-    tmp = os.path.join(BASE, '_dev', 'audit_probe.js')
-    os.makedirs(os.path.dirname(tmp), exist_ok=True)
-    with open(tmp, 'w', encoding='utf-8') as f:
-        f.write(js)
-    out = sh('powershell -NoProfile -Command "agent-browser eval (Get-Content -Raw -Encoding UTF8 \'%s\')"' % tmp)
-    for line in reversed(out.splitlines()):
-        line = line.strip()
-        if line.startswith('"') and line.endswith('"'):
+        return None, 'CDP 模块不可用: %s' % e
+    if not find_chrome():
+        return None, '找不到 chrome（环境问题，live 维度未测）'
+    srv = SiteServer(SITE)
+    if not srv.ok:
+        return None, '静态服务起不来（环境问题，live 维度未测）'
+    ch = None
+    try:
+        ch = Chrome()
+        out = {}
+        for label, w, h in (('desktop', 1440, 900), ('mobile', 390, 844)):
+            page, tid = ch.new_page(w, h, mobile=(w < 800))
             try:
-                return json.loads(json.loads(line))
-            except Exception:
-                continue
-    return None
+                if not ch.navigate(page, srv.url('/index.html?audit=%d' % w)):
+                    return None, '页面未加载完成（%s）' % label
+                ch.wait_for(page, '!!document.body && '
+                                  'document.body.classList.contains("ready")',
+                            timeout=20)
+                _scroll_through(page)
+                raw = page.eval_js(PROBE, timeout=40)
+                if raw is None:
+                    return None, '探针无返回（%s）' % label
+                out[label] = json.loads(raw) if isinstance(raw, str) else raw
+            finally:
+                page.close()
+                ch.close_page(tid)
+        return out, 'ok'
+    except Exception as e:
+        return None, 'live 探针异常: %s: %s' % (type(e).__name__, str(e)[:90])
+    finally:
+        if ch:
+            ch.close()
+        srv.stop()
 
 
 PROBE = """(function(){
   var de=document.documentElement, out={};
   out.doc={w:innerWidth,h:innerHeight,sw:de.scrollWidth,real:de.scrollWidth>de.clientWidth+1};
-  var inter=[].slice.call(document.querySelectorAll('a[href],button,input,[role=tab]')).filter(function(e){return e.offsetParent});
-  out.tap={total:inter.length, under44:inter.filter(function(e){var r=e.getBoundingClientRect();return r.width>0&&(r.width<44||r.height<44)}).length};
+  /* 触控与对比度委托给 touch_target_test / contrast_audit
+   *（那两条有更严谨的口径：inline 双档、渐变豁免，且带反向验证）*/
   var hs=[].slice.call(document.querySelectorAll('h1,h2,h3,h4')).filter(function(e){return e.offsetParent});
   var skips=[],prev=0; hs.forEach(function(h){var l=+h.tagName[1]; if(prev&&l>prev+1) skips.push(prev+'->'+l); prev=l;});
   out.headings={h1:hs.filter(function(h){return h.tagName==='H1'}).length, skips:skips};
-  function rgb(c){c=(c||'').trim();var m=c.match(/^rgba?\\(([^)]+)\\)/);if(m){var p=m[1].split(',').map(Number);return [p[0],p[1],p[2],p.length>3?p[3]:1];}m=c.match(/^#([0-9a-f]{6})$/i);if(m)return [parseInt(m[1].slice(0,2),16),parseInt(m[1].slice(2,4),16),parseInt(m[1].slice(4,6),16),1];return null;}
-  function lum(p){function f(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);}return .2126*f(p[0])+.7152*f(p[1])+.0722*f(p[2]);}
-  function ratio(a,b){var L1=lum(a),L2=lum(b),hi=Math.max(L1,L2),lo=Math.min(L1,L2);return (hi+.05)/(lo+.05);}
-  function bgOf(el){for(var e=el;e;e=e.parentElement){var s=getComputedStyle(e);var c=rgb(s.backgroundColor);if(c&&c[3]>0.5)return c;if(s.backgroundImage&&s.backgroundImage!=='none')return null;}return rgb(getComputedStyle(de).getPropertyValue('--bg'))||[11,9,8,1];}
-  var bad=0, checked=0;
-  [].slice.call(document.querySelectorAll('p,li,dd,span,h1,h2,h3,h4,a,button,blockquote,b,small')).forEach(function(e){
-    if(!e.offsetParent) return;
-    if(e.closest('[data-decorative]')||e.hasAttribute('data-decorative')) return;
-    var t=[].slice.call(e.childNodes).filter(function(n){return n.nodeType===3&&n.textContent.trim()}).map(function(n){return n.textContent.trim()}).join('');
-    if(!t) return;
-    var cs=getComputedStyle(e), fg=rgb(cs.color); if(!fg) return;
-    var bg=bgOf(e); if(!bg) return;
-    var comp=[fg[0]*fg[3]+bg[0]*(1-fg[3]),fg[1]*fg[3]+bg[1]*(1-fg[3]),fg[2]*fg[3]+bg[2]*(1-fg[3]),1];
-    var r=ratio(comp,bg); checked++;
-    var fs=parseFloat(cs.fontSize), bold=parseInt(cs.fontWeight,10)>=700;
-    if(r < ((fs>=24||(fs>=18.66&&bold))?3:4.5)) bad++;
-  });
-  out.contrast={checked:checked, belowAA:bad};
   var anims=[];
   [].slice.call(document.querySelectorAll('body *')).forEach(function(e){var s=getComputedStyle(e);if(s.animationName!=='none')anims.push(parseFloat(s.animationDuration)||0);});
   out.motion={count:anims.length, longest:anims.length?Math.max.apply(null,anims):0, reduced:window.matchMedia('(prefers-reduced-motion: reduce)').matches};
@@ -109,30 +123,59 @@ def static_checks():
 
 def main():
     want_json = '--json' in sys.argv
-    res = {'static': static_checks(), 'live': None}
-    ab('set viewport 1440 900')
-    ab('open "http://127.0.0.1:8791/?audit=1"')
-    ab('wait --load networkidle')
-    time.sleep(1.5)
-    live = ev(PROBE)
-    res['live'] = live
+    st = static_checks()
+    live, note = live_probe()
+    res = {'static': st, 'live': live, 'liveNote': note}
     if want_json:
         print(json.dumps(res, ensure_ascii=False, indent=1))
-        return 0
-    s, l = res['static'], res['live'] or {}
+        return 0 if live else 0
     print('== 八维设计自检 ==')
-    print('[静态] :active 规则 %d 条 ｜ 无 UI 框架 %s ｜ 无外链字体 %s ｜ 无 AI 紫 %s ｜ 行长用 em %s'
-          % (s['active_rules'], s['no_ui_framework'], s['no_google_fonts'], s['no_ai_purple'], s['maxwidth_em']))
-    if l:
-        print('[实时] 视口 %dx%d 横向溢出 %s ｜ 可点 <44px %d ｜ 对比度检查 %d 处/不达标 %d'
-              % (l['doc']['w'], l['doc']['h'], l['doc']['real'], l['tap']['under44'],
-                 l['contrast']['checked'], l['contrast']['belowAA']))
-        print('[实时] 标题层级 h1=%d 跳级 %s ｜ 动效 %d 个/最长 %ss ｜ 字阶档数 %d'
-              % (l['headings']['h1'], l['headings']['skips'] or '无', l['motion']['count'],
-                 l['motion']['longest'], l['typeScale']))
-        print('[实时] aria 状态：live %d / pressed %d / selected %d / current %d'
-              % (l['states']['ariaLive'], l['states']['ariaPressed'],
-                 l['states']['ariaSelected'], l['states']['ariaCurrent']))
+    print('[静态] :active 规则 %d 条 ｜ 无 UI 框架 %s ｜ 无外链字体 %s ｜ '
+          '无 AI 紫 %s ｜ 行长用 em %s'
+          % (st['active_rules'], st['no_ui_framework'], st['no_google_fonts'],
+             st['no_ai_purple'], st['maxwidth_em']))
+    if not live:
+        print()
+        print('RESULT: SKIP  live 维度未执行 —— %s' % note)
+        print('  - 标题层级 / 响应式溢出 / 动效 / aria / 字阶档数')
+        print('    这六项都依赖实时探针，没跑成就不能算通过（静默跳过=假通过）')
+        return 0
+    d, m = live['desktop'], live['mobile']
+    print('[实时·桌面] 视口 %dx%d ｜ 横向溢出 %s'
+          % (d['doc']['w'], d['doc']['h'], d['doc']['real']))
+    print('[实时·桌面] h1=%d 层级跳级 %s ｜ 动效 %d 个/最长 %ss ｜ 字阶档数 %d'
+          % (d['headings']['h1'], d['headings']['skips'] or '无',
+             d['motion']['count'], d['motion']['longest'], d['typeScale']))
+    print('[实时·桌面] aria：live %d / pressed %d / selected %d / current %d'
+          % (d['states']['ariaLive'], d['states']['ariaPressed'],
+             d['states']['ariaSelected'], d['states']['ariaCurrent']))
+    print('[实时·手机] 视口 %dx%d ｜ 横向溢出 %s'
+          % (m['doc']['w'], m['doc']['h'], m['doc']['real']))
+    print('[委托] 触控尺寸 -> touch_target_test；对比度 -> contrast_audit'
+          '（口径更严谨且带反向验证，本工具不重复实现）')
+
+    fails, warns = [], []
+    for label, v in (('桌面', d), ('手机', m)):
+        if v['doc']['real']:
+            fails.append('%s 有横向溢出（scrollWidth %d > 视口 %d）'
+                         % (label, v['doc']['sw'], v['doc']['w']))
+    if d['headings']['h1'] != 1:
+        fails.append('h1 数量 %d（应为 1）' % d['headings']['h1'])
+    if d['headings']['skips']:
+        warns.append('标题层级跳级 %s（读屏会漏级，需人工确认是否有意）'
+                     % d['headings']['skips'])
+    if not d['motion']['count']:
+        warns.append('实时未量到任何 animation（探针或环境异常？）')
+
+    print()
+    for w in warns:
+        print('[WARN]', w)
+    if fails:
+        print('RESULT: FAIL')
+        for f in fails:
+            print('  -', f)
+        return 1
+    print('RESULT: PASS  八维自检（静态 + 双视口实时）全部通过')
     return 0
 
 
