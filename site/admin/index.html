@@ -412,18 +412,50 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
   /* canvas 内绘制的文字 getComputedStyle 读不到，对比度判据覆盖不到它，
    * 因此这里的颜色必须与 CSS 令牌手工对齐（gold / fg-faint / line-soft）。 */
-  function grid(ctx, w, h, pad, iw, ih, max) {
+  /* Y 轴整齐刻度（轮126）。
+   * 旧写法是 Math.round(max * i / 4) —— 直接把数据峰值四等分，
+   * 峰值 2242 就印出 2242 / 1682 / 1121 / 561 / 0，
+   * 每个刻度都是硬算出来的数，读的人得先心算才能估值。
+   * 改为在 1/2/2.5/5 × 10^k 里挑步长：上界贴近数据、刻度值整齐，
+   * 且刻度段数限制在 3~5（画布只有 190px 高，再密就挤）。
+   * 实测：周峰值 2242 -> 0/500/1000/1500/2000/2500；
+   *       日峰值 256  -> 0/100/200/300。 */
+  function niceScale(v) {
+    if (!(v > 0)) { return { max: 4, step: 1, count: 4 }; }
+    var best = null;
+    for (var k = -3; k <= 9; k++) {
+      var mag = Math.pow(10, k);
+      var mults = [1, 2, 2.5, 5];
+      for (var mi = 0; mi < mults.length; mi++) {
+        var step = mults[mi] * mag;
+        var count = Math.ceil(v / step);
+        if (count < 3 || count > 5) { continue; }
+        var waste = (step * count - v) / v;
+        if (!best || waste < best.waste - 1e-9) {
+          best = { max: step * count, step: step, count: count, waste: waste };
+        }
+      }
+    }
+    return best || { max: v, step: v / 4, count: 4 };
+  }
+
+  function fmtTick(v) {
+    var s = Math.round(v * 10) / 10;
+    return (s % 1 === 0) ? String(s) : s.toFixed(1);
+  }
+
+  function grid(ctx, w, h, pad, iw, ih, sc) {
     ctx.strokeStyle = '#231E1A';
     ctx.fillStyle = '#8B8075';
     ctx.font = '10px ui-monospace,Consolas,monospace';
     ctx.lineWidth = 1;
-    for (var i = 0; i <= 4; i++) {
-      var y = pad.t + ih - ih * i / 4;
+    for (var i = 0; i <= sc.count; i++) {
+      var y = pad.t + ih - ih * i / sc.count;
       ctx.beginPath();
       ctx.moveTo(pad.l, y);
       ctx.lineTo(w - pad.r, y);
       ctx.stroke();
-      ctx.fillText(String(Math.round(max * i / 4)), 4, y + 3);
+      ctx.fillText(fmtTick(sc.step * i), 4, y + 3);
     }
   }
 
@@ -431,12 +463,13 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     var cv = $('#chart-weeks');
     var s = setup(cv), ctx = s.ctx, w = s.w, h = s.h;
     var rows = D.weeks, n = rows.length;
-    var max = 0;
-    rows.forEach(function (x) { if (x.pv > max) { max = x.pv; } });
-    max = Math.max(max, 4);
+    var peak = 0;
+    rows.forEach(function (x) { if (x.pv > peak) { peak = x.pv; } });
+    var sc = niceScale(peak);
+    var max = sc.max;
     var pad = { l: 38, r: 8, t: 12, b: 24 };
     var iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
-    grid(ctx, w, h, pad, iw, ih, max);
+    grid(ctx, w, h, pad, iw, ih, sc);
     var pts = rows.map(function (x, i) {
       return [pad.l + iw * (n > 1 ? i / (n - 1) : 0.5), pad.t + ih - ih * (x.pv / max)];
     });
@@ -465,12 +498,13 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     var cv = $('#chart-days');
     var s = setup(cv), ctx = s.ctx, w = s.w, h = s.h;
     var rows = daysOfWeek();
-    var max = 0;
-    rows.forEach(function (x) { if (x.pv > max) { max = x.pv; } });
-    max = Math.max(max, 4);
+    var peak = 0;
+    rows.forEach(function (x) { if (x.pv > peak) { peak = x.pv; } });
+    var sc = niceScale(peak);
+    var max = sc.max;
     var pad = { l: 38, r: 8, t: 12, b: 24 };
     var iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
-    grid(ctx, w, h, pad, iw, ih, max);
+    grid(ctx, w, h, pad, iw, ih, sc);
     var n = Math.max(rows.length, 1);
     var bw = iw / n;
     ctx.font = '10px ui-monospace,Consolas,monospace';
