@@ -42,7 +42,7 @@
  * 清单与内容都变 —— 不 bump 则老访客的 SW 仍 cache-first 供旧 analytics.js，
  * 页脚会继续读 /api/stats（本项目第 5 次踩同一坑，见 v2/v4/v6/v37/v40 注释）。
  * 跨版本对账锚点仍是 CSS --build(47) ⇄ HTML BUILD(47)：main.css 本次未改。 */
-var VERSION = 'v56';
+var VERSION = 'v57';
 
 /* 关键路径：离线也必须能完整渲染首屏与三段 AR */
 var PRECACHE = [

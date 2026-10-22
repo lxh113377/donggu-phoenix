@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:53;
+  --build:54;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -998,7 +998,7 @@ section.foot{padding-top:var(--sec-y-loose)}
   z-index:70;padding:13px 26px;border-radius:var(--radius-pill);border:1px solid var(--line);
   /* 背景改为完全不透明并去掉 blur：alpha=1 时 blur 结果被 100% 覆盖，关掉是严格零影响。
    * 原 .95 透出 5%，那部分去掉 blur 会由模糊变清晰，故提到 1.0 以免留下解释不清的差异。 */
-  background:#12100F;font-family:var(--font-sans);
+  background:var(--she-black);font-family:var(--font-sans);
   font-size:var(--fs-xs);letter-spacing:.1em;color:var(--fg);opacity:0;transition:all .45s var(--ease);
   pointer-events:none;max-width:min(88vw,520px);text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -1072,7 +1072,7 @@ section.foot{padding-top:var(--sec-y-loose)}
   position:fixed;left:1rem;top:0.5rem;z-index:200;
   transform:translateY(-160%);
   padding:0.65rem 1.1rem;border-radius:0.5rem;
-  background:var(--she-gold);color:#12100F;
+  background:var(--she-gold);color:var(--she-black);
   font-family:var(--font-sans);font-size:var(--fs-base);font-weight:600;letter-spacing:0.06em;
   box-shadow:0 0.5rem 1.5rem rgba(0,0,0,.5);
   transition:transform .18s var(--ease);
