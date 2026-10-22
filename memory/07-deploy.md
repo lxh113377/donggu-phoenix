@@ -51,10 +51,12 @@ wrangler pages deploy site --project-name donggu-phoenix --commit-dirty=true
 目前仍带着「特写卡图偏糊」的问题。故恢复后应优先 push + 等 CI 绿。
 
 ### 为什么不能只靠 Cloudflare 面
-`/admin` 与 `/api` 只在 Cloudflare 可用（Functions + D1），
-GitHub Pages 面访问后台会走「此外端没有后端」提示分支 —— 这是设计如此，
-不是本轮引入的问题。但主站展示以二维码指向的 GitHub Pages 为主入口，
-两面的**站点**内容应当一致。
+**轮109 已变（2026-10-22）**：后台 `/admin` 改成静态演示页，**两个面都能看**
+（实测 gh 面 zone=dash、六张卡读数与 pages.dev 完全一致、接口请求 0）。
+只有 `/api` 与 D1 仍是 Cloudflare 独占（Functions 只在那边），
+要看真实访问数据仍须走 pages.dev 的接口或 wrangler d1 execute。
+（旧版后台在 gh 面会显示「此外端没有后端」，那是当时的设计；静态化后该分支已整块删除。）
+主站展示以二维码指向的 GitHub Pages 为主入口，两面的**站点**内容应当一致。
 ## 轮96 收尾回执（2026-10-21 22:10）
 
 ### 网络已恢复
