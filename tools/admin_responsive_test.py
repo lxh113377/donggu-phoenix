@@ -169,7 +169,13 @@ def main():
     dst = os.path.join(BASE, 'site', '_admin_probe_resp.html')
     try:
         html = probe_html()
-        assert key not in html, '探针本体不得含密钥'
+        # 轮132 修：key 为空串时（CI 上没有 .dev.vars）必须跳过这条断言。
+        # 原写法 assert key not in html 在 key='' 时恒失败 —— 空串是任何
+        # 字符串的子串。本断言的意图是「探针不得泄漏密钥」，没有密钥时
+        # 无物可泄漏，检查不适用；有密钥时照常生效。
+        # （轮131 我把 key 改成 `or ''` 以适配静态后台，却没检查下游用法，
+        #  导致 CI 上 admin_contrast 直接 AssertionError 中断整条 suite。）
+        assert not key or key not in html, '探针本体不得含密钥'
         open(dst, 'w', encoding='utf-8').write(html)
         rows = None
         url = 'http://127.0.0.1:%d/_admin_probe_resp.html#%s' % (port, key)
