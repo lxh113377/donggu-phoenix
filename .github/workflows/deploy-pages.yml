@@ -136,6 +136,12 @@ jobs:
           # 上一条只读源码，证明不了「页面真的把数字画出来了」（轮17/52：函数存在 != 行为发生）。
           # 静态页零接口，所以这里只需进程内静态服务，不再需要 wrangler pages dev。
           python tools/admin_static_render_test.py
+          # 轮112：上面那条走 HTTP、测的是正向路径（数据在、渲染对、刷新不变）。
+          # 本条补静态化另两条承诺：file:// 双击可看（重写的主要动机之一，
+          # HTTP 下抓不到「相对路径在 file:// 解析失败」）、
+          # 以及样本缺失时有明确空态（render_test 假设数据在，兜底行为没人守）。
+          # 自带两项尺子自检：删掉判空兜底、数据退回 fetch，都必须被抓到。
+          python tools/admin_static_fallback_test.py
           # 反向验证：造 7 类数据退化 + 2 类渲染退化，证明上面两条真有牙
           # （本仓已 5 次遇到「只会报 PASS 的判据」）。故与主判据同挂 CI。
           python tools/reverse_admin_static.py

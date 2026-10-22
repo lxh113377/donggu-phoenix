@@ -65,6 +65,10 @@ SUITE = [
     # 轮109：后台静态化后新增。两条都自起进程内静态服务（零接口），
     # 不像上面两条依赖 wrangler pages dev + D1。
     ('tools/admin_static_render_test.py', True, '后台静态页真渲染 + 刷新不变（CDP，自起服务）'),
+    # 轮112：render_test 走 HTTP、测的是正向路径（数据在、渲染对）。
+    # 本判据补它测不到的两条静态化承诺：file:// 离线可看、
+    # 样本缺失时有明确空态；自带两项尺子有效性自检（删兜底/退回 fetch 都要被抓）。
+    ('tools/admin_static_fallback_test.py', True, '后台离线可看 + 缺样本空态（CDP）'),
     ('tools/reverse_admin_static.py', False, '后台静态化两条判据的反向验证（9 类故障注入）'),
     ('tools/runtime_health_test.py', False, '运行时健康（无泄漏/累积/循环叠加）'),
     ('tools/engine_behavior_test.py', False, '引擎行为（密度自适应+HUD节流实测）'),
