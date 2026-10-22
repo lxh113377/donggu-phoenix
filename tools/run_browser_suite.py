@@ -59,6 +59,10 @@ SUITE = [
     # 对比度/视觉平衡/令牌一致性三类判据都读不到 —— 属无人守的视觉不变量。
     # 自带注入错色的尺子自检（反向验证已内置，不再单列 reverse 脚本）。
     ('tools/phoenix_color_fidelity_test.py', True, '凤凰粒子色保真（含注入自检）'),
+    # 轮134：标题字号必须落在 :root 的字阶令牌上（纯静态，但归入套件便于一次看全）。
+    # 起因：4 条标题各自随手写 clamp 边界，.sec-head h2 实测 46px 而 --fs-4xl=44px，
+    # 且是重复 7 次的区块主标题；同视口 h3 一度 10 种字号。
+    ('tools/type_scale_discipline_test.py', True, '标题字号落在字阶令牌上'),
     ('tools/hero_height_test.py', True, '手机首屏锁一屏'),
     ('tools/ring_containment_test.py', True, '装饰环在画布内'),
     ('tools/anchor_offset_test.py', True, '锚点偏移正确'),

@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:49;
+  --build:51;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -386,7 +386,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   letter-spacing:.04em;color:rgba(212,162,76,.72);
   align-self:start;padding-top:.18em;user-select:none;font-variant-numeric:tabular-nums;
 }
-.sec-head h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(1.75rem,4.2vw,2.875rem);
+.sec-head h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(var(--fs-2xl),4.2vw,var(--fs-4xl));
   letter-spacing:.16em;color:var(--fg);text-wrap:balance}
 .sec-head h2 small{display:block;margin-top:14px;font-family:var(--font-latin);font-size:var(--fs-2xs);
   letter-spacing:.4em;color:var(--she-gold);text-transform:uppercase}
@@ -428,7 +428,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
  * 隐式依赖，换容器就露横向滚动。改 transform:scale，不参与布局盒计算。 */
 .totem-ring.b{inset:0;border-style:dashed;opacity:.5;animation-delay:-1.4s;transform:scale(1.09);transform-origin:center}
 @keyframes ringPulse{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.035);opacity:.8}}
-.totem-copy h3{font-family:var(--font-display);font-weight:400;font-size:clamp(1.5rem,3.4vw,2.375rem);
+.totem-copy h3{font-family:var(--font-display);font-weight:400;font-size:clamp(var(--fs-xl),3.4vw,var(--fs-3xl));
   letter-spacing:.12em;margin:0 0 18px;text-wrap:balance}
 .totem-copy p{color:var(--fg-dim);margin:0 0 18px;text-wrap:pretty}
 .totem-steps{list-style:none;margin:26px 0 0;padding:0;counter-reset:s}
@@ -474,7 +474,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   padding:clamp(14px,2vw,22px) clamp(16px,2.4vw,26px);
   background:linear-gradient(to top,rgba(8,7,6,.92),rgba(8,7,6,.55) 62%,transparent);
 }
-.carve-cap h3{font-family:var(--font-display);font-weight:400;font-size:clamp(1.188rem,2.2vw,1.563rem);
+.carve-cap h3{font-family:var(--font-display);font-weight:400;font-size:clamp(var(--fs-lg),2.2vw,var(--fs-2xl));
   letter-spacing:.1em;color:var(--she-gold-light);margin:0 0 6px}
 .carve-cap p{margin:0;font-size:var(--fs-base);line-height:1.95;color:var(--fg-dim)}
 @media (max-width:760px){
@@ -659,7 +659,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .ar-copy{position:absolute;left:0;bottom:150px;z-index:5;padding:0 clamp(18px,4vw,54px);
   max-width:min(560px,92vw);pointer-events:none}
 .ar-copy h2{margin:0;font-family:var(--font-display);font-weight:400;
-  font-size:clamp(1.5rem,3.2vw,2.25rem);letter-spacing:.1em;color:var(--fg)}
+  font-size:clamp(var(--fs-xl),3.2vw,var(--fs-3xl));letter-spacing:.1em;color:var(--fg)}
 .ar-copy .ar-en{margin:6px 0 18px;font-family:var(--font-latin);font-size:var(--fs-2xs);
   letter-spacing:.26em;color:var(--she-gold);text-transform:uppercase}
 .ar-chapter-wrap{border-left:2px solid var(--she-vermilion);padding-left:16px}
@@ -715,7 +715,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 
 @media (max-width:760px){
   .ar-copy{bottom:168px}
-  .ar-copy h2{font-size:clamp(1.25rem,5.4vw,1.625rem)}
+  .ar-copy h2{font-size:clamp(var(--fs-lg),5.4vw,var(--fs-2xl))}
   .ar-copy p{font-size:var(--fs-sm)}
   .ar-dots{top:66px;gap:6px}
   .ar-dots button{padding:8px 12px;font-size:var(--fs-2xs)}
@@ -754,7 +754,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .culture-card:hover .no{color:var(--accent)}
 .culture-card .kick{font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.24em;color:var(--fg-faint)}
 .culture-card h3{margin:0;font-family:var(--font-display);font-weight:400;
-  font-size:clamp(1.25rem,2.4vw,1.875rem);letter-spacing:.06em;line-height:1.45;
+  font-size:clamp(var(--fs-xl),2.4vw,var(--fs-2xl));letter-spacing:.06em;line-height:1.45;
   word-break:keep-all;overflow-wrap:anywhere}
 .culture-card p{margin:0;color:var(--fg-dim);font-size:var(--fs-base);line-height:2;text-wrap:pretty;
   max-width:44em}
@@ -824,7 +824,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   transform:translateY(-4px) scale(1.015);
   filter:drop-shadow(0 34px 46px rgba(0,0,0,.68)) drop-shadow(0 6px 12px rgba(0,0,0,.55));
 }
-.merch-item.is-feature h3{font-size:clamp(1.5rem,2.6vw,2.1rem);margin-top:18px}
+.merch-item.is-feature h3{font-size:clamp(var(--fs-xl),2.6vw,var(--fs-3xl));margin-top:18px}
 .merch-item.is-feature .tier{color:var(--she-vermilion)}
 .merch-item.is-feature > p{max-width:34em;padding-bottom:26px}
 .merch-item{padding:0 0 30px;background:var(--she-ink);transition:background .45s var(--ease);
@@ -882,7 +882,7 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   letter-spacing:.2em;margin-bottom:3px;font-size:var(--fs-2xs)}
 .road-item.now .st{color:var(--she-vermilion)}
 .road-item h3{margin:0;font-family:var(--font-display);font-weight:400;
-  font-size:clamp(1.25rem,2.2vw,1.75rem);letter-spacing:.06em;white-space:nowrap}
+  font-size:clamp(var(--fs-xl),2.2vw,var(--fs-2xl));letter-spacing:.06em;white-space:nowrap}
 .road-item p{margin:0;font-size:var(--fs-sm);color:var(--fg-dim);line-height:1.9}
 .road-item a{position:absolute;inset:0;z-index:1}
 .road-item .go-mark{font-family:var(--font-sans);font-size:var(--fs-xs);letter-spacing:.2em;color:var(--she-gold);
@@ -916,7 +916,7 @@ section.foot{padding-top:var(--sec-y-loose)}
   box-shadow:0 24px 64px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.06)}
 .qr-box img{width:100%;height:auto;border-radius:4px}
 .foot-copy h2{margin:0 0 16px;font-family:var(--font-display);font-weight:400;
-  font-size:clamp(1.5rem,3.4vw,2.5rem);letter-spacing:.12em;text-wrap:balance;
+  font-size:clamp(var(--fs-2xl),3.4vw,var(--fs-4xl));letter-spacing:.12em;text-wrap:balance;
   /* 居中补偿（轮62）：<=720px 时 .foot-grid{text-align:center} 让它居中，
      letter-spacing 给末字也加空间，墨迹视觉中心左偏 ls/2 = 2.40px。
      收回一个字距使盒子宽度=墨迹宽度；桌面左对齐时不影响。 */
@@ -1178,7 +1178,7 @@ section.foot{padding-top:var(--sec-y-loose)}
   .hero-lead{display:none}
   .hero-meta{display:none}
   .hero-tag{margin:0}
-  .hero h1{font-size:clamp(1.75rem,5.2vw,2.4rem);margin-top:4px;line-height:1}
+  .hero h1{font-size:clamp(var(--fs-2xl),5.2vw,var(--fs-3xl));margin-top:4px;line-height:1}
   .hero-acts{margin-top:14px}
   .hero-grid{align-items:start;align-content:start;height:auto;min-height:0}
   .hero-inner{margin:0}
