@@ -3877,3 +3877,69 @@ CI 上该判据目前测的是降级态。若想让 CI 反映设计目标态，
 轮102  诊断输出 -> 定位差异真因是低端降级
 轮103  态别阈值（实测依据）-> 跨环境自洽
 四轮之后，这条判据才真正「能测到它声称要测的东西」。
+
+## 轮107 结果（2026-10-22 · 八维聚合器其实只测二维；委托前须验证受托方）
+
+### 一、design_audit 的「静默假通过」（U-322）
+它是目标明列八维度的聚合器，但 live 探针依赖已死的 daemon。实测：
+只打出 [静态] 一行、rc=0 —— `main` 里 `if l:` 直接跳过 None，
+既不报错也不提示。**色彩对比度/标题层级/响应式溢出/微交互 aria 四维
+从未被这个工具测过**，而它在台账里被记为「八维一键自检」已存在多轮。
+
+「静默跳过=假通过」第 6 次现身（U-160/204/237/265/307/本行），
+且这次藏在一个**聚合器**里 —— 聚合器最容易掩盖子项失效。
+
+迁 CDP 后：自起进程内服务、测前滚一遍页面触发 reveal、双视口、
+live 缺失时明确 SKIP 并列出未测维度。
+
+### 二、复活后报 4 项红，全是探针口径落后（U-323）
+用 computed style 实测证实：
+  · 触控项全是 `display:inline` 行内链接（WCAG 2.5.8 豁免，
+    touch_target_test 用「行盒>=24」双档，本探针无豁免）
+  · `#hero-title` 是 `background-clip:text` + `color:rgba(0,0,0,0)` →
+    探针把透明前景当深色，算出 1.00；两个 CTA 背景是 linear-gradient，
+    探针只找 solid backgroundColor 一路找到页面深底 → 1.05
+    （contrast_audit 早已修过这两个坑并计数豁免）
+  · 探针选择器还比既有判据窄（缺 select/summary/[role=button]/[tabindex]）
+
+### 三、委托而非重复实现（U-324）
+同一维度两套口径必然出现「一条 PASS 一条 FAIL」的假信号（本轮正是如此）。
+删掉 design_audit 的 tap/contrast 段，委托给带反向验证的两条既有判据；
+design_audit 只保留独有维度（标题层级/h1 唯一/动效/字阶档数/aria/横向溢出）。
+
+### 四、差点犯的新错：空委托（U-325）
+声称「委托给既有判据」后去实测 —— **两条同时取不到读数**
+（touch_target 报 FAIL、contrast_audit 报 SKIP）。
+若不去验证，就等于亲手制造覆盖缺口：一个维度从「被错误地测」变成「没人测」。
+
+> 凡「委托/移交」类改动，必须当场跑一遍受托方并确认它有真实读数。
+
+### 五、根因是我自己轮75/79 埋的坑（U-326）
+`touch_target_test` 的 `dump_dom` 是单次 chrome 调用，撞上 U-193 的
+「rc=0 但 stdout 为空」就报「自检无读数」。
+手动复刻同样调用**第一次就成功**（domlen=3607），差异仅在重试次数。
+轮75/79 迁移时只加了同源服务、漏了重试，当时能跑通就没复查。
+（contrast_audit 早在轮68 就加了重试，其 SKIP 同样是偶发撞上。）
+
+修后：touch_target 4 视口 PASS、contrast_audit 235 处达标 PASS。
+另删掉我上一版补丁残留的旧 cmd 构造（死代码，功能无碍但误导后来人）。
+
+> **迁移判据时，已知环境坑要一并带上新实现** ——「这次跑通了」不构成证据。
+
+### 六、抽共享 CDP 模块（U-327）
+新增 `tools/cdp_client.py`：Chrome（起进程/建页/navigate/wait_for/screenshot）
++ SiteServer + find_chrome（本机路径 + PATH 回退供 CI）。
+两个必踩的坑写进 docstring：`--remote-allow-origins=*`（否则 WS 403）、
+`/json/new` 只收 PUT（405，改用 Target.createTarget）。
+
+### 读数
+- design_audit 八维自检：静态 + 双视口实时，RESULT: PASS
+- touch_target_test：4 个移动视口独立交互目标均 >=44px，PASS
+- contrast_audit：2 视口共 235 处文本全部达标，PASS
+- 全量静态门禁 39/39 PASS；CI run 待确认；sync 0/0
+- 台账 327 号唯一连续
+
+### 本轮最有价值的一步
+不是把 design_audit 修好，而是**报红后没有去改产品**。
+若当时按报红去「修」行内链接尺寸和渐变文字对比度，
+会把一个已达标的设计改坏，还会引入与既有判据冲突的口径。
