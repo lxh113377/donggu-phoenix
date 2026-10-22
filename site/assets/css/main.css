@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:55;
+  --build:56;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -106,7 +106,7 @@ body{
 img,svg,canvas{display:block;max-width:100%}
 a{color:var(--she-gold);text-decoration:none;text-underline-offset:.25em}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-:focus-visible{outline:2px solid var(--she-gold);outline-offset:4px;border-radius:4px}
+:focus-visible{outline:2px solid var(--she-gold);outline-offset:4px;border-radius:var(--radius-lg)}
 ::selection{background:rgba(179,32,44,.55);color:#FFF6E8}
 h1,h2,h3,h4,p,dl,dd{margin:0}
 [hidden]{display:none!important}
@@ -914,7 +914,7 @@ section.foot{padding-top:var(--sec-y-loose)}
 @media (max-width:720px){.foot-grid{grid-template-columns:1fr;text-align:center;justify-items:center}}
 .qr-box{padding:var(--sp-snug);background:var(--she-paper);border-radius:14px;width:min(232px,58vw);
   box-shadow:0 24px 64px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.06)}
-.qr-box img{width:100%;height:auto;border-radius:4px}
+.qr-box img{width:100%;height:auto;border-radius:var(--radius-lg)}
 .foot-copy h2{margin:0 0 16px;font-family:var(--font-display);font-weight:400;
   font-size:clamp(var(--fs-2xl),3.4vw,var(--fs-4xl));letter-spacing:.12em;text-wrap:balance;
   /* 居中补偿（轮62）：<=720px 时 .foot-grid{text-align:center} 让它居中，
@@ -933,7 +933,7 @@ section.foot{padding-top:var(--sec-y-loose)}
   font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.1em;color:var(--fg-faint);
   position:relative}
 .seal-mark{position:absolute;right:var(--gut);top:clamp(10px,2vw,26px);width:74px;height:74px;
-  display:grid;place-items:center;border:2px solid rgba(179,32,44,.65);border-radius:4px;
+  display:grid;place-items:center;border:2px solid rgba(179,32,44,.65);border-radius:var(--radius-lg);
   color:rgba(217,79,43,.85);font-family:var(--font-display);font-size:var(--fs-2xl);
   transform:rotate(-6deg);opacity:.9;letter-spacing:.1em;pointer-events:none}
 @media (max-width:720px){.seal-mark{top:6px;right:50%;transform:translateX(50%) rotate(-6deg);

@@ -52,10 +52,87 @@ TARGETS = [
     ('主站 main.css', os.path.join(BASE, 'site', 'assets', 'css', 'main.css')),
     ('后台 admin/index.html', os.path.join(BASE, 'site', 'admin', 'index.html')),
 ]
-FAMILY = r'(?:sp|sec-y|fs|she|fg|bg|panel|line|gold|red|ok)[\w-]*'
+# 轮138 扩到 radius/dur/ease/font：这三类同样会「定义了没人用」。
+FAMILY = (r'(?:sp|sec-y|fs|she|fg|bg|panel|line|gold|red|ok'
+            r'|radius|dur|ease|font)[\w-]*')
 DEF = re.compile(r'(--' + FAMILY + r')\s*:\s*([^;}]+)')
 USE_VAR = re.compile(r'var\(\s*(--[\w-]+)\s*[,)]')
 USE_GPC = re.compile(r"getPropertyValue\(\s*['\"](--[\w-]+)['\"]")
+
+
+# 令牌族 -> 它负责的属性域。值只有出现在这个域里，才算「绕过了该令牌」。
+# 轮138 实测教训：--radius-lg 是 4px，不限定域会把 padding/gap/
+# outline-offset/filter 里的 4px 也算成绕过（18 处里只有 3 处真是圆角）。
+DOMAINS = [
+    (r'--radius', r'border-radius(?:-\w+)?', 'border-radius*'),
+    (r'--(?:sp|sec-y)',
+     r'(?:padding|margin|gap|row-gap|column-gap)(?:-\w+)?',
+     'padding/margin/gap*'),
+    (r'--fs-', r'font-size', 'font-size'),
+    (r'--(?:dur|ease)', r'(?:transition|animation)(?:-\w+)?',
+     'transition/animation'),
+    (r'--font-', r'font(?:-family)?', 'font/font-family'),
+]
+
+
+JS_DIR = os.path.join(BASE, 'site', 'assets', 'js')
+
+
+def js_referenced_tokens():
+    """扫 JS，收集被 getPropertyValue('--x') / var(--x) 引用的令牌名。
+
+    轮138 修的引用漏看：canvas 字体改成运行时读 CSS 变量后，
+    --font-kai 的使用点在 JS 里；判据只扫 CSS 就报它「未被引用」，
+    而 INFO 文案写着「删留是设计决策」—— 照着删会静默打断 canvas 字体。
+    """
+    names = set()
+    try:
+        files = sorted(os.listdir(JS_DIR))
+    except OSError:
+        return names
+    for f in files:
+        if not f.endswith('.js'):
+            continue
+        try:
+            t = io.open(os.path.join(JS_DIR, f), encoding='utf-8',
+                        errors='ignore').read()
+        except OSError:
+            continue
+        t = re.sub(r'/\*.*?\*/', ' ', t, flags=re.S)   # 注释不算引用
+        t = re.sub(r'^\s*//.*$', ' ', t, flags=re.M)
+        # 通用口径：任何字符串字面量里出现的 --令牌名 都算引用。
+        # 轮138 教训：第一版只匹配 getPropertyValue('--x')，于是
+        # fontStack('--font-kai', …) 这种自定义辅助函数被漏掉，判据把
+        # **正在被使用的令牌**报成「未被引用，删留是设计决策」——
+        # 照着删会静默打断 canvas 字体。为具体函数名写特例正则必然再漏，
+        # 故改成不依赖函数名的通用扫描。
+        for lit in re.findall(r"['\"]([^'\"\n]{0,90})['\"]", t):
+            names |= set(re.findall(r'--[\w-]+', lit))
+    return names
+
+
+def prop_domain(name):
+    """返回 (属性域正则, 可读名)；正则 None 表示全属性（颜色族）。"""
+    for row in DOMAINS:
+        if re.match(row[0], name):
+            return row[1], row[2]
+    return None, '全属性'
+
+
+def literal_count(body, val, prop_pat):
+    """val 作为字面量出现在 prop_pat 属性域内的次数。
+
+    数字边界必须有（轮138 修的潜伏 bug）：re.escape('4px') 会匹配
+    14px/24px/44px/104px，实测 main.css 里无边界 86 处、加边界 18 处。
+    """
+    pat = r'(?<![\w.])' + re.escape(val) + r'(?![\w.])'
+    if prop_pat is None:
+        return len(re.findall(pat, body, re.I))
+    n = 0
+    for m in re.finditer(r'([a-z-]+)\s*:\s*([^;}]+)', body, re.I):
+        if re.fullmatch(prop_pat, m.group(1).strip(), re.I):
+            n += len(re.findall(pat, m.group(2), re.I))
+    return n
 
 
 def strip_comments(s):
@@ -71,8 +148,20 @@ def css_of(text, path):
     return '\n'.join(re.findall(r'<style[^>]*>(.*?)</style>', text, flags=re.S))
 
 
-def analyze(css_src):
-    """css_src 须已剥注释。返回 (fails, infos, 令牌数)。"""
+def defined_tokens(css_src):
+    """:root 里定义的令牌名集合（与 analyze 同一取法，避免两套口径）。"""
+    i = css_src.find(':root')
+    if i < 0:
+        return set()
+    j = css_src.find('}', i)
+    return {m.group(1) for m in DEF.finditer(css_src[i:j])}
+
+
+def analyze(css_src, extra_used=None):
+    """css_src 须已剥注释。返回 (fails, infos, 令牌数)。
+
+    extra_used：CSS 之外的引用集（如 JS 的 getPropertyValue）。
+    """
     i = css_src.find(':root')
     if i < 0:
         return [], [], 0
@@ -82,6 +171,8 @@ def analyze(css_src):
     if not defs:
         return [], [], 0
     used = set(USE_VAR.findall(css_src)) | set(USE_GPC.findall(css_src))
+    if extra_used:
+        used |= set(extra_used)
     for m in DEF.finditer(css_src):
         used |= set(USE_VAR.findall(m.group(2)))
     fails, infos = [], []
@@ -90,15 +181,25 @@ def analyze(css_src):
             continue
         # 值是否以字面量写在 CSS 里（排除 :root 的定义行本身）
         body = css_src[:i] + ' ' * (j - i) + css_src[j:]
-        lit = len(re.findall(re.escape(val), body, re.I))
+        dom, scope = prop_domain(name)
+        lit = literal_count(body, val, dom)
         if lit:
-            fails.append('%s 定义了但零引用，其值 %s 仍以字面量写在 CSS 里'
+            fails.append('%s 定义了但零引用，其值 %s 仍以字面量写在 %s 里'
                          '（%d 处）—— 改令牌不传导，应改为 var(%s)'
-                         % (name, val, lit, name))
+                         % (name, val, scope, lit, name))
         else:
-            infos.append('%s（值 %s）未被引用，但值也没写在 CSS 里 —— '
-                         '属调色板/供给冗余，删留是设计决策' % (name, val))
+            infos.append('%s（值 %s）未被引用，且其值没以字面量出现在 %s '
+                         '域内 —— 属调色板/供给冗余，删留是设计决策'
+                         % (name, val, scope))
     return fails, infos, len(defs)
+
+
+# 自检项名册：供结论文案动态计数（同 U-431，计数写死会变成假话）
+SELFTEST_LABELS = [
+    'S1 域内字面量判红', 'S2 var() 引用不误报', 'S6 属性域限定',
+    'S7 JS 引用计入', 'S3 值未写在域内只 INFO',
+    'S4 getPropertyValue 引用', 'S5 注释不算引用',
+]
 
 
 def selftest():
@@ -119,6 +220,29 @@ def selftest():
           '不误报' if ok2 else '误报'))
     if not ok2:
         bad.append('S2 误报正常引用')
+    # S6 同值但出现在别的属性域 -> 不得算绕过（防扩口径后误报）
+    s6a = ':root{--radius-lg:4px}\n.a{border-radius:4px}\n'
+    f6a, _, _ = analyze(strip_comments(s6a))
+    s6b = ':root{--radius-lg:4px}\n.a{padding:4px}\n'
+    f6b, i6b, _ = analyze(strip_comments(s6b))
+    ok6 = bool(f6a) and not f6b and len(i6b) == 1
+    print('  [%s] S6 4px 在 border-radius 里判红、在 padding 里只 INFO -> %s'
+          % ('ok' if ok6 else 'X',
+             '正确' if ok6 else '域限定失效（域内%s 域外%s）'
+             % (len(f6a), len(f6b))))
+    if not ok6:
+        bad.append('S6 属性域限定失效')
+    # S7 只被 JS 引用的令牌不得报「未使用」
+    s7 = ':root{--font-x:"Foo Bar",serif}\n.a{color:red}\n'
+    f7a, i7a, _ = analyze(strip_comments(s7))
+    f7b, i7b, _ = analyze(strip_comments(s7), {'--font-x'})
+    ok7 = (not f7a) and (not f7b) and len(i7a) == 1 and not i7b
+    print('  [%s] S7 只被 JS getPropertyValue 引用 -> %s'
+          % ('ok' if ok7 else 'X',
+             '不计为未使用（正确）' if ok7
+             else '仍报未引用（会被诱导删掉在用令牌）'))
+    if not ok7:
+        bad.append('S7 未把 JS 引用计入使用')
     # S3 零引用但值没写在 CSS 里 -> 只 INFO
     s3 = ':root{--she-x:#123456}\n.a{color:red}\n'
     f3, i3, _ = analyze(strip_comments(s3))
@@ -163,6 +287,21 @@ def main():
     infos = []
     untested = []
     total = 0
+    js_used = js_referenced_tokens()
+    # 打印只列确实在 :root 定义过的名字。JS 里另有 setProperty 写入的
+    # 运行时自定义属性（鼠标位置、滚动量、错峰延迟），它们不在 :root、
+    # 也不参与判定（判定只对 defined 里的名字做），但混在输出里会让人
+    # 误以为它们是设计令牌。
+    defined_all = set()
+    for _label, _path in TARGETS:
+        if os.path.exists(_path):
+            defined_all |= defined_tokens(strip_comments(css_of(
+                io.open(_path, encoding='utf-8', errors='ignore').read(),
+                _path)))
+    js_real = sorted(js_used & defined_all)
+    if js_real:
+        print('  JS 侧引用了 %d 个 :root 令牌：%s'
+              % (len(js_real), ' '.join(js_real)))
     for label, path in TARGETS:
         if not os.path.exists(path):
             untested.append(label)
@@ -170,7 +309,7 @@ def main():
             continue
         src = strip_comments(css_of(io.open(
             path, encoding='utf-8', errors='ignore').read(), path))
-        f, inf, n = analyze(src)
+        f, inf, n = analyze(src, js_used)
         if n == 0:
             untested.append('%s（解析不到令牌）' % label)
             print('[%s] 解析不到 :root 设计令牌 -> 未测' % label)
@@ -196,8 +335,8 @@ def main():
         print('RESULT: SKIP  未测面：%s（未测不等于通过）' % '、'.join(untested))
         return 0
     print('RESULT: PASS  两站 %d 个设计令牌无「假供给」（零引用且值仍以字面量'
-          '写在 CSS 里的情况为 0），且 6 项自检证明该判的判得、不该判的不误伤'
-          % total)
+          '写在 CSS 里的情况为 0），且 %d 项自检证明该判的判得、不该判的不误伤'
+          % (total, len(SELFTEST_LABELS)))
     return 0
 
 
