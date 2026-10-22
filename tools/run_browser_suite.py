@@ -70,6 +70,10 @@ SUITE = [
     ('tools/ar_scenes_test.py', False, 'AR 三场景'),
     ('tools/ar_stamp_test.py', False, '集章持久化'),
     ('tools/ar_focus_test.py', False, 'AR 焦点闭环'),
+    # 轮108：AR 播放判据的反向验证（破坏产品行为：停 tick / 漏 register /
+    # 摘掉 __ar，三种真故障都必须判红）。起 4 次 chrome 且每次要等 AR 播完，
+    # 成本高，故只进本地套件、不进 CI —— 主判据 ar_playback_test 已在 CI。
+    ('tools/reverse_ar_playback.py', False, 'AR 播放判据反向验证（4 故障注入）'),
     # 轮85（U-01）：真机前哨 —— 三档移动端 UA/视口/4G 限速/CPU 降频，实测首屏+AR+旁白+降级。
     # 自带双向自检（好夹具必须绿、坏夹具必须红），且自起同源服务，不依赖 8791。
     ('tools/preflight_device_test.py', False, '真机前哨（3 档模拟移动端 + AR 深检）'),

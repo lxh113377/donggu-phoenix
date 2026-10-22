@@ -86,6 +86,15 @@ jobs:
       - name: Visual balance (CDP)
         run: python tools/visual_balance_test.py
 
+      # AR 核心功能端到端（轮108）。旧版依赖 agent-browser，
+      # 而其二进制在本机根本不存在，脚本只 print 不判定、退出码恒 0 ——
+      # 等于本站核心功能从未被验证过（本地与 CI 都看不出）。
+      # 重写为 CDP 版：三段场景各自验「时间推进 + canvas 写入 + fps + 落章」，
+      # 并做数据/注册表对账。反向验证 4 用例证明三种真故障都能判红。
+      # 缺 chrome 时 SKIP（环境问题），AR 真坏才 FAIL。
+      - name: AR playback (core function, CDP)
+        run: python tools/ar_playback_test.py
+
       # 守卫自身的自检：保证「零样本必 SKIP」不会被悄悄改坏。
       # 数据字段消费者检查也放这里（纯静态、无浏览器依赖）。
       - name: Guard self-test
