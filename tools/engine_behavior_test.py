@@ -124,32 +124,51 @@ def judge_hud(cps, wps):
     return fails, unmeasurable
 
 
-def ps(cmd, timeout=90):
-    try:
-        r = subprocess.run([PS, '-NoProfile', '-Command', cmd], capture_output=True,
-                           text=True, cwd=BASE, timeout=timeout, encoding='utf-8', errors='replace')
-        return ((r.stdout or '') + (r.stderr or '')).strip()
-    except subprocess.TimeoutExpired:
-        return 'TIMEOUT'
+# 轮123 迁移：ps() 从 PowerShell 调 agent-browser 改为 ab_compat。
+_AB = None
 
+
+def _ab():
+    global _AB
+    if _AB is None:
+        from ab_compat import AbSession
+        _AB = AbSession()
+    return _AB
+
+
+def ps(cmd, timeout=90):
+    return _ab().run(cmd, timeout=timeout)
 
 def run_probe(name, code):
     tmp = os.path.join(BASE, '_qa', '_eb_%s.js' % name)
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     open(tmp, 'w', encoding='utf-8').write(code)
     out = ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "_qa/_eb_%s.js")' % name)
-    for line in reversed(out.splitlines()):
-        s = line.strip()
-        if s.startswith('"') and s.endswith('"'):
-            try:
-                return json.loads(json.loads(s))
-            except Exception:
-                continue
-    return None
+    # 轮123：CDP 直接返回已解析值/单层 JSON 字符串，**不再逐行找「引号包裹的行」**。
+    # 原版那个循环是 agent-browser 的输出格式特性（每行一个带引号的值）。
+    # 照搬过来会永远进不了分支 -> 探针「无数据」-> 整条判据 SKIP（我第一版就是这样）。
+    if out is None or out == '':
+        return None
+    if isinstance(out, (dict, list)):
+        return out
+    try:
+        return json.loads(out)
+    except Exception:
+        return None
 
 
 def main():
-    ps('agent-browser open "http://127.0.0.1:8791/"')
+    # 轮123：判据自己起服务，不再假设外部已起 8791（失败形态是 SKIP）
+    _srv = None
+    try:
+        from cdp_client import SiteServer
+        _srv = SiteServer(os.path.join(BASE, 'site'), port=8791)
+        _base = _srv.url('/index.html')
+    except Exception as _e:
+        print('RESULT: SKIP  服务起不来: %s' % _e)
+        return 0
+
+    ps('agent-browser open "%s"' % _base)
     time.sleep(1.2)
     clear = os.path.join(BASE, '_qa', 'clear_sw.js')
     if os.path.exists(clear):
@@ -157,7 +176,7 @@ def main():
         time.sleep(1.0)
     ps('agent-browser set viewport 1440 900')
     time.sleep(0.5)
-    ps('agent-browser open "http://127.0.0.1:8791/?eb=%d"' % int(time.time() * 1000))
+    ps('agent-browser open "%s?eb=%d"' % (_base, int(time.time() * 1000)))
     ps('agent-browser wait --load networkidle')
     time.sleep(3.5)
 
