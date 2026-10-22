@@ -130,7 +130,12 @@ class AbSession(object):
         if verb == 'eval':
             self._ensure()
             js = self._load_js(arg)
-            out = self._page.eval_js(js, timeout=max(5, min(timeout, 60)))
+            # await_promise=True：agent-browser 的 eval 会等 Promise，
+            # 而 Runtime.evaluate 默认不等 —— 不开的话 async IIFE 的返回值全丢，
+            # 判据会拿到 {} 并静默 SKIP（轮119 实测 ar_focus 的 PROBE 正是这种）。
+            # 对同步表达式这是无害的，故一律开启。
+            out = self._page.eval_js(js, timeout=max(5, min(timeout, 60)),
+                                     await_promise=True)
             return _stringify(out)
         raise AbCompatError('不支持的动词: %s（兼容层只实现 open/set/wait/eval）' % verb)
 

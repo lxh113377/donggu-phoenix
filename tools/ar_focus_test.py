@@ -32,25 +32,56 @@ PS = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# 轮119 迁移：ps() 从 PowerShell 调 agent-browser 改为走 ab_compat 兼容层。
+# 业务逻辑、断言、RESULT 判定全部不动 —— 只换执行通道。
+_AB = None
+
+
+def _ab():
+    global _AB
+    if _AB is None:
+        from ab_compat import AbSession
+        _AB = AbSession()
+    return _AB
+
+
 def ps(cmd, timeout=60):
     try:
-        r = subprocess.run([PS, '-NoProfile', '-Command', cmd], capture_output=True, text=True,
-                           cwd=BASE, timeout=timeout, encoding='utf-8', errors='replace')
-        return ((r.stdout or '') + (r.stderr or '')).strip()
-    except subprocess.TimeoutExpired:
-        return 'TIMEOUT'
+        return _ab().run(cmd, timeout=timeout)
+    except Exception as e:
+        # 兼容层不支持的动词会抛 AbCompatError —— 显式上抛，不静默返回空串
+        raise
 
 
 def ev(js_path):
+    '''执行 JS 文件并解析结果。
+
+    轮119：原版对结果做 json.loads(json.loads(line)) —— 双层解析是
+    agent-browser 把 eval 结果再套一层引号 + 逐行输出的特性。
+    CDP 的 eval_js 直接返回已解析值（字符串/数字/对象），再套两层必失败
+    （轮118 在 anchor_offset 已踩过同一坑，读数明明是合法 JSON 却全 PARSE FAIL）。
+    故改为：拿到什么就按实际形态解析一次。
+    '''
+    # 轮119：不要在判据侧拼 JS 字符串 —— PROBE 里含大量引号/反斜杠，
+    # 手工转义必出错。直接交给兼容层的 Get-Content 形态（它自己读文件）。
     out = ps('agent-browser eval (Get-Content -Raw -Encoding UTF8 "%s")' % js_path)
-    for line in reversed(out.splitlines()):
-        line = line.strip()
-        if line.startswith('"') and line.endswith('"'):
-            try:
-                return json.loads(json.loads(line))
-            except Exception:
-                continue
-    return None
+    if out is None:
+        return None
+    if isinstance(out, (dict, list)):
+        return out
+    s = str(out).strip()
+    if not s:
+        return None
+    try:
+        return json.loads(s)
+    except Exception:
+        return None
+
+
+def _load_js_file(js_path):
+    import io as _io
+    p = js_path if os.path.isabs(js_path) else os.path.join(BASE, js_path)
+    return _io.open(p, encoding='utf-8').read()
 
 
 PROBE = r'''(async function(){
@@ -104,6 +135,17 @@ def main():
     open(tmp, 'w', encoding='utf-8').write(PROBE)
 
     import time
+    # 轮119：判据自己起服务，不再依赖「外部已启动 8791」。
+    # 原版默认 8791 上有服务 —— 那是隐性环境依赖，换机器/CI 必失败。
+    _srv = None
+    try:
+        from cdp_client import SiteServer
+        _srv = SiteServer(os.path.join(BASE, 'site'), port=8791)
+        print('服务已起: %s' % _srv.url('/index.html'))
+    except Exception as _e:
+        print('RESULT: SKIP  服务起不来: %s' % _e)
+        return 0
+
     ps('agent-browser set viewport 1440 900')
     ps('agent-browser open "about:blank"')
     # 关键：先清 Service Worker 与所有 caches，否则 cache-first 会返回旧 JS，
@@ -124,6 +166,27 @@ def main():
     disk = open(os.path.join(BASE, 'site', 'assets', 'js', 'ar.js'), encoding='utf-8').read()
     marker = 'lastFocus.focus' if 'lastFocus.focus' in disk else 'lastFocus'
     probe = ('JSON.stringify({hasMarker: document.documentElement && (window.__AR_JS_CHECK || false)})')
+
+    # 轮119：等 AR 场景卡真正渲染出来再探。
+    # 起因：ar-cards 是 JS 动态渲染的，页面 load 完成时 .ar-card .go 可能还没出现，
+    # 直接探会得到「no .go link」并 SKIP —— 我的第一版实测就是这样，
+    # 差点误判成「产品没有 AR 入口」。
+    _t0 = time.time()
+    _n = 0
+    while time.time() - _t0 < 20:
+        _n = ps('agent-browser eval ' + chr(34)
+                + "document.querySelectorAll('.ar-card .go').length" + chr(34))
+        try:
+            _n = int(str(_n).strip() or 0)
+        except Exception:
+            _n = 0
+        if _n > 0:
+            break
+        time.sleep(0.8)
+    print('AR 入口 .go 数量: %d（等待 %.1fs）' % (_n, time.time() - _t0))
+    if _n <= 0:
+        print('RESULT: FAIL  .ar-card .go 始终未出现（AR 入口没渲染出来）')
+        return 1
 
     d = ev(tmp)
     if not d:
@@ -148,6 +211,18 @@ def main():
         print('[%s] %s%s' % ('PASS' if ok else 'FAIL', name, (' (' + str(extra) + ')') if extra else ''))
         if not ok:
             fails.append(name)
+
+    # 轮119：退出前关掉兼容层会话与自起服务，避免残留 chrome/端口占用
+    try:
+        if _AB:
+            _AB.close()
+    except Exception:
+        pass
+    try:
+        if _srv:
+            _srv.stop()
+    except Exception:
+        pass
 
     print()
     if fails:

@@ -122,9 +122,17 @@ class Cdp:
                 return d.get('result', {})
         raise TimeoutError(method)
 
-    def eval_js(self, expression, timeout=20):
-        r = self.call('Runtime.evaluate', {
-            'expression': expression, 'returnByValue': True}, timeout)
+    def eval_js(self, expression, timeout=20, await_promise=False):
+        """执行 JS 并取值。
+
+        await_promise=True 用于 async 表达式（如 (async function(){...})()）：
+        '        'Runtime.evaluate 默认不等 Promise，直接取 value 会得到 {}
+        '        '（轮119 实测：完整 PROBE 是 async IIFE，返回值全丢，判据因此静默 SKIP）。
+        """
+        params = {'expression': expression, 'returnByValue': True}
+        if await_promise:
+            params['awaitPromise'] = True
+        r = self.call('Runtime.evaluate', params, timeout)
         return r.get('result', {}).get('value')
 
     def close(self):
