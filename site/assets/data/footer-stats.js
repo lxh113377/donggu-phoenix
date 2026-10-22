@@ -12,7 +12,7 @@ var DG_FOOTER_STATS = {
     "days": 48,
     "demoDay": "2026-10-22"
   },
-  "uniques": 10413,
-  "pv": 13000,
+  "uniques": 10765,
+  "pv": 13007,
   "label": "演示样本"
 };

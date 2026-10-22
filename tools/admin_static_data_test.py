@@ -216,6 +216,55 @@ def trend_problems(d):
             bad.append("有单日浏览低于 60（%d），看着像断档" % min(dpv))
     return bad
 
+def tens_problems(d):
+    """G 条（轮128 口径）：访问数据计数值严禁是 10 的倍数。
+
+    只约束「访问数据」本身，排除两类：
+      · 结构字段：周序号 idx、所属周 week、天数 days、窗口天数、seed
+        —— 它们不是测量值，7 天一周就该是 7。
+      · 图表坐标轴刻度：niceScale 刻意产出 500/1000/1500，那是可读性设计，
+        不是数据（判据扫的是数据文件，天然不含刻度，这里注明以免误改）。
+    0 豁免：0 表示「该项未发生」，不是编造的整十。
+    """
+    COUNT_KEYS = {"pv", "uv", "scenes", "summon", "events", "n", "u"}
+    vals = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k in COUNT_KEYS and isinstance(v, int) and not isinstance(v, bool):
+                    vals.append(v)
+                else:
+                    walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+
+    walk(d)
+    tens = sorted({v for v in vals if v != 0 and v % 10 == 0})
+    out = []
+    if tens:
+        out.append("有 %d 个访问数据是 10 的倍数（老大口径严禁）：%s"
+                   % (len([v for v in vals if v != 0 and v % 10 == 0]),
+                      ', '.join(format(x, ',') for x in tens[:6])))
+
+    # 派生值：后台指标卡「周均浏览」是前端 Math.round(pv / 周数) 现算的，
+    # 数据文件里根本没有这个数 —— 只扫文件会漏掉它（轮128 发现的盲区）。
+    # 同理「峰值」虽取自 weeks 里已有的 pv（已被上面覆盖），但均值是新数。
+    try:
+        t = d.get('totals', {})
+        nw = len(d.get('weeks') or [])
+        pv = t.get('pv')
+        if isinstance(pv, int) and nw:
+            avg = int(round(pv / float(nw)))
+            if avg and avg % 10 == 0:
+                out.append("派生值「周均浏览」= round(%s / %d) = %s 是 10 的倍数"
+                           % (format(pv, ','), nw, format(avg, ',')))
+    except Exception:
+        pass
+    return out
+
+
 def staticity_problems(admin_html, analytics_js, index_html):
     """D 条：后台与页脚不得再走实时接口 / 登录 / 定时器。入参须已剥注释。"""
     bad = []
@@ -298,6 +347,20 @@ def selftest():
             'admin-stats.js', strip_comments(commented, False),
             'footer-stats.js analytics.js')):
         bad.append('D 条自检：注释里的接口名被当成行为（误报）')
+    # G 条自检：整十计数必须被抓到
+    if not any('10 的倍数' in x for x in tens_problems(d)):
+        bad.append('G 条自检：pv=90/uv=60 这类整十未被抓到')
+    # G 条自检：全部非整十时不得误报
+    d_ok = {"weeks": [{"idx": 1, "pv": 1483, "uv": 1207, "events": 2141}],
+            "days": [{"pv": 211, "uv": 173}],
+            "totals": {"pv": 1483, "langs": [{"l": "zh", "n": 1483}]}}
+    if tens_problems(d_ok):
+        bad.append('G 条自检：非整十数据被误报（%s）' % tens_problems(d_ok))
+    # G 条自检：派生值整十（数据文件里看不出来）必须被抓到
+    d_derived = {"weeks": [{"idx": 1, "pv": 1000}, {"idx": 2, "pv": 1000}],
+                 "days": [], "totals": {"pv": 2000}}
+    if not any('周均浏览' in x for x in tens_problems(d_derived)):
+        bad.append('G 条自检：派生值「周均」整十未被抓到（只扫文件的盲区）')
     return bad
 
 
@@ -308,7 +371,9 @@ def main():
         for b in bad_self:
             print('  -', b)
         return 1
-    print('[PASS] 自检 6 类退化样本全部能被抓到（尺子有效）')
+    # 轮128：原先写死「6 类」，加了 G 条自检后就成了假话（声明与实际不符）。
+    # 改为不报具体条数 —— 计数类文案一旦写死就会随判据演进而失真。
+    print('[PASS] 自检退化样本全部能被抓到（尺子有效）')
 
     want = (ADMIN, ANALYTICS, INDEX, DATA_ADMIN, DATA_FOOTER, GEN_REL)
     # 守卫：这个列表只接受相对正斜杠路径，混进绝对路径就当场报错，
@@ -391,6 +456,13 @@ def main():
     print("[%s] 形态：周序列非单调、有涨有跌、峰谷比适中（非线性）" % (
         "PASS" if not bf else "FAIL"))
     fails.extend("形态不像随机流量：" + x for x in bf)
+
+    # G) 口径：严禁访问数据出现 10 的倍数（老大轮128 追加要求）
+    checked += 1
+    bg = tens_problems(d)
+    print('[%s] 口径 G：访问数据无一为 10 的倍数' % (
+        'PASS' if not bg else 'FAIL'))
+    fails.extend('随机性不达标：' + x for x in bg)
 
     # E) 页脚与后台同源同数
     checked += 1

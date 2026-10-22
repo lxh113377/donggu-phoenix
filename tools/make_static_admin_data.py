@@ -76,7 +76,8 @@ END = DEMO_DAY - dt.timedelta(days=DEMO_DAY.weekday() + 1)   # 2026-10-18
 N_DAYS_BASE = (END - START).days + 1
 
 SEED = 20261144                       # 筛选标准见 tools/pick_seed_notes.md
-PV_TOTAL = 13000                      # 浏览总量（口径 1；全部事件另算）
+PV_TOTAL = 13007                      # 浏览总量（口径 1；全部事件另算）
+                                      # 轮128：原 13000。老大口径「严禁出现 10 的倍数」
 WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 # 单一权威文案：后台横幅、页脚、docs 都读这一个字段，避免三处各写一份而漂移
 DEMO_NOTE = ("演示用静态样本：数值一次生成、固定不变，不随真实访问更新。"
@@ -146,11 +147,127 @@ def weekly_levels(rnd, spans):
     return [raw[i] * spans[i][2] / 7.0 for i in range(n)]
 
 
+def detensor(vals, rnd, caps=None):
+    """**守恒**去整十：成对 ±1，sum(vals) 不变。
+
+    用于「之和有对账义务」的列表：
+      · week_pv —— 之和必须等于 PV_TOTAL，且逐日按它二次分配
+      · 各维度排行 —— 之和必须等于对应总量（check() 的底线对账）
+
+    为什么不能只换种子：221 个计数值若各自独立、1/10 概率落整十，
+    全部非整十的概率 0.9^221 = 7.7e-11，搜索不可能找到，
+    必须在生成器里显式去整十（轮128 实测算过）。
+
+    caps 给每个元素设上限（如日访客不得超过同日浏览）。0 豁免。
+    """
+    n = len(vals)
+    if caps is None:
+        caps = [10 ** 12] * n
+    todo = [i for i in range(n) if vals[i] != 0 and vals[i] % 10 == 0]
+    rnd.shuffle(todo)
+    for i in todo:
+        if vals[i] % 10:
+            continue
+        moved = False
+        for delta in rnd.sample([1, -1, 2, -2], 4):
+            nv = vals[i] + delta
+            if nv % 10 == 0 or nv <= 0 or nv > caps[i]:
+                continue
+            partners = [j for j in range(n) if j != i]
+            rnd.shuffle(partners)
+            for j in partners:
+                mv = vals[j] - delta
+                if mv <= 0 or mv % 10 == 0 or mv > caps[j]:
+                    continue
+                vals[i], vals[j] = nv, mv
+                moved = True
+                break
+            if moved:
+                break
+    return vals
+
+
+def untensor_weeks(weeks, rnd):
+    """微调逐周 uv/scenes/summon，使明细与五类总量都不落在 10 的倍数上。
+
+    与 detensor 的区别：这里**不要求守恒** —— 累计访客/场景/唤凤/事件
+    本来就是从逐周求和派生的（check() 的对账是「周相加 == 累计」，
+    两边同时变，改一个元素不会破坏它）。
+    而周浏览量 pv 不能动：它是逐日分配的依据，动了要重算整周逐日。
+
+    收敛不了返回 False 由调用方报错，而不是硬写一组不合规的数。
+    """
+    def ok(x):
+        return x != 0 and x % 10 != 0
+
+    for _ in range(900):
+        for w in weeks:
+            w["events"] = w["pv"] + w["scenes"] + w["summon"]
+        tot = {}
+        for k in ("pv", "uv", "scenes", "summon", "events"):
+            tot[k] = sum(w[k] for w in weeks)
+        bad_tot = [k for k, v in tot.items() if not ok(v)]
+        dirty = []
+        for w in weeks:
+            for k in ("uv", "scenes", "summon", "events"):
+                if not ok(w[k]):
+                    dirty.append((w, k))
+        if not bad_tot and not dirty:
+            return True
+
+        def try_move(w, fk, d):
+            nv = w[fk] + d
+            if nv < 0 or nv > w["pv"] or nv % 10 == 0 or nv == 0:
+                return None
+            trial = dict(w)
+            trial[fk] = nv
+            trial["events"] = trial["pv"] + trial["scenes"] + trial["summon"]
+            if not ok(trial["events"]):
+                return None
+            nt = {}
+            for kk in ("uv", "scenes", "summon", "events"):
+                nt[kk] = sum((trial if x is w else x)[kk] for x in weeks)
+            if not all(ok(v) for v in nt.values()):
+                return None
+            return trial
+
+        pool = list(dirty) if dirty else []
+        if bad_tot and not pool:
+            k = rnd.choice(bad_tot)
+            for w in weeks:
+                for fk in ("summon", "scenes", "uv"):
+                    pool.append((w, fk))
+        rnd.shuffle(pool)
+        done = False
+        for w, k in pool:
+            fields = [k] if k in ("uv", "scenes", "summon") else ["summon", "scenes"]
+            for fk in fields:
+                if fk == "events":
+                    continue
+                for d in rnd.sample([1, -1, 2, -2, 3, -3], 6):
+                    trial = try_move(w, fk, d)
+                    if trial is not None:
+                        w[fk] = trial[fk]
+                        w["events"] = trial["events"]
+                        done = True
+                        break
+                if done:
+                    break
+            if done:
+                break
+        if not done:
+            return False
+    return False
+
+
 def build():
     """产出数据字典。同一种子必然同一结果（无系统时间、无网络）。"""
     rnd = random.Random(SEED)
     spans = week_spans()
     week_pv = allocate(PV_TOTAL, weekly_levels(rnd, spans))
+
+    # 轮128：周浏览量先守恒去整十（逐日分配与累计对账都不受影响）
+    detensor(week_pv, rnd, caps=[v * 3 for v in week_pv])
 
     weeks = []
     days = []
@@ -185,6 +302,10 @@ def build():
             x *= rnd.uniform(0.76, 1.32)
             dw.append(x)
         dpv = allocate(pv, dw)
+        # 轮128：逐日浏览守恒去整十；逐日访客无跨日对账（UV 不可加）可自由调
+        detensor(dpv, rnd, caps=[pv * 2] * len(dpv))
+        duv = [int(round(x / rnd.uniform(1.17, 1.28))) for x in dpv]
+        detensor(duv, rnd, caps=dpv)
         for j in range(span):
             d = w_start + dt.timedelta(days=j)
             days.append({
@@ -192,9 +313,15 @@ def build():
                 "dow": WEEKDAY_CN[d.weekday()],
                 "week": i + 1,
                 "pv": dpv[j],
-                "uv": int(round(dpv[j] / rnd.uniform(1.17, 1.28))),
+                "uv": duv[j],
             })
 
+    # 轮128：明细与总量一起非整十化（须在算 total_* 之前，之后重取和）
+    if not untensor_weeks(weeks, rnd):
+        raise AssertionError("去整十未收敛：请更换 SEED 后重跑")
+    tot_uv = sum(w["uv"] for w in weeks)
+    tot_sc = sum(w["scenes"] for w in weeks)
+    tot_sm = sum(w["summon"] for w in weeks)
     total_pv = sum(week_pv)
     total_events = total_pv + tot_sc + tot_sm
 
@@ -220,6 +347,12 @@ def build():
     scene_n = allocate(tot_sc, [s for _, s in scenes])
     geo_pv = allocate(total_pv, [s for _, s in geo])
     geo_uv = allocate(tot_uv, [s for _, s in geo])
+    # 轮128：份额表是两位小数百分比，总量整十时 13000x0.44=5720 必然整十
+    # —— 结构性成因而非随机巧合，故每个排行列表都守恒去整十
+    for _lst, _cap in ((lang_n, total_pv), (screen_n, total_pv),
+                     (ref_n, total_pv), (scene_n, tot_sc),
+                     (geo_pv, total_pv), (geo_uv, tot_uv)):
+        detensor(_lst, rnd, caps=[_cap * 2] * len(_lst))
 
     return {
         "meta": {
@@ -251,6 +384,26 @@ def build():
         "weeks": weeks,
         "days": days,
     }
+
+
+def _count_values(d):
+    """遍历数据字典，取出所有「访问数据」计数值（排除结构字段）。"""
+    COUNT_KEYS = {"pv", "uv", "scenes", "summon", "events", "n", "u"}
+    out = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k in COUNT_KEYS and isinstance(v, int) and not isinstance(v, bool):
+                    out.append(v)
+                else:
+                    walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+
+    walk(d)
+    return out
 
 
 def check(d):
@@ -311,6 +464,18 @@ def check(d):
     for x in d["days"]:
         if not (0 < x["uv"] <= x["pv"]):
             bad.append("%s 逐日访客不满足 0<uv<=pv" % x["date"])
+
+    # ---- 轮128 口径：严禁出现 10 的倍数 ----
+    # 适用范围是「访问数据」本身（计数值），不含：
+    #   · 结构字段：周序号 idx、所属周 week、天数 days、窗口天数、seed
+    #   · 图表坐标轴刻度（niceScale 刻意产出 500/1000/1500 是为了可读性）
+    # 为什么单列：整十数（13,000 / 4,780）一眼就像编的，正是「随机仿真」
+    # 要避开的形态。而它此前是**结构性必然** —— PV_TOTAL 取整十、
+    # 份额表取两位小数，13000x0.44=5720 必然整十，换种子救不回来。
+    tens = [v for v in _count_values(d) if v != 0 and v % 10 == 0]
+    if tens:
+        bad.append("有 %d 个访问数据是 10 的倍数（老大口径严禁）：%s"
+                   % (len(tens), sorted(set(tens))[:8]))
 
     # ---- 第 1 条要求：不许是「线性增加」那种假 ----
     v = [w["pv"] for w in d["weeks"]]

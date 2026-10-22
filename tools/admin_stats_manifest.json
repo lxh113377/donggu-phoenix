@@ -9,15 +9,15 @@
     "demoDay": "2026-10-22"
   },
   "totals": {
-    "pv": 13000,
-    "uv": 10413,
-    "events": 19541,
-    "scenes": 4780,
-    "summon": 1761
+    "pv": 13007,
+    "uv": 10765,
+    "events": 19239,
+    "scenes": 4688,
+    "summon": 1544
   },
   "sha256": {
-    "docs/后台演示数据说明.md": "d055d50f0a5deb7119d41675a25b11dffc244eae34b218201824987b86cadfd4",
-    "site/assets/data/admin-stats.js": "5226f78ca8feb46aa40a2f5df060c67db7b40e882ce02061b97d6753ffc64ec5",
-    "site/assets/data/footer-stats.js": "11024426dc9206516a3c581dfad4bb8f3a8f525caf1a32e51fdc72b72a911d0b"
+    "docs/后台演示数据说明.md": "963815ad143bff5edf4a5af91e6c63ea353c18ad50501aae90c8fb4a2c3e5dad",
+    "site/assets/data/admin-stats.js": "57b605f4c8a36196ebc93402a9a2544822502601ae601747bd34ecc2226541e8",
+    "site/assets/data/footer-stats.js": "b76ad1cd64964160a9b2163fa453a393f229df2986073d38ed7a4bd501737ad0"
   }
 }
