@@ -63,6 +63,9 @@ SUITE = [
     # 起因：4 条标题各自随手写 clamp 边界，.sec-head h2 实测 46px 而 --fs-4xl=44px，
     # 且是重复 7 次的区块主标题；同视口 h3 一度 10 种字号。
     ('tools/type_scale_discipline_test.py', True, '标题字号落在字阶令牌上'),
+    # 轮140：禁用 JS 时正文不得被 CSS 藏住（noscript 样式 + 看门狗两层兜底）。
+    # 自检会剥掉兜底还原修复前形态，要求必须报出被藏内容。
+    ('tools/no_js_content_test.py', True, '禁 JS 时正文可见（含剥兜底自检）'),
     ('tools/hero_height_test.py', True, '手机首屏锁一屏'),
     ('tools/ring_containment_test.py', True, '装饰环在画布内'),
     ('tools/anchor_offset_test.py', True, '锚点偏移正确'),

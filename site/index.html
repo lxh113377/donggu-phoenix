@@ -33,6 +33,47 @@
 <!-- 字体自托管：与 CSS 同源、零外部请求；preload 只押首屏真正会用到的那一份 -->
 <link rel="preload" href="assets/fonts/zcool-display.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/main.css">
+<noscript><style>
+/* 渐进增强（轮140）：.reveal / .ink-divider path 初始 opacity:0，
+ * 靠 main.js 的 IntersectionObserver 加 .in 才显形。禁用 JS 时实测
+ * 可见文字从 24497 掉到 6938 字（丢 72%）。noscript 只在 JS 关闭时生效，
+ * 所以这一层管「JS 被禁用」；「JS 开着但 main.js 没跑成」由下面的看门狗管。
+ * 用 !important 是因为要盖过 .reveal 与 reduced-motion 之外的所有初始态。 */
+.reveal{opacity:1!important;transform:none!important}
+.ink-divider path{opacity:1!important;stroke-dashoffset:0!important}
+.sec-head{opacity:1!important;transform:none!important}
+</style></noscript>
+<script>
+/* 内容可见性看门狗（轮140）
+ * 背景同上面的 noscript：进场动画依赖 main.js。但 noscript 只覆盖
+ * 「用户禁用 JS」这一种，盖不住更常见的现场故障 —— 4G 下 main.js
+ * 请求超时、被拦、或执行中抛错。那种情况 JS 是开着的，noscript 不触发，
+ * 观众会面对一个只剩 28% 内容的残缺页面，而且不知道是坏了。
+ *
+ * 做法：等 main.js 的完成信号 window.__site（其对象带 ready:true）。
+ * 超时未出现就把进场元素直接置为可见。正常路径下信号一定先到，
+ * 看门狗什么都不做 —— 它只在故障时介入，不影响任何动画。
+ * 轮询而非 MutationObserver：这个判断每分钟最多几次，成本可忽略，
+ * 且比观察 DOM 变化更直接（我们要的是「脚本跑完了」而不是「DOM 变了」）。 */
+(function () {
+  var LIMIT = 7000;            // ms；4G 下 main.js(约 40KB) 的宽松上限
+  var t0 = Date.now();
+  function forceVisible() {
+    var st = document.createElement('style');
+    st.setAttribute('data-reveal-fallback', '');
+    st.textContent = '.reveal{opacity:1!important;transform:none!important}'
+      + '.ink-divider path{opacity:1!important;stroke-dashoffset:0!important}'
+      + '.sec-head{opacity:1!important;transform:none!important}';
+    (document.head || document.documentElement).appendChild(st);
+  }
+  function tick() {
+    if (window.__site) { return; }          // 正常：main.js 已就位，不干预
+    if (Date.now() - t0 > LIMIT) { forceVisible(); return; }
+    setTimeout(tick, 250);
+  }
+  setTimeout(tick, 800);
+})();
+</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -412,7 +453,7 @@
  * 比白屏更难看，而且看起来像「网站坏了」。VERSION bump 只能保证下次访问正常，
  * 救不了这一次。故用 CSS 里的 --build 与本文常量对账：不等则清缓存重载一次（有防循环闸）。 */
 (function () {
-  var BUILD = '57';
+  var BUILD = '58';
   var KEY = 'dg-build-fix';
   var got = '';
   try { got = (getComputedStyle(document.documentElement).getPropertyValue('--build') || '').trim(); } catch (e) {}
