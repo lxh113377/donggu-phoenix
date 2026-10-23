@@ -272,6 +272,37 @@ def tens_problems(d):
     return out
 
 
+def dup_consistency_problems(d):
+    """H 条（轮178）：冗余副本 totals.weeks 必须与权威 d['weeks'] 逐字段一致。
+
+    一手实测缺口：admin-stats.js 里 totals.weeks 是周表的第二份拷贝，
+    生成器分别构造两份，而其 check() 只校验顶层 weeks 的求和，从不比对副本；
+    全站渲染代码 0 读者（都读 D.weeks）。于是「副本漂移」是静默的 ——
+    把 totals.weeks[0].pv 改偏 37，check() 照样返回无问题，CI 会绿灯发布
+    一份自相矛盾的仿真数据（周表与副本对不上）。
+    副本只要继续被写出就必须与权威一致；这条把「不该存在的冗余」纳入守护。
+    """
+    out = []
+    tw = (d.get('totals') or {}).get('weeks')
+    weeks = d.get('weeks')
+    if tw is None or weeks is None:
+        return out          # 结构不含该副本 -> 本判据不适用（缺字段由其他判据管）
+    if len(tw) != len(weeks):
+        out.append('副本长度不一致：totals.weeks %d 条 vs weeks %d 条'
+                   % (len(tw), len(weeks)))
+        return out
+    diffs = []
+    for i, (a, b) in enumerate(zip(tw, weeks)):
+        for k in sorted(set(a) | set(b)):
+            if a.get(k) != b.get(k):
+                diffs.append('第%d周 %s：副本=%r 权威=%r'
+                             % (i + 1, k, a.get(k), b.get(k)))
+    if diffs:
+        out.append('totals.weeks 副本与权威周表不一致：%s'
+                   % '；'.join(diffs[:5]))
+    return out
+
+
 def staticity_problems(admin_html, analytics_js, index_html):
     """D 条：后台与页脚不得再走实时接口 / 登录 / 定时器。入参须已剥注释。"""
     bad = []
@@ -387,6 +418,19 @@ def selftest():
                  "days": [], "totals": {"pv": 2000}}
     if not any('周均浏览' in x for x in tens_problems(d_derived)):
         bad.append('G 条自检：派生值「周均」整十未被抓到（只扫文件的盲区）')
+    # H 条自检：totals.weeks 副本漂移必须被抓到（这是本轮发现的静默缺口）
+    d_drift = {"weeks": [{"idx": 1, "pv": 1484}, {"idx": 2, "pv": 1908}],
+               "totals": {"weeks": [{"idx": 1, "pv": 1521},
+                                    {"idx": 2, "pv": 1908}]}}
+    if not any('副本' in x for x in dup_consistency_problems(d_drift)):
+        bad.append('H 条自检：totals.weeks 副本被改偏 37 未被抓到'
+                   '（静默发布矛盾数据的缺口没堵上）')
+    # H 条自检：两份一致时不得误报
+    d_same = {"weeks": [{"idx": 1, "pv": 1484}],
+              "totals": {"weeks": [{"idx": 1, "pv": 1484}]}}
+    if dup_consistency_problems(d_same):
+        bad.append('H 条自检：一致的副本被误报（%s）'
+                   % dup_consistency_problems(d_same)[0][:40])
     return bad
 
 
@@ -489,6 +533,15 @@ def main():
     print('[%s] 口径 G：访问数据无一为 10 的倍数' % (
         'PASS' if not bg else 'FAIL'))
     fails.extend('随机性不达标：' + x for x in bg)
+
+    # H) 副本一致：totals.weeks 是周表冗余副本，全站 0 读者，但只要继续
+    #    写出就必须与权威 weeks 逐字段一致（轮178，实测注入偏差后生成器
+    #    check() 仍放行 —— 会带 CI 绿灯发布自相矛盾的仿真数据）
+    checked += 1
+    bh = dup_consistency_problems(d)
+    print('[%s] 副本一致：totals.weeks 与权威 weeks 逐字段相同' % (
+        'PASS' if not bh else 'FAIL'))
+    fails.extend('周表副本漂移：' + x for x in bh)
 
     # E) 页脚与后台同源同数
     checked += 1
