@@ -602,14 +602,19 @@ var SCENE_NAMES = { craft: '造像技艺', red: '红色地标', phoenix: '凤凰
         w.scenes, w.summon, w.events].map(csvCell).join(','));
     });
     D.days.forEach(function (d) {
-      out.push(['day', 'W' + d.week, d.date, d.dow, d.pv, d.uv,
+      // key 列填日期而不是周号：周号在 start 列已能推出，
+      // 而 48 个 day 行若都填 W1..W7，无法按日唯一识别（轮170 实测）。
+      out.push(['day', d.date, d.date, d.dow, d.pv, d.uv,
         '', '', ''].map(csvCell).join(','));
     });
     D.totals.sceneRanks.forEach(function (x) {
       out.push(['scene', x.scene, '', '', '', '', x.n, '', ''].map(csvCell).join(','));
     });
     D.totals.langs.forEach(function (x) {
-      out.push(['lang', x.l, '', '', '', x.n, '', '', ''].map(csvCell).join(','));
+      // 与界面口径统一（轮168 界面已显示中文名）：
+      // key 保存原始码（可机读/便于对账），页脚位置放中文名。
+      out.push(['lang', x.l, LANG_NAMES[x.l] || x.l, '', '',
+        x.n, '', '', ''].map(csvCell).join(','));
     });
     D.totals.screens.forEach(function (x) {
       out.push(['screen', x.s, '', '', '', x.n, '', '', ''].map(csvCell).join(','));
@@ -627,7 +632,12 @@ var SCENE_NAMES = { craft: '造像技艺', red: '红色地标', phoenix: '凤凰
     document.body.appendChild(a);
     a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-    toast('已导出 ' + (D.weeks.length + D.days.length) + ' 行周次与逐日数据');
+    // 播报要说实话：实际 98 行、含 5 类明细，不是只有周次与逐日。
+    var nDetail = D.totals.sceneRanks.length + D.totals.langs.length
+      + D.totals.screens.length + D.totals.referrers.length
+      + D.totals.countries.length;
+    toast('已导出 ' + (D.weeks.length + D.days.length) + ' 行时间序列 + '
+      + nDetail + ' 行明细（场景/语言/屏幕/来源/国家）');
   }
 
   /* ---------- 启动 ---------- */
