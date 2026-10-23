@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:66;
+  --build:67;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -459,8 +459,10 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .carve-sec{padding-top:var(--sec-y)}
 .carve-shell{
   position:relative;margin-top:var(--sp-4);border:1px solid var(--line-soft);
-  /* 破格：画布左右越出 wrap，视觉上更「展陈」，文字仍锁在栏内 */
-  margin-inline:calc(var(--gut) * -1);
+  /* 破格（画布左右越出 wrap）改由外层 .carve-clip 承担，见 §幕布揭示。
+   * 原先负外边距打在本元素上，会被父级 .clip-reveal{overflow:hidden}
+   * 裁回原宽 —— 出血静默失效：轮159 实测桌面每边被切 48px、手机 18px，
+   * 而 DOM 无横向滚动、布局不报错，任何判据都看不见。 */
   border-left:0;border-right:0;
   background:
     radial-gradient(70% 60% at 62% 40%, rgba(126,66,26,.30), transparent 70%),
@@ -495,7 +497,11 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .carve-cap p{margin:0;font-size:var(--fs-base);line-height:1.95;color:var(--fg-dim)}
 @media (max-width:760px){
   #carve-stage{height:clamp(320px,52svh,460px)}
-  .carve-cap{position:static;background:none;border-top:1px solid var(--line-soft);max-width:none}
+  .carve-cap{position:static;background:none;border-top:1px solid var(--line-soft);max-width:none;
+    /* 文字左缘对齐全站栅格：桌面 padding 是 clamp(16px,2.4vw,26px)=16px，
+     * 而 390 下 --gut=18px —— 少这 2px 会让本段解说比其它段落缩进更浅，
+     * 且被 .clip-reveal 裁掉 2px（轮159 实测）。取较大值对齐栅格。 */
+    padding-left:max(16px,var(--gut));padding-right:max(16px,var(--gut))}
   .carve-hint{display:none}
   .carve-control{gap:var(--sp-tight)}
   .carve-slider-wrap{min-width:100%;order:1}
@@ -1089,6 +1095,11 @@ section.foot{padding-top:var(--sec-y-loose)}
   background:linear-gradient(180deg,#0B0908,#171210);
   transform-origin:top;transition:transform 1.15s var(--ease-out) .05s}
 .clip-reveal.in::after{transform:scaleY(0)}
+/* 破格出血必须打在「裁切框自身」上。
+ * .clip-reveal 的 overflow:hidden 不能去（幕布 ::after 靠 inset:0 铺满，
+ * 去掉就会露出覆盖层边缘），所以让裁切框自己向外扩：
+ * 子元素与它等宽，就不存在被裁的问题。 */
+.clip-reveal.carve-clip{margin-inline:calc(var(--gut) * -1)}
 @media (prefers-reduced-motion:reduce){
   .reveal{opacity:1;transform:none;transition:none}
   .clip-reveal::after{display:none}  .hero-tag,.hero h1,.hero-lead,.hero-acts,.hero-meta{opacity:1;animation:none;clip-path:none}

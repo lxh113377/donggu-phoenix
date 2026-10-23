@@ -223,7 +223,7 @@
       </div>
       <p class="carve-lineage reveal"><span>明初 · 南京工部匠籍「雕銮匠」</span><span>刘氏一脉廿余代、六百余年</span><span>2014 年入选第四批国家级非遗名录</span></p>
 
-      <div class="clip-reveal reveal">
+      <div class="clip-reveal carve-clip reveal">
       <div class="carve-shell">
         <canvas id="carve-stage" aria-label="一木成像雕刻过程动画"></canvas>
         <p class="carve-hint" id="carve-hint">在画面上按住左右拖 · 或拖动下方进度条</p>
@@ -453,7 +453,7 @@
  * 比白屏更难看，而且看起来像「网站坏了」。VERSION bump 只能保证下次访问正常，
  * 救不了这一次。故用 CSS 里的 --build 与本文常量对账：不等则清缓存重载一次（有防循环闸）。 */
 (function () {
-  var BUILD = '66';
+  var BUILD = '67';
   var KEY = 'dg-build-fix';
   var got = '';
   try { got = (getComputedStyle(document.documentElement).getPropertyValue('--build') || '').trim(); } catch (e) {}
