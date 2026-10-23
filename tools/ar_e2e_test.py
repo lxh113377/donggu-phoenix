@@ -26,7 +26,11 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 # migrate: ps() -> ab_compat (round 122)
+# 轮174：_AB（chrome）与 _SRV（静态服务）都提到模块级，
+# 供 __main__ 的 finally 统一清理 —— 原先本判据跑完既不关 chrome
+# 也不停服务，82 判据串行跑时会残留进程/端口污染后续判据。
 _AB = None
+_SRV = None
 
 
 def _ab():
@@ -69,11 +73,11 @@ def main():
 
     # round 122: start our own server instead of assuming 8791 is up
     # (a missing server produced RESULT: SKIP -- looks like an env issue)
-    _srv = None
+    global _SRV
     try:
         from cdp_client import SiteServer
-        _srv = SiteServer(os.path.join(BASE, 'site'), port=8791)
-        _base = _srv.url('/index.html')
+        _SRV = SiteServer(os.path.join(BASE, 'site'), port=8791)
+        _base = _SRV.url('/index.html')
     except Exception as _e:
         print('RESULT: SKIP  server failed: %s' % _e)
         return 0
@@ -172,4 +176,20 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    _rc = 1
+    try:
+        _rc = main()
+    finally:
+        # 无论成功/失败/SKIP，都关掉自己起的 chrome 与静态服务，
+        # 避免残留污染回归序列里的下一个判据（轮174 修 flaky 根因）。
+        try:
+            if _AB is not None:
+                _AB.close()
+        except Exception:
+            pass
+        try:
+            if _SRV is not None:
+                _SRV.stop()
+        except Exception:
+            pass
+    sys.exit(_rc)
