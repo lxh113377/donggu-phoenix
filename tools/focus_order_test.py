@@ -59,6 +59,14 @@ MAX_TABS = 46
 DESCENT_TOL = 40        # px；同一行多列 + 取整
 PAGES = [('主站', '/index.html'), ('后台', '/admin/index.html')]
 
+# 走查前注入：关掉滚动动画与元素过渡，让几何成为静态量。
+# 判据测的是焦点顺序/可达性（由 DOM 与布局决定），与动画无关；
+# 带着动画测就必须「等多久」，而轮152 实测落定要 1.1~1.8s（CPU 节流下），
+# 任何固定等待都会慢读早、快机器又恰好蒙对 —— 这正是 CI 红本地绿的根因。
+QUIET = ('html,body{scroll-behavior:auto !important}'
+         '*,*::before,*::after{transition:none !important;'
+         'animation:none !important}')
+
 READ = r"""(function(){
   var el = document.activeElement;
   if (!el || el === document.body) { return JSON.stringify(null); }
@@ -103,9 +111,17 @@ def walk(page, ch, url, after_nav=None):
     """
     ch.navigate(page, url)
     ch.wait_for(page, "document.querySelectorAll('%s').length>0" % SEL, 30)
+    # QUIET 先注入，after_nav（自检的注入用例）后注入 —— 顺序不能反：
+    # 反了会被 QUIET 的同名/同层样式覆盖掉测试样式的意图。
+    page.eval_js('(function(){var s=document.getElementById("quiet");'
+                 'if(s){s.remove();}'
+                 's=document.createElement("style");s.id="quiet";'
+                 's.textContent=' + json.dumps(QUIET) + ';'
+                 'document.head.appendChild(s);'
+                 'window.scrollTo(0,0);return 1;})()', timeout=20)
     if after_nav:
         after_nav()
-    time.sleep(2.0)
+    time.sleep(1.2)
     page.call('Page.enable')
     seq = []
     last_key = None
@@ -123,27 +139,10 @@ def walk(page, ch, url, after_nav=None):
             continue
         stall = 0
         last_key = key
-        # 等滚动真的停住，而不是等固定秒数。
-        # 轮152 实证的 flaky 根因：原先 time.sleep(0.9) 是按「平滑滚动一般
-        # 半秒内完成」拍的，但本仓有 html{scroll-behavior:smooth}，
-        # 回归里 20+ 个浏览器判据争抢 CPU 时 0.9s 可以不够 ——
-        # 于是读到滚动中间态，误报「Tab 到视口外」（同一判据全量跑 rc=1、
-        # 单独跑 rc=0 就是这类问题）。改成轮询 scrollY 直到连续两次相同，
-        # 上限 3s；这样既不等多余时间，也不会在慢机器上读早。
-        prev = None
-        b = None
-        t0 = time.time()
-        while time.time() - t0 < 3.0:
-            cur = json.loads(page.eval_js(READ, timeout=25))
-            if cur is None:
-                break
-            if prev is not None and cur.get('sy') == prev:
-                b = cur
-                break
-            prev = cur.get('sy')
-            time.sleep(0.12)
-        if b is None:
-            b = json.loads(page.eval_js(READ, timeout=25))
+        # QUIET 已消除滚动与过渡，几何是静态量，不再依赖任何时间参数。
+        # 读两次取后者：万一样式表在首个 Tab 之后才生效，第二次已是终值。
+        json.loads(page.eval_js(READ, timeout=25))
+        b = json.loads(page.eval_js(READ, timeout=25))
         if b is None:
             continue
         seq.append(b)
@@ -315,7 +314,6 @@ def main():
     print()
     print('=== 尺子有效性自检 ===')
     bad_self = []
-    ok1 = bool(ti_bad) or True
     # S1：没有正值 tabindex 是好事，但必须证明「有」会被抓到 ——
     # 用一个内联样例直接跑静态函数
     sample = '<a tabindex="5">x</a>'
@@ -331,6 +329,32 @@ def main():
           % ('ok' if ok2 else 'X', len(f_inj)))
     if not ok2:
         bad_self.append('S2 注入的顺序错乱没被抓到，判据可能恒绿')
+    # S4 检测能力不依赖动画时机（防 QUIET 变成「掩盖开关」）：
+    # 给一条静态就在视口外的合成读数（fixed; top:-9999px 那种真缺陷），
+    # judge 必须报红。judge 只读值不看时间，所以这条同时证明
+    # 「关掉动画不影响抓缺陷」与「视口外判定在工作」。
+    trap = [
+        {'tag': 'a', 'cls': '', 'txt': '\u63d0\u793a', 'id': '',
+         'docTop': 17, 'docLeft': 1339, 'docBottom': 40,
+         'viewTop': 17, 'sy': 0, 'vh': 900, 'inVp': True},
+        {'tag': 'a', 'cls': 'offtrap', 'txt': '\u9677\u9631', 'id': '',
+         'docTop': -9999, 'docLeft': 8, 'docBottom': -9959,
+         'viewTop': -9999, 'sy': 0, 'vh': 900, 'inVp': False},
+    ]
+    f4 = judge(trap)
+    ok4 = any('\u89c6\u53e3\u5916' in x for x in f4)
+    print('  [%s] S4 静态视口外焦点被 judge 抓到（%d 处）—— '
+          'QUIET 关动画不削弱检测' % ('ok' if ok4 else 'X', len(f4)))
+    if not ok4:
+        bad_self.append('S4 视口外判定失效，注入 QUIET 等于掩盖缺陷')
+    # S5 反向对照：全在视口内时不得报「视口外」（证明 S4 不是恒红）
+    clean = [dict(trap[0]), dict(trap[0], docTop=120, docBottom=143,
+                   viewTop=120)]
+    f5 = judge(clean)
+    ok5 = not any('\u89c6\u53e3\u5916' in x for x in f5)
+    print('  [%s] S5 视口内读数不误报' % ('ok' if ok5 else 'X'))
+    if not ok5:
+        bad_self.append('S5 视口外判定会误报，判据会恒红')
     real_all = []
     for label, seq in seqs.items():
         real_all += judge(seq)
