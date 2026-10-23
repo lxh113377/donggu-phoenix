@@ -144,6 +144,32 @@ try:
     checks += 1
     if target not in stamps3:
         fails.append('刷新后集章丢失（stamps=%s）—— 持久化失效' % stamps3)
+    # ---- F 集齐态渲染：老访客带满章回访时，文案要宣布解锁 ----
+    # 轮174 新增。动机是轮173 那个按钮文案 bug 的同族风险：
+    #   状态在（localStorage 有集章），但渲染只在落章那一刻发生 ——
+    #   那样带满章回访的老访客永远只看到 集章 3/3，看不到
+    #   三章集齐·已解锁完整动线，等于集齐奖励只对第一次的人可见。
+    # 断言区分三种失效：默认 集章 0/3 = paintStamps 没跑；
+    #   集章 3/3 = 跑了但 all 判定没生效；含 集齐/解锁 才算对。
+    all_ids = json.dumps(scenes)
+    js_set = ('try{localStorage.setItem(' + S + 'donggu-ar-v1' + S
+              + ',JSON.stringify({stamps:' + all_ids
+              + ',dwell:10,visits:2,at:Date.now()}))}catch(e){};1')
+    AB.run('agent-browser eval ' + Q + js_set + Q)
+    AB.run('agent-browser open ' + Q + url + '&restored=1' + Q)
+    AB.run('agent-browser wait --load networkidle')
+    AB.run('agent-browser eval ' + Q + 'window.__ar.open(' + S
+           + str(scenes[0]) + S + ');1' + Q)
+    time.sleep(1.4)
+    line = ev('JSON.stringify((document.getElementById('
+              + S + 'ar-stamp-line' + S + ')||{}).textContent||"")') or ''
+    rst = ev('JSON.stringify(window.__ar.stats().stamps)') or []
+    print('F 带 %d/%d 回访 -> stamp-line=%r' % (len(rst), len(scenes), line.strip()))
+    checks += 1
+    if len(rst) != len(scenes):
+        fails.append('注入的满章态未生效（stamps=%s）' % rst)
+    elif not ('集齐' in line or '解锁' in line):
+        fails.append('已集齐 %d/%d 但文案未宣布解锁：%r' % (len(scenes), len(scenes), line.strip()))
 
 except AbCompatError as e:
     print('RESULT: SKIP  CDP 环境不可用: %s' % e)
@@ -160,12 +186,13 @@ finally:
             pass
 
 print()
-if checks < 5:
-    fails.append('只完成 %d/5 项检查（有跳过的）' % checks)
+if checks < 6:
+    fails.append('只完成 %d/6 项检查（有跳过的）' % checks)
 if fails:
     print('RESULT: FAIL')
     for f in fails:
         print('  -', f)
     sys.exit(1)
-print('RESULT: PASS  落章生效且刷新后仍在（持久化正常，无重复计数）')
+print('RESULT: PASS  落章生效、刷新后仍在、无重复计数，且带满章回访时'
+      '文案宣布解锁（恢复态渲染正确）')
 sys.exit(0)
