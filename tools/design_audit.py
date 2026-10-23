@@ -19,6 +19,13 @@
 轮107：从 agent-browser daemon 迁到共享 CDP 模块。旧版 live 探针因
 daemon 已死恒返回 None，而 main 里 if l 直接跳过、退出码恒 0，
 等于八维里有四维从未被这个工具测过（静默跳过=假通过）。
+归宿说明（轮154）：本件是本地一键总览，故意不接入 CI。
+理由：八维各有专项判据且都已在 CI（type_scale_discipline / rhythm /
+stagger / reduced_motion / microinteraction / focus_ring_contrast /
+focus_order / canvas_text_contrast / originality_audit /
+brand_color_parity 等），在这里重复跑只会让同一维度出现两套口径。
+且本件没有「注入违规必须报红」的自检 —— 它输出的 PASS 是读数汇总，
+不是证明；按本仓纪律不能当守卫用。想接进 CI 的先给它加牙。
 """
 import json, os, re, subprocess, sys, time
 
