@@ -369,6 +369,14 @@ jobs:
           # （本仓已 5 次遇到「只会报 PASS 的判据」）。故与主判据同挂 CI。
           python tools/reverse_admin_static.py
           python tools/ledger_id_test.py
+          # 轮176：轮次标注漂移守卫。本轮发现自己把两批工作的轮次写错：
+          # 权威轮次（goal_round 头部 / get_goal 的 roundsStarted）是 175/176，
+          # 我却按自己的计数写成 177/178，导致台账 174 之后直接跳到 177
+          # （175、176 整段空号）。账目错不影响产品，却让交接读到错误时间线——
+          # 而此前没有任何机器在看，全靠自觉，而自觉恰恰是不可靠的那个。
+          # 锚点 = memory/round_anchor.json（每轮开始时从 goal_round 头部写入）。
+          # 带自检：把轮次列改成「锚点+3」必须报红，证明它真在看。
+          python tools/round_anchor_guard.py
           # 轮125（U-395~397）：memory/ 的 4KB 硬限此前**没有任何机器检查**，
           # 结果实测 6 个文件超限、最大 263KB —— 规则写着没人守就会一路漂移。
           # 棘轮式：存量超限记入基线（不判红，因拆分需与并行端协调），

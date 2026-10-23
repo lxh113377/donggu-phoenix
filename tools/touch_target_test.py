@@ -341,7 +341,7 @@ def main():
                 continue
             ov = r0.get('scrollW', 0) - r0.get('iw', 0)
             small = r0.get('small') or []
-            # AR 面板展开态：测不到就必须报，不能静默通过（轮177）
+            # AR 面板展开态：测不到就必须报，不能静默通过（轮175）
             if not r0.get('arHas'):
                 fails.append('vw=%d：找不到 #ar 面板，该维度未测量' % r0['vw'])
             elif not r0.get('arOpen'):

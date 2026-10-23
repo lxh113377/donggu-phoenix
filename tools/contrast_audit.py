@@ -377,7 +377,7 @@ def main():
                 fails.append('vw=%s 无文档（探针未加载）' % r0.get('vw'))
                 continue
             checked = r0.get('checked', 0)
-            # AR 面板展开态：测不到就必须报，不能静默通过（轮178）
+            # AR 面板展开态：测不到就必须报，不能静默通过（轮176）
             ao = r0.get('arOpened')
             pc = r0.get('panelChecked') or 0
             if ao not in ('ok', 'click'):
