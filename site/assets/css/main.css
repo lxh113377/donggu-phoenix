@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:67;
+  --build:68;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -1023,8 +1023,15 @@ section.foot{padding-top:var(--sec-y-loose)}
 }
 .qr-fallback[hidden]{display:none}
 .qr-fallback b{display:block;margin-bottom:var(--sp-1);color:var(--she-gold);font-weight:400;font-size:var(--fs-md)}
-.qr-fallback strong{font-family:var(--font-latin);font-weight:400;letter-spacing:.03em;
-  color:var(--she-gold-light);word-break:break-all;font-size:var(--fs-base)}
+.qr-fallback strong{font-family:var(--font-latin);font-weight:400;
+  letter-spacing:.03em;color:var(--she-gold-light);
+  /* 独立成块：原先 URL 跟在中文冒号后同行排，word-break:break-all
+   * 在任意字符断行，实测两行 94px 与 189px 严重失衡（第一行只放
+   * 短短一段、其余挤到第二行且向右缩进），用户手输时极易看漏。
+   * 改为块级后从行首排满可用宽度，断点仍在任意字符（URL 无
+   * 自然断点，break-all 保留），但两行长度接近、行首对齐。 */
+  display:block;margin-top:var(--sp-1);
+  word-break:break-all;font-size:var(--fs-base)}
 
 /* ---------- ⑯ 覆盖层 ---------- */
 #summon-veil{position:fixed;inset:0;z-index:55;pointer-events:none;opacity:0;
