@@ -176,8 +176,14 @@ window.AR_DATA = {
     camMode: '实景叠加',
     prev: '上一段',
     next: '下一段',
-    play: '暂停',
-    pause: '继续',
+    /* play / pause 按「按钮动作」命名（与 ar.js 的
+     * playing ? ui.pause : ui.play 及 fallback "暂停"/"继续" 同约定）：
+     * 暂停态时按钮是「继续播放」，播放中时按钮是「暂停播放」。
+     * 轮173 实测发现原值写反 —— 播放中显示「继续」、暂停/播完显示
+     * 「暂停」，两个状态全反。HTML 初始文案「暂停」配 autoplay 也
+     * 印证代码约定是对的。 */
+    play: '继续',
+    pause: '暂停',
     restart: '重播',
     done: '本段完成 · 已落章',
     stampNew: '新落一章',
