@@ -343,6 +343,51 @@ if "AR_SCENES.create(id, data)" not in ar_ctrl or "未接入播放层" not in ar
 durs = [int(x) for x in re.findall(r"duration: (\d+)", ar_data)]
 if sum(durs) != 152:
     fails.append("AR 三段时长合计应为 152s，实际 %d" % sum(durs))
+
+# 轮142：页面文案里的「3 段 · 13 章」「2 分 32 秒」必须等于数据实测值。
+# 一手问题：本项原先只在 print 的标签里硬写「13 章节」，没有任何断言 ——
+# 把 ar-data.js 的 chapters 从 13 删到 12，门禁照样输出
+# 「[PASS] AR 展陈：3 场景 / 13 章节 / 152s」，即一句永远不会错的宣传语。
+CN_NUM = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6,
+          "七": 7, "八": 8, "九": 9, "十": 10}
+
+
+def count_chapters(src):
+    """按场景块数 chapters 数组里的 title 条数。
+
+    必须用括号深度定位数组边界：场景本身也有 title，
+    扁平 findall(r"title:") 会数到 17 而不是 13。
+    """
+    total = 0
+    for m in re.finditer(r"chapters:\s*\[", src):
+        depth, j = 1, m.end()
+        while j < len(src) and depth > 0:
+            if src[j] == "[":
+                depth += 1
+            elif src[j] == "]":
+                depth -= 1
+            j += 1
+        total += len(re.findall(r"title:\s*['\"]", src[m.end():j - 1]))
+    return total
+
+
+AR_SEGS = len(data_scene_ids)
+AR_CHAPS = count_chapters(ar_data)
+AR_SECS = sum(durs)
+if AR_SEGS != 3:
+    fails.append("AR 段数应为 3，实测 %d" % AR_SEGS)
+if AR_CHAPS != 13:
+    fails.append("AR 章数应为 13，实测 %d" % AR_CHAPS)
+for mm in re.finditer(r"(\d+)\s*段\s*·\s*(\d+)\s*章", html):
+    if int(mm.group(1)) != AR_SEGS or int(mm.group(2)) != AR_CHAPS:
+        fails.append("AR 页面文案「%s 段 · %s 章」与数据不符（实测 %d 段 %d 章）"
+                     % (mm.group(1), mm.group(2), AR_SEGS, AR_CHAPS))
+for mm in re.finditer(r"(\d+)\s*分\s*(\d+)\s*秒", html):
+    if int(mm.group(1)) * 60 + int(mm.group(2)) != AR_SECS:
+        fails.append("AR 页面文案「%s 分 %s 秒」与数据不符（实测 %d 秒）"
+                     % (mm.group(1), mm.group(2), AR_SECS))
+if "三段合计" in html and AR_SEGS != 3:
+    fails.append("AR 页面写「三段合计」但实测 %d 段" % AR_SEGS)
 # 场景直连码必须生成且非空
 # 直连码清单同样由数据层驱动（新场景不必再来改这里）
 for sid in (data_scene_ids or ["craft", "red", "phoenix"]):
@@ -474,7 +519,11 @@ if m:
         fails.append("canonical 与页面其他绝对 URL 不一致")
 if ext:
     fails.append("出现外部请求: " + ", ".join(ext[:3]))
-print(f"[{'PASS' if not any('AR' in f or '外部请求' in f for f in fails) else 'FAIL'}] AR 展陈：3 场景 / 13 章节 / 152s / 零外链")
+# 标签用实测值：原先硬写「3 场景 / 13 章节 / 152s」，
+# 数据变了它照样印旧数字，等于第二句谎话（轮142）。
+print(f"[{'PASS' if not any('AR' in f or '外部请求' in f for f in fails) else 'FAIL'}] "
+      f"AR 展陈：{AR_SEGS} 场景 / {AR_CHAPS} 章节 / {AR_SECS}s / "
+      f"零外链（文案已与数据对账）")
 
 # 11) 交付治理件 + PWA/离线能力（对标 peer 后补齐的基线，防回归）
 DOC_FILES = ["LICENSE", "CONTRIBUTING.md", "CHANGELOG.md", "SECURITY.md",
