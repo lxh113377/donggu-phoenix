@@ -105,6 +105,16 @@ def triage(norm):
     return real, expected, stats
 
 
+def result_kinds(norm):
+    """日志行里的 RESULT 结论种类列表。
+
+    提成独立函数是为了让它可被自检覆盖：main() 靠「空列表」判定
+    取数或解码失效，这条防护若没有对应自检项，将来被改回去也不会被发现
+    （U-427：防护本身也要有牙）。
+    """
+    return [m.group(1) for _, t in norm for m in [RESULT.search(t)] if m]
+
+
 def selftest():
     bad = []
     # S1 中间 FAIL + 末尾 PASS
@@ -136,6 +146,27 @@ def selftest():
           % ('ok' if ok3 else 'X', len(r3), e3))
     if not ok3:
         bad.append('S3 误报')
+    # S4 空读数必须返回空 kinds —— main() 据此判失效。
+    # 这条保护的是新增的「非空日志但零 RESULT 不得当通过」防护本身：
+    # 它若被改回去（比如哪天有人觉得日志为空没必要报错），S4 会立刻红。
+    n4 = normalize(['a\tVerify\t2026-01-01T00:00:01.0Z\tpython tools/x.py',
+                    'a\tVerify\t2026-01-01T00:00:02.0Z\t一些没有结论的输出',
+                    'a\tVerify\t2026-01-01T00:00:03.0Z\t还在输出'])
+    k4 = result_kinds(n4)
+    ok4 = (len(n4) == 3) and (k4 == [])
+    print('  [%s] S4 日志非空(%d 行)但零 RESULT -> kinds 空（应空）%s'
+          % ('ok' if ok4 else 'X', len(n4),
+             '' if ok4 else ' -> 实得 %s' % k4))
+    if not ok4:
+        bad.append('S4 空读数检测失效，「零命中当通过」的防护不成立')
+    # S5 反向：正常日志必须能提取到 kinds（证明 S4 的空是内容真没有，
+    # 而不是 result_kinds 本身恒返回空）
+    k5 = result_kinds(n1)
+    ok5 = len(k5) == 4 and k5.count('FAIL') == 2
+    print('  [%s] S5 正常日志可提取 kinds（4 条，含 2 条 FAIL）%s'
+          % ('ok' if ok5 else 'X', '' if ok5 else ' -> 实得 %s' % k5))
+    if not ok5:
+        bad.append('S5 kinds 提取失效，S4 的空结论不可信')
     return bad
 
 
@@ -195,13 +226,25 @@ def main():
         except Exception:
             concl = '?'
 
-    kinds = [m.group(1) for _, t in norm for m in [RESULT.search(t)] if m]
+    kinds = result_kinds(norm)
     print()
     print('=== 原始读数 ===')
     print('  RESULT 行：PASS %d / FAIL %d / SKIP %d'
           % (kinds.count('PASS'), kinds.count('FAIL'), kinds.count('SKIP')))
     print('  job conclusion：%s' % concl)
     print()
+    # 空读数必须拦（轮148 我手工踩坑逼出来的）。
+    # 上一版只防「取不到日志」（rc!=0 或字节数为 0），不防「取到了却一条
+    # RESULT 都没匹配上」—— 后者最容易骗人：编码不对时（PowerShell 的 >
+    # 重定向写 UTF-16LE，按 utf-8 读会让每个 ASCII 字符后带一个 NUL，
+    # 关键词全部匹配不到），338KB 的日志会被读成「0 行 RESULT」，
+    # 于是「0 条 FAIL」被当成「没有任何失败」。真相是解析根本没工作。
+    # 属 U-149 假守护同族：空读数不得当通过用。
+    if not kinds:
+        print('RESULT: FAIL  日志共 %d 行却匹配到 0 条 RESULT —— ' % len(norm))
+        print('          这几乎一定是取数或解码失效，而不是「全过」；'
+              '先查编码，gh 日志经 PowerShell 重定向会得到 UTF-16LE')
+        return 1
     print('=== 按「步骤末条 RESULT」分类 ===')
     print('  真失败 %d 条 ｜ 步骤内期望输出（反向验证注入）%d 条'
           % (len(real), expected))
