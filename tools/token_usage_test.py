@@ -58,6 +58,23 @@ FAMILY = (r'(?:sp|sec-y|fs|she|fg|bg|panel|line|gold|red|ok'
 DEF = re.compile(r'(--' + FAMILY + r')\s*:\s*([^;}]+)')
 USE_VAR = re.compile(r'var\(\s*(--[\w-]+)\s*[,)]')
 USE_GPC = re.compile(r"getPropertyValue\(\s*['\"](--[\w-]+)['\"]")
+# 设计意图标记：写在令牌行尾的注释里，如
+#   --she-silver:#C9D1D9;  /* @palette 凤凰装银饰，未用但属设计语言 */
+# 只在「零引用且值未以字面量出现在其属性域」时豁免 INFO；
+# 值被硬编码时仍判红 —— @palette 不是免死金牌，别把假供给标成供给。
+# 收紧作用域：标记要在该声明分号之后、且中间不再出现新的 --声明，
+# 否则一行多声明时标记会连坐（把豁免发给未被声明的令牌）。
+PALETTE_MARK = re.compile(
+    r'(--[\w-]+)\s*:[^;\n]+;(?:(?!--)[^\n])*@palette')
+
+
+def palette_marked(raw_css):
+    """从未剥注释的原始 CSS 里取被 @palette 标记的令牌名。
+
+    必须在原文上找：analyze 收到的是剥注释后的文本，标记本身
+    就在那段注释里，剥掉就读不到了。
+    """
+    return {m.group(1) for m in PALETTE_MARK.finditer(raw_css)}
 
 
 # 令牌族 -> 它负责的属性域。值只有出现在这个域里，才算「绕过了该令牌」。
@@ -157,10 +174,11 @@ def defined_tokens(css_src):
     return {m.group(1) for m in DEF.finditer(css_src[i:j])}
 
 
-def analyze(css_src, extra_used=None):
-    """css_src 须已剥注释。返回 (fails, infos, 令牌数)。
+def analyze(css_src, extra_used=None, marked=None):
+    """css_src 须已剥注释；marked 是 @palette 标记的令牌名集合。
 
-    extra_used：CSS 之外的引用集（如 JS 的 getPropertyValue）。
+    返回 (fails, infos, 令牌数)。extra_used：CSS 之外的引用集
+    （如 JS 的 getPropertyValue）。
     """
     i = css_src.find(':root')
     if i < 0:
@@ -187,6 +205,9 @@ def analyze(css_src, extra_used=None):
             fails.append('%s 定义了但零引用，其值 %s 仍以字面量写在 %s 里'
                          '（%d 处）—— 改令牌不传导，应改为 var(%s)'
                          % (name, val, scope, lit, name))
+        elif marked and name in marked:
+            # 有意供给：设计语言的一档，未被使用不算噪音。
+            continue
         else:
             infos.append('%s（值 %s）未被引用，且其值没以字面量出现在 %s '
                          '域内 —— 属调色板/供给冗余，删留是设计决策'
@@ -199,6 +220,8 @@ SELFTEST_LABELS = [
     'S1 域内字面量判红', 'S2 var() 引用不误报', 'S6 属性域限定',
     'S7 JS 引用计入', 'S3 值未写在域内只 INFO',
     'S4 getPropertyValue 引用', 'S5 注释不算引用',
+    'S8 @palette 标记豁免生效', 'S9 @palette 不是免死金牌',
+    'S10 行内多声明标记不连坐',
 ]
 
 
@@ -271,6 +294,44 @@ def selftest():
              '不算引用（正确）' if ok5 else '被注释骗过'))
     if not ok5:
         bad.append('S5 注释里的 var() 被当成引用')
+    # S8 @palette 标记生效：零引用 + 值未硬编码 -> 不再报 INFO
+    s8 = (':root{--she-x:#123456;  /* @palette 有意色板供给 */}\n'
+          '.a{color:red}\n')
+    f8, i8, _ = analyze(strip_comments(s8), None,
+                        palette_marked(s8))
+    ok8 = (not f8) and len(i8) == 0
+    print('  [%s] S8 @palette 标记的合法供给 -> %s'
+          % ('ok' if ok8 else 'X',
+             '不再报 INFO（正确）' if ok8 else
+             ('仍报 INFO（标记没生效）' if i8 else '连缺陷都不报了，可疑')))
+    if not ok8:
+        bad.append('S8 @palette 标记未生效或被过度处理')
+    # S9 @palette 不是免死金牌：值仍以字面量硬编码时仍须 FAIL
+    s9 = (':root{--sp-9:36px;  /* @palette */}\n'
+          '.a{padding:36px}\n')
+    f9, i9, _ = analyze(strip_comments(s9), None,
+                        palette_marked(s9))
+    ok9 = len(f9) == 1 and len(i9) == 0
+    print('  [%s] S9 标记了但值硬编码 -> %s'
+          % ('ok' if ok9 else 'X',
+             '仍判 FAIL（不是免死金牌）' if ok9 else
+             ('被标记豁免掉了（危险：假供给藏进标记）' if not f9
+              else '分类异常')))
+    if not ok9:
+        bad.append('S9 @palette 变成免死金牌，会藏住假供给')
+    # S10 一行多声明时标记不得连坐
+    s10 = (':root{--red:#B3202C; --red-hi:#EA4835;'
+           '  --gold:#D4A24C;  /* @palette 品牌金 */ }\n'
+           '.a{color:red}\n')
+    marked10 = palette_marked(s10)
+    f10, i10, _ = analyze(strip_comments(s10), None, marked10)
+    # 只有 --gold 该被豁免；--red 与 --red-hi 仍应报 INFO
+    ok10 = (marked10 == {'--gold'} and len(i10) == 2
+            and all(x.startswith('--red') for x in i10))
+    print('  [%s] S10 行内多声明标记不连坐 -> 标记集 %s、INFO %d 条'
+          % ('ok' if ok10 else 'X', sorted(marked10), len(i10)))
+    if not ok10:
+        bad.append('S10 标记连坐，会把未声明的令牌一起豁免')
     return bad
 
 
@@ -307,9 +368,12 @@ def main():
             untested.append(label)
             print('[%s] 读不到文件 -> 未测' % label)
             continue
-        src = strip_comments(css_of(io.open(
-            path, encoding='utf-8', errors='ignore').read(), path))
-        f, inf, n = analyze(src, js_used)
+        raw_txt = io.open(path, encoding='utf-8',
+                          errors='ignore').read()
+        css_raw = css_of(raw_txt, path)
+        marked = palette_marked(css_raw)
+        src = strip_comments(css_raw)
+        f, inf, n = analyze(src, js_used, marked)
         if n == 0:
             untested.append('%s（解析不到令牌）' % label)
             print('[%s] 解析不到 :root 设计令牌 -> 未测' % label)

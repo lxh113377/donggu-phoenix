@@ -23,27 +23,27 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:63;
+  --build:64;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
   --she-red-deep:#7A1420;
   --she-vermilion:#D94F2B;
-  --she-blue:#1E3A5F;
-  --she-blue-deep:#0E1B29;
+  --she-blue:#1E3A5F;  /* @palette 凤凰装蓝，值在 SVG/JS 资产里用 */
+  --she-blue-deep:#0E1B29;  /* @palette 蓝靛深蓝，色板一档备用 */
   --she-black:#12100F;
   --she-ink:#0B0908;
   --she-gold:#D4A24C;
   --she-gold-light:#E8B761;
-  --she-silver:#C9D1D9;
+  --she-silver:#C9D1D9;  /* @palette 上文「银为饰」的银，民族色板 */
   --she-paper:#F6F1E7;
-  --she-paper-2:#EDE4D4;
+  --she-paper-2:#EDE4D4;  /* @palette 纸色第二档，分层底色扩展 */
 
   --bg:var(--she-ink);
   --fg:#F4EDE1;
   --fg-dim:rgba(244,237,225,.74);
   --fg-faint:rgba(244,237,225,.66);
-  --fg-ghost:rgba(244,237,225,.24);
+  --fg-ghost:rgba(244,237,225,.24);  /* @palette fg 阶梯第三档 */
   --line:rgba(212,162,76,.30);
   --line-soft:rgba(212,162,76,.15);
 
