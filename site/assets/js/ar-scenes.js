@@ -569,11 +569,18 @@
       ctx.lineTo(mx + S * 0.08, mbase);
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = "rgba(122,20,32,.85)";
+      /* 生卒年用深色墨（轮149 修）：原先是 rgba(246,241,231,.6) ——
+       * 那是给深色页底用的近白色，可这行字画在浅色石碑
+       * rgba(198,190,176,.94) 上，浅字浅石实测对比仅 1.47:1，
+       * 游客在 AR 纪念碑前根本读不到烈士生卒年。
+       * 改用比碑面暗得多的墨色（同名字那行的凤红方向、更实）。
+       * 名字那行 alpha 也从 .85 提到 .92，留一点余量。
+       * 生卒年数值本身的校正见下方轮141 注释（1901 误写 -> 1898）。 */
+      ctx.fillStyle = "rgba(96,14,21,.96)";
       ctx.font = "600 " + Math.round(S * 0.03) + "px " + fontStack('--font-kai', FALLBACK_KAI);
       ctx.textAlign = "center";
       ctx.fillText("黄公略", mx, mbase - S * 0.19);
-      ctx.fillStyle = "rgba(246,241,231,.6)";
+      ctx.fillStyle = "rgba(74,14,20,.96)";
       ctx.font = "11px " + fontStack('--font-sans', FALLBACK_SANS);
       /* 生卒年（轮141 校正）：原写 "1901 - 1931"，与 ar-data.js
        * 本章解说「年仅 33 岁」自相矛盾（1931-1901=30）。
