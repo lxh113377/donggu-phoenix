@@ -283,6 +283,20 @@ jobs:
           # 自检三项：注入暗环必须抓到、注入 outline:none 必须抓到、
           # 不注入必须 0 报红（U-427：报 0 先证明能抓到非 0）。
           python tools/focus_ring_contrast_test.py
+          # 轮146：键盘 Tab 顺序必须符合视觉阅读顺序（WCAG 2.4.3）。
+          # 真按 Tab（CDP Input.dispatchKeyEvent）走一遍，读每个焦点的
+          # 文档坐标。两个口径错都在这轮被抓出来：
+          #   ① 按 docTop 全局单调判，把三列卡片「先读完一张卡再读下一张」
+          #      的正常顺序误报成回跳（实测 x=211->578->946 逐列向右）；
+          #   ② 改成列感知后又漏了同一行内的左右错序 —— 注入 order 把
+          #      .carve-play 与 .carve-slider-wrap 对调时报 0 处，
+          #      因为它们 docTop 几乎相等，只查 y 碰不到。
+          # 现两层口径：垂直区间重叠（同一行）查 x 单调；不重叠（跨行）
+          # 查 y 单调但 x 前进视为换列。settle 提到 0.9s 是因为
+          # html{scroll-behavior:smooth} 下立刻读 rect 会误报「Tab 到视口外」。
+          # 自检 S2 的注入必须作为 after_nav 传进 walk —— 写在 walk 之前
+          # 会被它自己的 navigate 冲掉（这也错过一次）。
+          python tools/focus_order_test.py
           # 轮134（U-433）：改了 cache-first 资源必须同时 bump SW VERSION。
           # sw.js 自己的注释就写着「本项目第 4 次踩同一坑」，是代码声明过的不变量。
           # 量近 40 个提交抓到 1 次未记账违规：637931a（轮128 我自己）改了
