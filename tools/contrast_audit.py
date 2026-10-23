@@ -69,6 +69,7 @@ function _ratio(a,b){
 }
 function contrastAudit(doc, win, SEL){
   var bad = [], checked = 0, skippedGradient = 0, skippedTransparent = 0;
+  var panelChecked = 0;   // 落在展开的 AR 面板内且被测量的元素数
   [].slice.call(doc.querySelectorAll(SEL)).forEach(function(e){
     if (!e.offsetParent) return;
     if (e.closest && e.closest('[data-decorative]')) return;
@@ -98,13 +99,14 @@ function contrastAudit(doc, win, SEL){
     var bold = parseInt(cs.fontWeight, 10) >= 700;
     var need = (fs >= 24 || (fs >= 18.66 && bold)) ? 3 : 4.5;
     checked++;
+    if (e.closest && e.closest('#ar.on')) panelChecked++;
     if (r < need) {
       bad.push({ txt: txt.slice(0, 20), ratio: Math.round(r*100)/100, need: need,
                  fs: fs, color: cs.color, bg: 'rgb(' + bg.slice(0,3).join(',') + ')' });
     }
   });
   return { checked: checked, bad: bad, skippedGradient: skippedGradient,
-           skippedTransparent: skippedTransparent };
+           skippedTransparent: skippedTransparent, panelChecked: panelChecked };
 }
 '''
 
@@ -269,6 +271,24 @@ VPS.forEach(function(v, i){
   host.appendChild(f);
 });
 ''' + KERNEL + r'''
+function openArPanel(w, d){
+  // 展开 AR 面板并 seek 到有章节文字处，让面板内文字进入可测态。
+  var ar = d.getElementById('ar');
+  if (!ar) return 'noar';
+  if (w.__ar && w.__ar.open){
+    try{
+      var sc = w.__ar.scenes;
+      if (sc && sc.length){
+        w.__ar.open(sc[0].id);
+        try{ w.__ar.seek(Math.floor(sc[0].duration * 0.4)); }catch(e){}
+        return 'ok';
+      }
+    }catch(e){ return 'err'; }
+  }
+  var b = d.querySelector('.ar-card .go');
+  if (b){ b.click(); return 'click'; }
+  return 'nobtn';
+}
 function scrollAll(w, d, done){
   var y = 0, max = d.body.scrollHeight;
   (function step(){
@@ -287,12 +307,16 @@ setTimeout(function(){
       var d = f.contentDocument, w = f.contentWindow;
       if (!d || !w){ res.push({vw: v[0], err: 'no doc'}); if(--pending===0) finish(); return; }
       scrollAll(w, d, function(){
-        var r = contrastAudit(d, w, "''' + SEL + r'''");
-        r.vw = v[0];
-        r.iw = w.innerWidth;
-        r.build = getComputedStyle(d.documentElement).getPropertyValue('--build').trim();
-        res.push(r);
-        if (--pending === 0) finish();
+        var opened = openArPanel(w, d);
+        setTimeout(function(){
+          var r = contrastAudit(d, w, "''' + SEL + r'''");
+          r.vw = v[0];
+          r.arOpened = opened;
+          r.iw = w.innerWidth;
+          r.build = getComputedStyle(d.documentElement).getPropertyValue('--build').trim();
+          res.push(r);
+          if (--pending === 0) finish();
+        }, 700);
       });
     });
     function finish(){
@@ -353,12 +377,23 @@ def main():
                 fails.append('vw=%s 无文档（探针未加载）' % r0.get('vw'))
                 continue
             checked = r0.get('checked', 0)
+            # AR 面板展开态：测不到就必须报，不能静默通过（轮178）
+            ao = r0.get('arOpened')
+            pc = r0.get('panelChecked') or 0
+            if ao not in ('ok', 'click'):
+                fails.append('vw=%s：AR 面板未展开（arOpened=%s），'
+                             '面板内文字未被测量' % (r0.get('vw'), ao))
+            elif pc < 3:
+                fails.append('vw=%s：面板展开但只测到 %d 项面板内文字（<3），'
+                             '测量面不足' % (r0.get('vw'), pc))
             bad = r0.get('bad', [])
             total_checked += checked
             print('  vw=%-5d 检查 %d 处文本，不达标 %d 处'
-                  '（跳过渐变 %d / 透明 %d）' % (
+                  '（跳过渐变 %d / 透明 %d / AR 面板内 %d 项）' % (
                       r0['vw'], checked, len(bad),
-                      r0.get('skippedGradient', 0), r0.get('skippedTransparent', 0)))
+                      r0.get('skippedGradient', 0),
+                      r0.get('skippedTransparent', 0),
+                      r0.get('panelChecked', 0)))
             for b in bad[:8]:
                 print('      - %s  对比 %.2f < %.1f  (%.0fpx)  fg=%s bg=%s' % (
                     b['txt'], b['ratio'], b['need'], b['fs'], b['color'], b['bg']))
