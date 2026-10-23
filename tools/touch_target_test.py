@@ -104,6 +104,34 @@ function audit(w, d, MIN, INLINE_MIN){
   }
   return out;
 }
+function arPanelStats(w, d){
+  // 面板展开态下，统计其中真正可点的元素数（供 main 断言测量面）。
+  var ar = d.getElementById('ar');
+  if (!ar) return {has:false, open:false, targets:0};
+  var open = ar.classList.contains('on');
+  var n = 0;
+  if (open){
+    [].slice.call(ar.querySelectorAll('button,a[href]')).forEach(function(e){
+      var cs = w.getComputedStyle(e);
+      if (cs.display === 'none' || cs.visibility === 'hidden') return;
+      var r = e.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) n++;
+    });
+  }
+  return {has:true, open:open, targets:n};
+}
+function tryOpenAr(f){
+  var w = f.contentWindow, d = f.contentDocument;
+  if (!w || !d) return 'nodoc';
+  if (w.__ar && w.__ar.open){
+    try{ var sc = w.__ar.scenes;
+      if (sc && sc.length){ w.__ar.open(sc[0].id); return 'api'; }
+    }catch(e){}
+  }
+  var b = d.querySelector('.ar-card .go');
+  if (b){ b.click(); return 'click'; }
+  return 'noar';
+}
 '''
 
 
@@ -252,18 +280,31 @@ VPS.forEach(function(v, i){
 });
 ''' + AUDIT_JS + r'''
 setTimeout(function(){
-  try{
-    var res = [];
-    VPS.forEach(function(v, i){
-      var f = document.getElementById('f' + i);
-      var d = f.contentDocument, w = f.contentWindow;
-      var a = (d && w) ? audit(w, d, MIN, INLINE_MIN) : { err: 'no doc' };
-      a.vw = v[0];
-      if (d && w) { a.iw = w.innerWidth; a.scrollW = d.documentElement.scrollWidth; }
-      res.push(a);
-    });
-    document.title = JSON.stringify(res);
-  }catch(e){ document.title = 'ERR ' + e; }
+  // 先在每个 iframe 里展开 AR 面板，让面板内控件进入可测态
+  VPS.forEach(function(v, i){
+    var f = document.getElementById('f' + i);
+    f.__openTry = tryOpenAr(f);
+  });
+  setTimeout(function(){
+    try{
+      var res = [];
+      VPS.forEach(function(v, i){
+        var f = document.getElementById('f' + i);
+        var d = f.contentDocument, w = f.contentWindow;
+        var a = (d && w) ? audit(w, d, MIN, INLINE_MIN) : { err: 'no doc' };
+        a.vw = v[0];
+        a.openTry = f.__openTry;
+        if (d && w) {
+          a.iw = w.innerWidth;
+          a.scrollW = d.documentElement.scrollWidth;
+          var st = arPanelStats(w, d);
+          a.arHas = st.has; a.arOpen = st.open; a.arTargets = st.targets;
+        }
+        res.push(a);
+      });
+      document.title = JSON.stringify(res);
+    }catch(e){ document.title = 'ERR ' + e; }
+  }, 2200);
 }, 5200);
 </script></body></html>'''
     return html.replace('__MIN__', str(MIN_PX)).replace('__IMIN__', str(INLINE_MIN_PX))
@@ -300,9 +341,20 @@ def main():
                 continue
             ov = r0.get('scrollW', 0) - r0.get('iw', 0)
             small = r0.get('small') or []
+            # AR 面板展开态：测不到就必须报，不能静默通过（轮177）
+            if not r0.get('arHas'):
+                fails.append('vw=%d：找不到 #ar 面板，该维度未测量' % r0['vw'])
+            elif not r0.get('arOpen'):
+                fails.append('vw=%d：AR 面板未展开（openTry=%s），'
+                             '面板内触控目标未被测量' % (r0['vw'], r0.get('openTry')))
+            elif (r0.get('arTargets') or 0) < 6:
+                fails.append('vw=%d：面板展开但只测到 %s 个可点元素（<6），'
+                             '测量面不足' % (r0['vw'], r0.get('arTargets')))
             note = '' if ov <= 1 else '（另有横向溢出 %dpx）' % ov
-            print('  vw=%-5d 不足 %dpx 的独立交互目标 %d 个%s' % (
-                r0['vw'], MIN_PX, len(small), note))
+            print('  vw=%-5d 不足 %dpx 的独立交互目标 %d 个%s'
+                  '（AR 面板内可点 %s 个）' % (
+                      r0['vw'], MIN_PX, len(small), note,
+                      r0.get('arTargets')))
             for e in small[:5]:
                 if e.get('inline'):
                     print('      %-36s 行盒 %dpx < %d  %r' % (
