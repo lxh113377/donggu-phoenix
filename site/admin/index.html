@@ -293,7 +293,20 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   'use strict';
 
   var D = (typeof DG_STATIC_STATS !== 'undefined') ? DG_STATIC_STATS : null;
-  var SCENE_NAMES = { craft: '造像技艺', red: '红色地标', phoenix: '凤凰图腾' };
+  /* 语言码 -> 中文名（轮168 新增）。
+ * 之前语言表直接显示 zh-CN / en-US 这类 BCP47 码，
+ * 获奖级后台不该把机器标签当界面文案。
+ * 只收数据里实际出现的 6 种；未知码回落原值，不猜。 */
+var LANG_NAMES = {
+  'zh-CN': '简体中文',
+  'en-US': '英语（美国）',
+  'zh-TW': '繁体中文',
+  'ja-JP': '日语',
+  'ko-KR': '韩语',
+  'fr-FR': '法语（法国）'
+};
+
+var SCENE_NAMES = { craft: '造像技艺', red: '红色地标', phoenix: '凤凰图腾' };
   var state = { week: 0 };
 
   var $ = function (s) { return document.querySelector(s); };
@@ -429,7 +442,11 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     fillTable('#tbl-country tbody', t.countries.map(function (c) {
       return [c.c, fmt(c.n), fmt(c.u)];
     }));
-    fillTable('#tbl-lang tbody', t.langs.map(function (x) { return [x.l || '(未知)', fmt(x.n)]; }));
+    fillTable('#tbl-lang tbody', t.langs.map(function (x) {
+      // 语言码要翻成人话：裸 zh-CN 扔给看板的人是失职
+      // （轮168 实读后台时发现）。地区码保留括号，信息不丢。
+      return [LANG_NAMES[x.l] || x.l || '(未知)', fmt(x.n)];
+    }));
     fillTable('#tbl-screen tbody', t.screens.map(function (x) { return [x.s || '(未知)', fmt(x.n)]; }));
   }
 
