@@ -743,6 +743,13 @@ try:
         _chars |= set(_html.unescape(re.sub(r'<[^>]+>', ' ', _s)))
     for _p in _glob.glob(os.path.join(SITE, 'assets', 'data', '*.js')):
         _s = open(_p, encoding='utf-8', errors='ignore').read()
+        # 与下面 assets/js 一支同样先剥注释（轮173 统一）。
+        # 一手证据：给 ar-data.js 加了一条解释 play/pause 约定的中文注释，
+        # 注释里的 "暂停"/"继续" 带引号，被字符串正则当成字符串边界，
+        # 于是把注释文字当渲染内容收集，误报缺字「案」。
+        # 注释里的字永远不会渲染 —— 不剥就会「加注释即触发缺字」。
+        _s = re.sub(r'/\*.*?\*/', ' ', _s, flags=re.S)
+        _s = re.sub(r'//[^\n]*', ' ', _s)
         for _m in re.finditer(r"['\"\x60]([^'\"\x60]{1,500})['\"\x60]", _s):
             _chars |= set(_m.group(1))
     for _p in _glob.glob(os.path.join(SITE, 'assets', 'js', '*.js')):
