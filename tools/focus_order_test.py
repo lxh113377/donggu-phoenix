@@ -68,6 +68,7 @@ READ = r"""(function(){
     docLeft: Math.round(r.left + window.scrollX),
     docBottom: Math.round(r.bottom + window.scrollY),
     viewTop: Math.round(r.top),
+    sy: Math.round(window.scrollY),
     vh: window.innerHeight,
     inVp: r.top >= -2 && r.bottom > 2 && r.top < window.innerHeight - 2,
     isSkip: !!first && el === first
@@ -82,7 +83,7 @@ def tab_once(page, ch):
                    'windowsVirtualKeyCode': 9, 'nativeVirtualKeyCode': 9})
 
 
-def walk(page, ch, url, settle=0.9, after_nav=None):
+def walk(page, ch, url, after_nav=None):
     """真按 Tab 走一遍，返回序列（每项含文档坐标与视口状态）。
 
     after_nav：导航完成、DOM 就绪后执行的回调。
@@ -114,8 +115,27 @@ def walk(page, ch, url, settle=0.9, after_nav=None):
             continue
         stall = 0
         last_key = key
-        time.sleep(settle)          # 等平滑滚动落定
-        b = json.loads(page.eval_js(READ, timeout=25))
+        # 等滚动真的停住，而不是等固定秒数。
+        # 轮152 实证的 flaky 根因：原先 time.sleep(0.9) 是按「平滑滚动一般
+        # 半秒内完成」拍的，但本仓有 html{scroll-behavior:smooth}，
+        # 回归里 20+ 个浏览器判据争抢 CPU 时 0.9s 可以不够 ——
+        # 于是读到滚动中间态，误报「Tab 到视口外」（同一判据全量跑 rc=1、
+        # 单独跑 rc=0 就是这类问题）。改成轮询 scrollY 直到连续两次相同，
+        # 上限 3s；这样既不等多余时间，也不会在慢机器上读早。
+        prev = None
+        b = None
+        t0 = time.time()
+        while time.time() - t0 < 3.0:
+            cur = json.loads(page.eval_js(READ, timeout=25))
+            if cur is None:
+                break
+            if prev is not None and cur.get('sy') == prev:
+                b = cur
+                break
+            prev = cur.get('sy')
+            time.sleep(0.12)
+        if b is None:
+            b = json.loads(page.eval_js(READ, timeout=25))
         if b is None:
             continue
         seq.append(b)
