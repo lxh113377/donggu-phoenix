@@ -219,20 +219,27 @@ def trend_problems(d):
 def tens_problems(d):
     """G 条（轮128 口径）：访问数据计数值严禁是 10 的倍数。
 
-    只约束「访问数据」本身，排除两类：
-      · 结构字段：周序号 idx、所属周 week、天数 days、窗口天数、seed
-        —— 它们不是测量值，7 天一周就该是 7。
-      · 图表坐标轴刻度：niceScale 刻意产出 500/1000/1500，那是可读性设计，
-        不是数据（判据扫的是数据文件，天然不含刻度，这里注明以免误改）。
+    轮177 把「白名单」翻成「黑名单」。白名单（只查 pv/uv/... 七个键）
+    是"默认放行"——老大要求的是普遍约束"严禁出现 10 的倍数"，而生成器
+    将来新增任何计数维度（devices、dwell、clicks…）若没登记就静默逃逸。
+    黑名单反过来："默认拦截"——除明确的结构字段外，**任何**整数值都按
+    访问数据查整十。新增结构字段时才需要登记进 STRUCT_KEYS。
+      · 结构字段豁免：周序号 idx、所属周 week、天数 days、月份 month、
+        窗口跨度、seed —— 它们不是测量值，7 天一周就该是 7。
+      · 图表坐标轴刻度：niceScale 刻意产出 500/1000/1500，那是可读性设计
+        不是数据（判据扫数据文件，天然不含刻度，注明以免误改）。
     0 豁免：0 表示「该项未发生」，不是编造的整十。
     """
-    COUNT_KEYS = {"pv", "uv", "scenes", "summon", "events", "n", "u"}
+    STRUCT_KEYS = {"idx", "id", "week", "weeks", "day", "days", "month",
+                   "year", "seed", "span", "days_span", "window_days",
+                   "n_weeks", "n_days"}
     vals = []
 
     def walk(node):
         if isinstance(node, dict):
             for k, v in node.items():
-                if k in COUNT_KEYS and isinstance(v, int) and not isinstance(v, bool):
+                if (k not in STRUCT_KEYS and isinstance(v, int)
+                        and not isinstance(v, bool)):
                     vals.append(v)
                 else:
                     walk(v)
@@ -356,6 +363,25 @@ def selftest():
             "totals": {"pv": 1483, "langs": [{"l": "zh", "n": 1483}]}}
     if tens_problems(d_ok):
         bad.append('G 条自检：非整十数据被误报（%s）' % tens_problems(d_ok))
+    # G 条自检（轮177 黑名单方向）：不在旧白名单的新计数维度整十必须被抓到。
+    # devices 从未登记进任何计数白名单 —— 白名单时代它会静默逃逸，
+    # 而老大要求的是普遍约束「严禁出现 10 的倍数」。若有人把黑名单
+    # STRUCT_KEYS（默认拦截）改回白名单（默认放行），这条会立刻报红。
+    d_escape = {"totals": {"pv": 13007, "devices": 200},
+                "weeks": [{"idx": 1, "pv": 1483, "devices": 90}],
+                "days": []}
+    if not any('10 的倍数' in x for x in tens_problems(d_escape)):
+        bad.append('G 条自检：未登记的新计数维度 devices=200 未被抓到'
+                   '（黑名单被改回白名单？默认放行会静默逃逸）')
+    # G 条自检：结构字段（weeks/days/idx/seed）不得因黑名单扩大扫描面而误报
+    d_struct = {"meta": {"window": {"weeks": 7, "days": 48}, "seed": 20261144},
+                "totals": {"pv": 13007},
+                "weeks": [{"idx": 1, "week": 1, "days": 7, "pv": 1483,
+                           "uv": 1183}]}
+    if tens_problems(d_struct):
+        bad.append('G 条自检：结构字段被误报为整十（%s），'
+                   'STRUCT_KEYS 豁免可能漏了项'
+                   % tens_problems(d_struct)[0][:40])
     # G 条自检：派生值整十（数据文件里看不出来）必须被抓到
     d_derived = {"weeks": [{"idx": 1, "pv": 1000}, {"idx": 2, "pv": 1000}],
                  "days": [], "totals": {"pv": 2000}}
