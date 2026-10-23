@@ -121,7 +121,19 @@ def walk(page, ch, url, after_nav=None):
                  'window.scrollTo(0,0);return 1;})()', timeout=20)
     if after_nav:
         after_nav()
-    time.sleep(1.2)
+    # 等「字体已加载」这个可观测量，而不是等固定秒数。
+    # 判据读数依赖布局（docTop/docLeft），而自托管中文/拉丁字体会改变
+    # 行高与字宽 -> 未加载完就 Tab 会读到布局位移中的坐标。
+    # 轮154 实测：删掉原 time.sleep(1.2) 后连跑 3 次仍全绿（本机字体缓存
+    # 命中，几乎瞬时），但那只说明「此处不需要等」，不能说明「不需要等」
+    # 这件事本身 —— 冷缓存/慢网下仍可能读早。所以换成按可观测量收敛：
+    # 语义精确、快机器不白等，慢机器也一定等到。
+    try:
+        ch.wait_for(page, "document.fonts.status === 'loaded'"
+                    " || document.fonts.status === 'error'", 12)
+    except Exception:
+        # 取不到就绪状态时降级为短等待并显式说明，不静默假定已就绪
+        time.sleep(1.2)
     page.call('Page.enable')
     seq = []
     last_key = None
