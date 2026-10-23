@@ -50,8 +50,35 @@ def scan_chars():
 
 def build(src, text, out):
     from fontTools import subset
-    subset.main([src, "--text=" + text, "--layout-features=", "--no-hinting",
-                 "--desubroutinize", "--flavor=woff2", "--output-file=" + out])
+    # --layout-features=kern：只保留字距调整，其余（liga/calt/ss01…）仍裁掉，
+    # 体积代价实测仅 +2~3KB/字体（cinzel 13.7->16.4，zcool 219.5->221.8）。
+    #
+    # 原先这里是 "--layout-features="（空值）= 主动裁掉全部排版特性，
+    # 后果是站里所有拉丁展示文字（标题、章节序号、时间、页脚计数）
+    # 都失去 kerning，只能靠 letter-spacing 粗调 —— 而这类失效是静默的：
+    # CSS 合法、浏览器不报错、DevTools 看着像生效，只有量字距对才发现为零。
+    # 顺带查清一件事：Cinzel 源字体本身没有 tnum 特性（只有 calt/dlig/locl/
+    # onum/ss01/ss02），所以 CSS 里 5 处 font-variant-numeric:tabular-nums
+    # 无论怎么裁都不会生效，那是另一条要单独处理的问题（见台账）。
+    subset.main([src, "--text=" + text, "--layout-features=kern",
+                 "--no-hinting", "--desubroutinize", "--flavor=woff2",
+                 "--output-file=" + out])
+    # 产出校验：子集库在某些版本下会静默忽略 --layout-features，
+    # 所以不能假设参数写了就生效 —— 直接读回产物数字距查找数。
+    from fontTools.ttLib import TTFont
+    f = TTFont(out)
+    try:
+        n = 0
+        if "GPOS" in f and f["GPOS"].table.LookupList:
+            n = len(f["GPOS"].table.LookupList.Lookup)
+        has_kern_table = "kern" in f
+    finally:
+        f.close()
+    if n == 0 and not has_kern_table:
+        raise SystemExit("子集 %s 没有字距数据：--layout-features 未生效，"
+                         "不要让无 kern 的字体上线" % out)
+    print("  %s 字距查找(GPOS)=%d kern表=%s" % (os.path.basename(out), n,
+                                                has_kern_table))
     return os.path.getsize(out)
 
 

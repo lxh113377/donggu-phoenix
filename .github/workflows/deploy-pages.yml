@@ -257,6 +257,16 @@ jobs:
           # 只查「仓库自己两句话对不对得上」，不评判外部史实（那需人工核）。
           # 红色展陈站后续必然增补烈士人物，同类错误会复发，故机器守。
           python tools/fact_consistency_test.py
+          # 轮145：会被用来渲染中文的字体栈，必须有具名中文兜底。
+          # cinzel.woff2 汉字数实测 0（子集只收拉丁与数字），而原先
+          #   --font-latin:"Cinzel","Times New Roman",serif
+          # 栈尾是裸 generic，于是 .hero h1 em / .hero-meta dd /
+          # .carve-rail button b / .visit-stats 四处的中文都落各机器
+          # 默认衬线（Windows 宋体、macOS Songti、Android Noto）——
+          # 同一份设计在不同访客机器上有多个版本。
+          # 判据用 fontTools 读 cmap 判断族是否真供汉字，未装库则降级
+          # 按族名判断并在报告里标注口径；S1 直接复刻缺陷原样必须报红。
+          python tools/font_cjk_stack_test.py
           # 轮134（U-433）：改了 cache-first 资源必须同时 bump SW VERSION。
           # sw.js 自己的注释就写着「本项目第 4 次踩同一坑」，是代码声明过的不变量。
           # 量近 40 个提交抓到 1 次未记账违规：637931a（轮128 我自己）改了

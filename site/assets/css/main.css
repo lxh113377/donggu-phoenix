@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:59;
+  --build:61;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -52,7 +52,14 @@
   --font-serif:"Songti SC","Noto Serif SC","STSong","SimSun",serif;
   --font-kai:"STKaiti","Kaiti SC","KaiTi","Songti SC",serif;
   --font-sans:"PingFang SC","Noto Sans SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif;
-  --font-latin:"Cinzel","Times New Roman",serif;
+  /* cinzel.woff2 汉字数实测为 0（子集只收拉丁与数字），而站里 .hero h1 em、
+   * .hero-meta dd、.carve-rail button b 等处都用这个栈渲染含中文的文本。
+   * 原先栈尾是裸 serif 关键字，中文就落各机器的默认衬线（Windows 宋体 /
+   * macOS Songti / Android Noto）—— 那不是设计选择，是听天由命：同一行里
+   * 英文走 Cinzel、中文按访客机器随机变。
+   * 尾巴引用 --font-serif（不重抄中文栈，改一处两边同步）：纯拉丁元素的
+   * 匹配链仍在 Cinzel 就停、完全不受影响，只有中文才会继续往下找到确定体。 */
+  --font-latin:"Cinzel","Times New Roman",var(--font-serif);
 
   /* 字阶：11 → 112，共 11 档，禁止临时造字号 */
   --fs-2xs:0.6875rem;
@@ -326,7 +333,13 @@ a.btn-ask{margin-left:12px}
 @media (max-width:900px){.hero-meta{justify-content:center}}
 .hero-meta div{display:grid;gap:4px}
 .hero-meta dt{font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.26em;color:var(--fg-faint)}
-.hero-meta dd{font-family:var(--font-latin);font-size:var(--fs-lg);letter-spacing:.08em;color:var(--she-gold);font-variant-numeric:tabular-nums}
+/* 去掉 tabular-nums：Cinzel 源字体没有 tnum 特性（GSUB 只有
+ * calt/dlig/locl/onum/ss01/ss02），A/B 实测同文本改前改后宽度
+ * 149.27 = 149.27，这条永远不可能生效。
+ * hero-meta 的数值是静态文本、永不变化，比例数字在此无害且是设计意图
+ * （展示字体的数字本该保留字面感）。动态数字（#ar-time/.carve-pct）
+ * 已换 --font-sans 取等宽，那两处的声明是有效的，不能照此删除。 */
+.hero-meta dd{font-family:var(--font-latin);font-size:var(--fs-lg);letter-spacing:.08em;color:var(--she-gold)}
 
 @keyframes pulse{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1.25)}}
 @keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
@@ -383,7 +396,11 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .sec-idx{
   font-family:var(--font-latin);font-size:clamp(1.5rem,2.6vw,2.25rem);line-height:1;
   letter-spacing:.04em;color:rgba(212,162,76,.72);
-  align-self:start;padding-top:.18em;user-select:none;font-variant-numeric:tabular-nums;
+  /* 去掉 font-variant-numeric:tabular-nums：Cinzel 没有 tnum 特性，
+   * A/B 实测（同文本只改这条声明）宽度 149.27 对 149.27，声明是死的。
+   * 章节序号 01..07 是静态文本、永不变化，比例数字在这里无害且是设计意图
+   * （展示字体的数字本就该有字面感），故只删无效声明、不换字体。 */
+  align-self:start;padding-top:.18em;user-select:none;
 }
 .sec-head h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(var(--fs-2xl),4.2vw,var(--fs-4xl));
   letter-spacing:.16em;color:var(--fg);text-wrap:balance}
@@ -510,8 +527,15 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
   box-shadow:0 0 16px rgba(212,162,76,.55);cursor:grab
 }
 .carve-slider::-moz-range-track{height:3px;background:rgba(212,162,76,.35);border-radius:2px}
-.carve-pct{font-family:var(--font-latin);font-size:var(--fs-xs);letter-spacing:.16em;color:var(--she-gold);
-  min-width:6.4em;font-variant-numeric:tabular-nums}
+/* 拖滑杆时逐帧写「已成 N%」，两个问题一起暴露：
+ * ① 数字用 Cinzel（无 tnum）实测同为 2 位数极差 5.1px（01% 22.7 .. 08% 27.8）；
+ *    min-width:6.4em 只保证容器不小于 6.4em，挡不住文字在框内左右游移，
+ *    方向本身就用错了 —— 防抖动要等宽数字，不是最小宽度。
+ * ② 「已成」是汉字，而 cinzel.woff2 汉字数=0（实测 cmap 里一个都没有），
+ *    于是同一个标签里数字走 Cinzel、汉字走回退，两套字面风格并排。
+ * 换 --font-sans 后：极差实测 0.0px，且中文与数字同栈、风格统一。 */
+.carve-pct{font-family:var(--font-sans);font-size:var(--fs-xs);letter-spacing:.16em;color:var(--she-gold);
+  font-variant-numeric:tabular-nums}
 .carve-play{
   font-family:var(--font-sans);font-size:var(--fs-xs);letter-spacing:.2em;color:var(--she-gold);
   padding:12px 24px;border:1px solid var(--line);border-radius:var(--radius-pill);
@@ -682,7 +706,15 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .ar-bar-wrap{flex:1;height:2px;background:rgba(212,162,76,.2);border-radius:2px;overflow:hidden}
 .ar-bar{height:100%;width:0;background:linear-gradient(90deg,var(--she-gold),var(--she-vermilion));
   box-shadow:0 0 12px rgba(232,183,97,.6);transition:width .18s linear}
-#ar-time{font-family:var(--font-latin);font-size:var(--fs-2xs);letter-spacing:.1em;color:var(--fg-faint);
+/* 计时读数每帧重写（ar.js: el.time.textContent = fmt(state.t) + …）。
+ * 原先用 --font-latin（Cinzel），实测同为 2 位数的九种读数宽度极差
+ * 10.1px（78.2..68.1）—— 而它所在的 .ar-progress 是 flex，
+ * 计时变宽就把右边的兄弟整体推过去，每帧都在抖。
+ * Cinzel 源字体没有 tnum 特性（GSUB 只有 calt/dlig/locl/onum/ss01/ss02），
+ * 所以 tabular-nums 在这套字面上永远不可能生效；换 --font-sans 后
+ * 同组读数极差实测 0.0px（与 ui-monospace 对照组一致）。
+ * 保留 tabular-nums：sans 栈本身数字等宽，但回退字体不一定，这条是护栏。 */
+#ar-time{font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.1em;color:var(--fg-faint);
   white-space:nowrap;font-variant-numeric:tabular-nums}
 .ar-controls{display:flex;align-items:center;gap:var(--sp-hair);flex-wrap:wrap}
 .ar-btn{padding:11px 20px;border-radius:var(--radius-pill);border:1px solid var(--line-soft);
@@ -748,7 +780,8 @@ section{position:relative;z-index:1;padding:var(--sec-y) 0}
 .culture-card .no{
   font-family:var(--font-latin);font-size:clamp(2rem,3.6vw,3.25rem);line-height:.9;letter-spacing:.02em;
   color:color-mix(in srgb,var(--accent) 72%,transparent);
-  font-variant-numeric:tabular-nums;transition:color .5s var(--ease)
+  /* 同上：卡片序号 01..04 静态、且 Cinzel 无 tnum，声明无效，删 */
+  transition:color .5s var(--ease)
 }
 .culture-card:hover .no{color:var(--accent)}
 .culture-card .kick{font-family:var(--font-sans);font-size:var(--fs-2xs);letter-spacing:.24em;color:var(--fg-faint)}
