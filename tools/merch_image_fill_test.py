@@ -28,11 +28,15 @@ feature 修复前：宽高都被 150px 压 -> dominant << 0.8，判红。
   · cacheBust 保留：注入带时间戳的 <link> 绕开 HTTP/SW 缓存
   · chrome 偶发空输出（U-193）-> 每视口最多 5 次重试
   · 两视口都无数据 -> SKIP 且**明确说明是环境问题**，不算判据通过
-归宿说明（轮154）：本件覆盖独有维度（文创卡片里图片的视觉占比；
-image_quality_test 只管变形/模糊/加载失败，不重复），但目前无自检。
-按本仓纪律（无牙判据接进 CI = 一枚可能恒绿的假守护，比不接更危险）
-暂不接入。待办：补「注入一张已知占比不达标的图，必须报 FAIL」的自检
-后再接入；在那之前请勿因为它能跑通就当成守卫。
+归宿说明（轮155 更新）：本件覆盖独有维度（文创卡片里图片的视觉占比；
+image_quality_test 只管变形/模糊/加载失败，不重复），已在 CI 浏览器套件。
+轮154 曾因其无自检而不接入，并发现它自带一个只认 Windows 路径的
+find_chrome —— 在 ubuntu runner 上必返回 None，于是「缺 chrome -> SKIP ->
+退出码 0」，即便接进 CI 也只是枚永不测量的假守护。现两处都修：
+  · chrome 发现改用 cdp_client.find_chrome（与全站同口径，含 PATH 回退）
+  · 判定拆成纯函数 judge_cards，自检 T1~T4（空读数/压小/溢出/健康不误报）
+    加真站阈值边界项：同一份实测读数抬阈值必报红、压阈值必不报红
+边界项已用破坏性实验证明确有牙（把判定改成恒不报红时，它当场报失效）。
 """
 import json
 import os
@@ -77,15 +81,17 @@ PROBE = """(function(doc, win){
 DOM_THRESHOLD = 0.80
 
 
-def find_chrome():
-    root = os.path.join(os.path.expanduser('~'), '.agent-browser', 'browsers')
-    if not os.path.isdir(root):
-        return None
-    for name in sorted(os.listdir(root), reverse=True):
-        exe = os.path.join(root, name, 'chrome.exe')
-        if os.path.exists(exe):
-            return exe
-    return None
+# chrome 发现与全站判据共用同一口径：cdp_client.find_chrome
+# （先取 agent-browser 自带 chrome，再回退 PATH 上的
+#  google-chrome / chromium / chromium-browser）。
+#
+# 原先本文件自带一个只找 ~/.agent-browser 下 chrome.exe 的版本 ——
+# 那是 Windows 专用路径与专用文件名，在 ubuntu runner 上必返回 None，
+# 于是「缺 chrome -> RESULT: SKIP -> 退出码 0」；即便接进 CI，
+# 它也是一枚永不测量却永远绿的假守护（轮132 同族；轮154 的
+# 孤儿判据审查抓出的正是本件）。
+sys.path.insert(0, os.path.join(BASE, 'tools'))
+from cdp_client import find_chrome
 
 
 def free_port():
@@ -114,7 +120,7 @@ def start_site_server(port):
     return srv
 
 
-def wrapper_html(vw, vh):
+def wrapper_html(vw, vh, inject=None):
     """同源 iframe 承载目标视口；宽屏也走同一套，保证两视口口径一致。"""
     return (
         "<!doctype html><html><head><meta charset=\"utf-8\"><title>pending</title>"
@@ -189,6 +195,50 @@ def measure(chrome, port, vw, vh, attempts=5):
     return rows
 
 
+def judge_cards(cards, threshold=DOM_THRESHOLD):
+    # 测量结果 -> 缺陷列表（纯函数；自检可直接喂已知坏值）。
+    # 判定原先混在 main 的循环里，于是「图片被压小会不会判红」
+    # 只能靠真起 chrome 才能证明；拆出来后静态自检拿合成读数就能验牙。
+    if not cards:
+        # 空读数不能静默通过：测量口径失效和「一切都好」长得一样
+        return ['没有可测卡片（测量口径失效，不是通过）']
+    fails = []
+    doms = [c['dominant'] for c in cards]
+    mn = min(doms)
+    if mn < threshold:
+        worst = [c for c in cards if c['dominant'] < threshold]
+        fails.append('%d 张卡 dominant < %.2f（图片被压小，最低 %.2f）'
+                     % (len(worst), threshold, mn))
+    ovf = [c for c in cards if c['overflow']]
+    if ovf:
+        fails.append('%d 张卡图片溢出容器' % len(ovf))
+    return fails
+
+
+def selftest():
+    # 判据自身的牙。静态四项用合成读数，证明「坏值一定报红、好值一定不报红」；
+    # 真站边界项由 main 追加（同一份实测读数改阈值必须翻转结论）。
+    bad = []
+
+    def mk(vals, ovf=False):
+        return [{'dominant': v, 'overflow': ovf, 'feat': False}
+                for v in vals]
+
+    # T1 空读数必须报 —— 测量口径失效不能伪装成通过
+    if not judge_cards([]):
+        bad.append('T1 空读数没报红（测量失效会被当成通过）')
+    # T2 明显被压小必须报红
+    if not judge_cards(mk([0.95, 0.52, 0.98])):
+        bad.append('T2 dominant 0.52 没判红（判据可能恒绿）')
+    # T3 溢出必须报红
+    if not judge_cards(mk([0.95, 0.96], ovf=True)):
+        bad.append('T3 图片溢出容器没判红')
+    # T4 健康读数不得误报
+    if judge_cards(mk([0.88, 0.99, 0.95])):
+        bad.append('T4 健康读数被误报（判定过紧）')
+    return bad
+
+
 def main():
     chrome = find_chrome()
     if not chrome:
@@ -200,7 +250,13 @@ def main():
         print('RESULT: SKIP  静态服务起不来（环境问题，非判据通过）')
         return 0
 
-    fails = []
+    self_bad = selftest()
+    print('=== 尺子有效性自检（静态 T1~T4）===')
+    for x in self_bad:
+        print('  [X]', x)
+    if not self_bad:
+        print('  [ok] T1 空读数报红 / T2 压小判红 / T3 溢出判红 / T4 健康不误报')
+    fails = list(self_bad)
     any_data = False
     try:
         for w, h, label in [(1440, 900, '桌面'), (390, 844, '移动')]:
@@ -223,13 +279,19 @@ def main():
             print('[%s %dx%d] 视口%d，%d 张卡，dominant 最小 %.2f 均值 %.2f%s' % (
                 label, w, h, d.get('iw'), len(cards), mn,
                 sum(doms) / len(doms), feat_str))
-            if mn < DOM_THRESHOLD:
-                worst = [c for c in cards if c['dominant'] < DOM_THRESHOLD]
-                fails.append('%s %dx%d：%d 张卡 dominant < %.2f（图片被压小，最低 %.2f）'
-                             % (label, w, h, len(worst), DOM_THRESHOLD, mn))
-            ovf = [c for c in cards if c['overflow']]
-            if ovf:
-                fails.append('%s %dx%d：%d 张卡图片溢出容器' % (label, w, h, len(ovf)))
+            for x in judge_cards(cards):
+                fails.append('%s %dx%d：%s' % (label, w, h, x))
+            # 真站边界自检：拿这一视口的实测读数改阈值，结论必须翻转。
+            # 抬 0.02（刚好高于最小值）-> 必须报红；
+            # 压 0.05（刚好低于最小值）-> 必须不报红。
+            # 这验的是整条链路：真测出来的数喂进判定，判定真的会动。
+            mn_v = min(c['dominant'] for c in cards)
+            hi = judge_cards(cards, threshold=mn_v + 0.02)
+            lo = judge_cards(cards, threshold=mn_v - 0.05)
+            if not hi or lo:
+                fails.append(
+                    '%s %dx%d：阈值边界自检失效（抬阈值 %s 报红、压阈值 %s 不报红，二者应为 真/假）'
+                    % (label, w, h, bool(hi), bool(lo)))
     finally:
         try:
             srv.shutdown()

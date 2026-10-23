@@ -119,7 +119,8 @@ jobs:
       #   reverse_ar_playback —— 118 秒（起 4 次 chrome），代价过高，留本地套件
       #
       # 缺 chrome 时各自 SKIP（环境问题），真坏才 FAIL。
-      - name: Browser suite (17 CDP gates)
+      # 条数不写死在步骤名里：加/减判据时标题必然变成假话（轮155 实测此处写 17、实际已 20）。
+      - name: Browser suite (CDP gates)
         run: |
           # 9 视口无横向溢出/越界/首屏裁切
           python tools/multi_viewport_test.py
@@ -169,6 +170,13 @@ jobs:
           # 属 U-395/401/408 同族：视觉不变量无人守。
           # 自带「注入 12 个错色必须报出 12 个」的尺子自检，故不单列 reverse 脚本。
           python tools/phoenix_color_fidelity_test.py
+          # 双视口文创卡片图片占比（dominant >= 0.80）+ 阈值边界自检。
+          # 轮155 接入：原先本件自带一个只认 Windows 路径的 find_chrome，
+          # 在 ubuntu runner 上必返回 None -> SKIP -> 退出码 0，即便接进 CI
+          # 也是永不测量的假守护；现与全站共用 cdp_client.find_chrome，
+          # 并补了「抬阈值必报红、压阈值必不报红」的边界自检（已用破坏性
+          # 实验证明它确有牙）。
+          python tools/merch_image_fill_test.py
       # 守卫自身的自检：保证「零样本必 SKIP」不会被悄悄改坏。
       # 数据字段消费者检查也放这里（纯静态、无浏览器依赖）。
       - name: Guard self-test
