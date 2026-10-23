@@ -93,7 +93,29 @@ canvas{display:block;width:100%;height:190px}
 /* 轮115：表格容器也吃满 panel 剩余高度（表格行少时不再在面板底部留大空白）。
  * tbody 无法拉高，故配合 .panel>table 一起 flex，让表格自身撑开、
  * 行间由 table 的默认分配吸收剩余空间。 */
-.tw{overflow-x:auto;flex:1}
+.tw{overflow-x:auto;flex:1;
+  /* 横滑可发现性（轮157）：窄屏时表格右侧列被藏在滚动容器外，
+   * 光靠上方一句「可左右滑动」不够——用户不知道自己是已经到底
+   * 还是仍有内容。这里用 background-attachment 的 local / scroll
+   * 差异做渐隐：local 图层随内容滚走、scroll 图层钉在视口边缘，
+   * 于是「还有隐藏内容」时才出现提示，「已滚到端头」时自动消失。
+   * 好处是纯 CSS、零 JS、零滚动监听，且不会出现「永远挂着一块
+   * 假阴影」这种反向误导。
+   * 40px 是面板底色渐隐（让被切的半个数字淡出而不是硬切），
+   * 14px 是极淡金色，给「可操作」一点暗示，强度仅 .30→.02。
+   * 几何约束（轮158 实测逼出来的）：遮盖层的不透明段必须宽于
+   * 金色层，否则端头会漏出一条金边 —— 不可滚的表也会显示假提示。
+   * 故取 55%（40px×55%=22px）> 14px。改尺寸时这条必须一起校。 */
+  background:
+    linear-gradient(90deg,var(--panel) 55%,rgba(20,17,16,0))
+      left center / 40px 100% no-repeat local,
+    linear-gradient(270deg,var(--panel) 55%,rgba(20,17,16,0))
+      right center / 40px 100% no-repeat local,
+    linear-gradient(90deg,rgba(212,162,76,.30),rgba(212,162,76,.02))
+      left center / 14px 100% no-repeat scroll,
+    linear-gradient(270deg,rgba(212,162,76,.30),rgba(212,162,76,.02))
+      right center / 14px 100% no-repeat scroll;
+}
 .panel>table{width:100%;flex:1}
 /* 窄屏表格溢出时由 JS 点亮横滑提示，否则右侧列等于被藏起来。 */
 .scroll-hint{display:none;margin:0 0 8px;font-size:var(--fs-2xs);letter-spacing:.1em;color:var(--gold-dim)}
