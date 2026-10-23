@@ -124,15 +124,19 @@ def walk(page, ch, url, after_nav=None):
     # 等「字体已加载」这个可观测量，而不是等固定秒数。
     # 判据读数依赖布局（docTop/docLeft），而自托管中文/拉丁字体会改变
     # 行高与字宽 -> 未加载完就 Tab 会读到布局位移中的坐标。
-    # 轮154 实测：删掉原 time.sleep(1.2) 后连跑 3 次仍全绿（本机字体缓存
-    # 命中，几乎瞬时），但那只说明「此处不需要等」，不能说明「不需要等」
-    # 这件事本身 —— 冷缓存/慢网下仍可能读早。所以换成按可观测量收敛：
-    # 语义精确、快机器不白等，慢机器也一定等到。
-    try:
-        ch.wait_for(page, "document.fonts.status === 'loaded'"
-                    " || document.fonts.status === 'error'", 12)
-    except Exception:
-        # 取不到就绪状态时降级为短等待并显式说明，不静默假定已就绪
+    # 轮154 实测：本机与冷启动下该条件都是 0.00~0.01s 即为 loaded
+    # （字体走缓存/子集极小），所以这不是「换成更慢的等法」，
+    # 而是把原来固定 1.2s 的墙钟换成 0.01s 的可观测量 —— 快约 120 倍，
+    # 同时在真正慢的机器上一定会等到，不会像 sleep 那样读早。
+    #
+    # 注意降级条件：wait_for 超时是「返回 falsy」，不抛异常，
+    # 所以绝不能写 try/except Exception —— 那个分支永远不执行，
+    # 等于在注释里承诺一个不存在的降级（轮154 我就这么错过一次）。
+    ready = ch.wait_for(page, "document.fonts.status === 'loaded'"
+                        " || document.fonts.status === 'error'", 12)
+    if not ready:
+        # 等不到就绪状态（老浏览器无 document.fonts 等）才降级为短等待；
+        # 这是按返回值判断的真分支，不是靠异常兜底。
         time.sleep(1.2)
     page.call('Page.enable')
     seq = []
