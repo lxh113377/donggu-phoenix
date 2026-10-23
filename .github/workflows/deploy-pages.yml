@@ -190,6 +190,11 @@ jobs:
           # 做法：劫持 Blob 拿产出物 + MutationObserver 拿 toast，
           # 验 BOM/表头/day key 唯一/lang 带中文名/toast 属实/week 自洽。
           python tools/admin_export_test.py
+          # 后台周次下拉与周图联动（轮172 新开维度：交互之后）。
+          # canvas 是位图，画了什么不在 DOM 里；下拉 value 一定变
+          # （浏览器原生），所以「select 变了」证明不了「图跟着变」——
+          # 只能读像素。自检 S1 删掉 change 里的 drawWeeks() 必须被抓到。
+          python tools/admin_week_select_test.py
       # 守卫自身的自检：保证「零样本必 SKIP」不会被悄悄改坏。
       # 数据字段消费者检查也放这里（纯静态、无浏览器依赖）。
       - name: Guard self-test
