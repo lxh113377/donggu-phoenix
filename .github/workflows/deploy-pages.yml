@@ -183,6 +183,13 @@ jobs:
           # 是截屏实读时偶然发现的。自检 S1 复刻该缺陷证明判据有牙、
           # S2/S3 证明合法破格与可滚容器不误伤。
           python tools/bleed_defeat_test.py
+          # 后台导出 CSV 的产出物判据（轮171 新开维度）。
+          # 导出在页面不留痕迹（点了就下载、DOM 不变），任何读 DOM 的
+          # 判据都测不到它 —— 轮170 正是因为长期无人守，攒下三处不一致
+          # （day key 填周号、lang 导裸码、toast 少报 40 行）。
+          # 做法：劫持 Blob 拿产出物 + MutationObserver 拿 toast，
+          # 验 BOM/表头/day key 唯一/lang 带中文名/toast 属实/week 自洽。
+          python tools/admin_export_test.py
       # 守卫自身的自检：保证「零样本必 SKIP」不会被悄悄改坏。
       # 数据字段消费者检查也放这里（纯静态、无浏览器依赖）。
       - name: Guard self-test
