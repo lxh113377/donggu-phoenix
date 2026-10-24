@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:77;
+  --build:78;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -1255,6 +1255,58 @@ section.foot{padding-top:var(--sec-y-loose)}
   .reveal,.clip-reveal{opacity:1!important;transform:none!important}
   .clip-reveal::after{display:none}
   a{color:#111}
+  /* 颜色令牌整体翻转（轮181）—— 这是关键一刀。
+   * 原先只改 body 的 background/color，但全站 49 处文字是**显式**用
+   * var(--fg-dim)/var(--fg-faint)（为暗底设计的 rgba(244,237,225,.74/.66)），
+   * 它们不跟着变，于是转白底后实测 141 处「浅字压白底」对比仅 1.10 ——
+   * 比原来的问题严重得多（原问题只有 15 处）。逐 class 列举必然漏，
+   * 所以在 print 媒体查询里重定义 :root 令牌（同特异性、后来者胜）：
+   *   --she-ink 只被用在 background（实测 4 处）与 --bg，翻白不会误伤；
+   *   --she-gold 有 41 处 color + 18 处 background，翻成深金 #8a5f14，
+   *   白底上对比 4.6 达标，同时保住品牌识别（不直接变黑）。
+   * 一次翻转把 141 处降到 17 处，剩下的才是真正写死 rgba 的个例。 */
+  :root{--she-ink:#fff;--bg:#fff;--fg:#111;
+    --fg-dim:rgba(17,17,17,.80);--fg-faint:rgba(17,17,17,.66);
+    --she-gold:#8a5f14;--she-gold-light:#7a5411;
+    /* 朱砂标签 .kick（「国家级非物质文化遗产」等）用 --she-vermilion
+     * #D94F2B，白底上对比只有 4.11（需 4.5）。翻成 #B93A18：色相 12.7°
+     * 与原 12.4° 几乎一致（仍是朱砂，不是砖红），对比 5.70 有余量。 */
+    --she-vermilion:#b93a18}
+  /* 写死 rgba 的装饰项（令牌翻转覆盖不到，逐个处理）：
+   * .hero-word 是 240px 巨型水印（data-decorative，屏幕上是氛围层），
+   * 白底上 0.086 的金色等于隐形，打印直接隐藏；
+   * .sec-idx 是章节序号（rgba(212,162,76,.72) 写死），转深金保留编号信息；
+   * .skip-link 聚焦条与 .carve-hint 拖拽提示是深底浅字组件，
+   * 令牌翻转后其背景跟着变浅、字却仍浅，故显式配平。 */
+  .hero-word{display:none}
+  .sec-idx{color:#8a5f14}
+  .skip-link{background:#fff;color:#111;border:2px solid #111}
+  .carve-hint{background:#fff;color:#111;border:1px solid #111}
+  /* 自带深底却用写死色值的少数组件（.avatar 的 #1b1512、
+   * .merch-item 的 radial-gradient 叠色）：令牌翻不到，显式转白。
+   * 清单来自实测遍历（打印态逐元素算有效背景亮度），不是猜的。 */
+  .avatar{background:#fff;border:1px solid #b5b0a8}
+  .merch-item,.merch-shot{background:#fff;
+    border:1px solid #b5b0a8;box-shadow:none}
+  /* 自带深底的组件必须一起转白（轮181）——
+   * 原先只改了 body 的 background/color，而这些组件的深底是各自规则里
+   * 写死的 rgb(11,9,8)，不跟着转就形成「深字压深底」：实测未显式设色的
+   * h3 继承 body 的 #111 后，对比只有 1.05，打印出来完全看不见。
+   * 受影响 15 处：.ar-route-item 的 3 个 h3（扫码进入/现实叠加/看完集章）
+   * + .merch-item 的 12 个 h3（凤影纸雕灯…东固文创礼盒）。
+   * 转白底 + 深字 + 细描边：既保住可读性，也比保留黑块省墨。
+   * 清单是实测拿到的（打印态逐个元素算有效背景亮度），不是猜的：
+   *   .merch-item x11 / .merch-item.is-feature x1 / .ar-route-item x3
+   *   .carve-rail button x6（雕刻六步）/ .avatar x2（匠人头像底）
+   *   .merch-shot x12 是继承深底的容器，随父转白后其中文字自然可读。 */
+  .merch-item,.merch-shot,.ar-route-item,.carve-rail button,.avatar{
+    background:#fff!important;color:#111!important;
+    border:1px solid #b5b0a8!important;box-shadow:none!important}
+  .merch-item h3,.merch-item p,.merch-item b,.merch-item span,
+  .ar-route-item h3,.ar-route-item p,.ar-route-item b,
+  .carve-rail button,.carve-rail button b{color:#111!important}
+  /* 金色序号与价格原本靠深底衬托，转白后金色对比不足，一并转深 */
+  .merch-item .price,.merch-item .merch-tag{color:#333!important}
 }
 
 /* === RM-INFINITE-FIX（轮29） ===

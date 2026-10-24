@@ -158,8 +158,36 @@ def run_check(main_src, adm_src):
     return bad, mt, at
 
 
+def strip_media(src, keyword='print'):
+    """按大括号配对剥掉 @media <keyword>{...} 整块。
+
+    打印态是为「白底打印」重新配色的（轮181 在 @media print 里翻转
+    :root 令牌），那些覆盖值不是品牌色分叉，不该参与跨站品牌比对。
+    正则 .*? 配第一个右花括号会在嵌套块中途停下，故必须按括号深度切。"""
+    out = []
+    i = 0
+    pat = re.compile(r'@media[^{]*\b' + keyword + r'\b[^{]*\{')
+    while True:
+        m = pat.search(src, i)
+        if not m:
+            out.append(src[i:])
+            break
+        out.append(src[i:m.start()])
+        depth = 1
+        j = m.end()
+        while j < len(src) and depth > 0:
+            if src[j] == '{':
+                depth += 1
+            elif src[j] == '}':
+                depth -= 1
+            j += 1
+        i = j
+    return ''.join(out)
+
+
 def parse_root_from(src):
     out = {}
+    src = strip_media(src, 'print')
     for m in re.finditer(r':root\s*\{(.*?)\}', src, flags=re.S):
         for _m in re.finditer(r'(--[\w-]+)\s*:\s*(#[0-9a-fA-F]{3,8})\b',
                                 m.group(1)):
@@ -175,6 +203,32 @@ def selftest(main_src, adm_src):
     if not gold_main:
         return ['主站解析不到 --she-gold，自检无法进行']
 
+    # S0（轮181）：主站 @media print 里覆盖品牌令牌，不得被当成跨站分叉。
+    # 这条锁死「打印态专用覆盖不参与品牌比对」的语义 —— 我加 print
+    # 令牌翻转时正是被旧解析器（扫所有 :root、后来者胜）误判成分叉。
+    # S0 的期望值必须来自**独立来源**：后台的 --gold。
+    # 上一版用 mt.get('--she-gold') 当基准，而 mt 本身就来自被污染的
+    # 同一份解析 —— 自己跟自己比恒等，去掉 strip_media 后两边一起变脏，
+    # S0 仍是空检查（牙齿测试实测抓到）。
+    at_self = parse_root_from(adm_src)
+    gold_admin = at_self.get('--gold')
+    if not gold_admin:
+        bad.append('S0 构造失败：后台解析不到 --gold，没有独立基准')
+    else:
+        # ① 主站解析结果必须等于后台真值，才说明 print 覆盖被剥掉了
+        if norm(gold_main) != norm(gold_admin):
+            bad.append('S0 主站品牌金解析到 %r，与后台真值 %r 不符 '
+                       '—— @media print 里的令牌覆盖未被剥离'
+                       % (gold_main, gold_admin))
+        # ② 追加一个 print 覆盖块后，解析结果仍须等于后台真值
+        with_print = (main_src + '\n@media print{\n'
+                      '  :root{--she-gold:#8a5f14;'
+                      '--she-ink:#fff}\n}\n')
+        mp = parse_root_from(with_print)
+        if mp.get('--she-gold') != norm(gold_admin):
+            bad.append('S0 追加 print 覆盖后解析到 %r（应仍为 %s）'
+                       ' —— strip_media 未生效'
+                       % (mp.get('--she-gold'), norm(gold_admin)))
     # S1：后台 --gold 改回旧的错值
     s1 = adm_src.replace('--gold:' + gold_main.lstrip('#'),
                          '--gold:D4A24E', 1)

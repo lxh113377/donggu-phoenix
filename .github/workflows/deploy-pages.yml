@@ -177,6 +177,14 @@ jobs:
           # 且 valuenow 是落在 min~max 内的数）B 活性（改进度后 valuenow 必须跟着变，
           # 否则「写死一个值」就能骗过 A）。自检双向：该报的必须报、有值的不许误报。
           python tools/aria_required_state_test.py
+          # 轮181：打印态可读性。CSS 的 @media print 注释承诺「现场贴展板兜底、
+          # 保证二维码与文字可读」，此前无任何判据守它（contrast_audit 只测屏幕态）。
+          # 一手实测：print 块原先只改 body，自带深底的组件（.merch-item /
+          # .ar-route-item / .carve-rail button / .avatar）没跟着转白，未显式设色的
+          # h3 继承 #111 压在 rgb(11,9,8) 上对比仅 1.05 —— 15 个标题打印出来完全看不见。
+          # 判据查四条：A 无暗底块 B 全部文字对比达标 C 二维码可见且够大
+          # D 装饰水印已隐藏。切媒体前注入 QUIET（否则读到过渡中间色，实测会误报 4 处）。
+          python tools/print_readability_test.py
           # AR 焦点闭环 7 项（a11y）
           python tools/ar_focus_test.py
           # defer 后功能回归 5 项
