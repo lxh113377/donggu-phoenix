@@ -171,6 +171,61 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   .btn:active{transform:none}
   #toast{transition:none}
 }
+/* ---------- 打印（轮182） ----------
+ * 一手实测：后台原先 0 个 @media print。浏览器默认**不打印背景**
+ * （Chrome 的 Background graphics 默认关），于是深色 body 底 #0B0908
+ * 不会被印出来，而文字仍按 CSS 输出 —— 实测 body color=var(--fg)
+ * =#EDE6DC 对白纸的对比只有 **1.24**，整张报表打印出来完全不可读。
+ * 另有三处会被一并打回原形：
+ *   · canvas 折线/柱状图是**位图**，不受「不画背景」影响会被印出来，
+ *     但它内部画的是浅灰 #8B8075 字与金线（JS 硬编码，CSS 翻令牌管不到），
+ *     打在白纸上等于一块看不清的灰雾。tbl-weeks / tbl-days 已完整
+ *     覆盖同样数据，故打印时隐藏图、留表 —— 不丢信息，反而可读。
+ *   · .bars 的 .fill 是 CSS background 编码条形长度，不画背景就全消失，
+ *     只剩数字。这里用 print-color-adjust:exact 强制绘制并改深色，
+ *     保住「长度」这个视觉编码。
+ *   · .tw 是 overflow-x:auto 的横滑容器，打印会把右方列**裁掉**；
+ *     纸质没有滚动，故解除裁切并去掉滑动遮罩与提示。
+ * 令牌翻转的写法与主站 @media print 同一口径（轮181）：同特异性、
+ * 后来者胜，只作用于打印，屏幕态零影响。金色统一取 #8a5f14
+ * （白底对比 4.6 达标，仍是品牌金，不直接变黑）。 */
+@media print{
+  :root{
+    --bg:#fff; --panel:#fff; --panel-2:#fff;
+    --line:#8a8378; --line-soft:#b5b0a8;
+    --fg:#111; --fg-dim:#333; --fg-faint:#555;
+    --gold:#8a5f14; --gold-dim:#6b4a10;
+  }
+  body{background:#fff;color:#111}
+  header{position:static;background:#fff;border-bottom:1px solid #8a8378;
+    backdrop-filter:none}
+  /* 图：canvas 是位图，内部浅灰字/金线由 JS 硬编码绘制，
+   * CSS 翻令牌管不到，打在白纸上就是一团看不清的灰雾。
+   * 同样数据在 tbl-weeks / tbl-days 里完整存在，故整行隐藏、不丢信息。
+   * 用显式 class 而不是 :has(canvas) —— 后者在 Safari<15.4 / Chrome<105
+   * 会整条被丢弃，打印就留下一块空白板。
+   * 选择器必须写全 .grid.two.charts-row：单写 .charts-row 特异性只有
+   * 0-1-0，会被 .grid.two{display:grid}（0-2-0）压过而完全失效
+   * —— 实测探针抓到 canvas 仍占 1102x190，就是这个原因。 */
+  .grid.two.charts-row{display:none}
+  /* 条形：强制绘制，保住长度这个视觉编码 */
+  .bars .track{border:1px solid #8a8378;background:#fff;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bars .fill{background:#8a5f14 !important;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* 表格：解除横滑裁切，加框线让行列在纸上分得清 */
+  .tw{overflow:visible;background:none !important;padding:0}
+  .scroll-hint{display:none !important}
+  table{page-break-inside:auto}
+  table tr{page-break-inside:avoid;border-bottom:1px solid #b5b0a8}
+  th,td{border-bottom:1px solid #d5d0c8}
+  /* 交互件与瞬时件在纸上无意义 */
+  #toast,.btn,.row-tools{display:none}
+  /* 分页与省墨 */
+  .panel{box-shadow:none;break-inside:avoid}
+  .grid.two{display:block}
+  .grid.two>section{margin-bottom:10pt}
+}
 </style>
 </head>
 <body>
@@ -195,7 +250,7 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 <main id="dash" class="zone">
   <dl class="cards" id="cards"></dl>
 
-  <div class="grid two">
+  <div class="grid two charts-row">
     <section class="panel">
       <h2>按周浏览<em id="chart-weeks-sub">按周</em></h2>
       <canvas id="chart-weeks" width="640" height="190" role="img" aria-label="按周浏览量折线图"></canvas>

@@ -52,6 +52,11 @@ QUIET = ("html,body{scroll-behavior:auto!important}"
          "animation:none!important}")
 
 # 撤销修复：把 :root 令牌翻回暗底配色（模拟轮181 修复前的状态）
+ADMIN_BREAK_CSS = ("@media print{:root{--bg:#0B0908;--panel:#141110;"
+  "--panel-2:#1B1714;--fg:#EDE6DC;--fg-dim:#B9AEA2;"
+  "--fg-faint:#8B8075;--gold:#D4A24C;--gold-dim:#9C7B3F;}"
+  ".grid.two.charts-row{display:block !important}}")
+
 BREAK_CSS = ("@media print{:root{--she-ink:#0B0908;--bg:#0B0908;"
              "--fg:#F4EDE1;--fg-dim:rgba(244,237,225,.74);"
              "--fg-faint:rgba(244,237,225,.66);"
@@ -98,7 +103,8 @@ PROBE = r"""(function(){
     var b=e.getBoundingClientRect();
     return b.width>0 && b.height>0;}
   var out={media:window.matchMedia('print').matches,
-    darkBlocks:0, darkSample:[], badText:[], checkedText:0};
+    darkBlocks:0, darkSample:[], badText:[], checkedText:0,
+    badPaper:[], checkedPaper:0};
   // A 暗底块
   [].slice.call(document.querySelectorAll('*')).forEach(function(e){
     var b=e.getBoundingClientRect();
@@ -147,15 +153,69 @@ PROBE = r"""(function(){
   // D 装饰水印
   var hw=document.querySelector('.hero-word');
   out.heroWord={exists:!!hw, visible:shown(hw)};
+  // G 文字 vs 白纸：浏览器默认**不打印背景**，真实落点是白纸。
+  // 只跟屏幕有效背景比会漏判 —— 后台修复前实测：文字对深底 18.79 达标、
+  // 对白纸只有 1.24，而旧判据报「0 处不达标」（判据自身的测量盲区）。
+  // 例外：被强制绘制的元素（print-color-adjust:exact，如条形填充）
+  // 背景会真印出来，仍按其有效背景判。
+  [].slice.call(document.querySelectorAll(
+    'h1,h2,h3,h4,p,li,a,b,span,dd,figcaption,button,td,th,label,summary'))
+    .forEach(function(e){
+      var own='';
+      for(var i=0;i<e.childNodes.length;i++){
+        var n=e.childNodes[i];
+        if(n.nodeType===3) own+=(n.textContent||'');}
+      own=own.trim();
+      if(!own) return;
+      var cs=getComputedStyle(e);
+      if(cs.display==='none'||cs.visibility==='hidden') return;
+      if(!e.getClientRects().length) return;   // 祖先被隐藏
+      var pca=cs.printColorAdjust||cs.webkitPrintColorAdjust||'auto';
+      var target=(pca==='exact')?effBg(e):{r:255,g:255,b:255,a:1};
+      var v=ratio(cs.color, target);
+      out.checkedPaper++;
+      if(v===null) return;
+      var fs=parseFloat(cs.fontSize)||0;
+      var bold=parseInt(cs.fontWeight,10)>=700;
+      var need=(fs>=24||(fs>=18.66&&bold))?3:4.5;
+      if(v<need && out.badPaper.length<8){
+        out.badPaper.push({sel:((e.id||'')||
+          (typeof e.className==='string'?e.className.split(' ')[0]:'')
+          ||e.tagName).slice(0,20), tag:e.tagName, ratio:v, need:need,
+          color:cs.color, txt:own.slice(0,12)});
+      }
+    });
+  // E 后台专属：隐藏图表后数据必须由表格兜住；条形长度编码必须被绘制
+  out.tables = {};
+  ['tbl-weeks', 'tbl-days', 'tbl-country', 'tbl-lang', 'tbl-screen',
+   'tbl-scenes'].forEach(function(id){
+    var t = document.getElementById(id);
+    if(!t) return;
+    var r = t.getBoundingClientRect();
+    out.tables[id] = {rows: t.querySelectorAll('tbody tr').length,
+      h: Math.round(r.height),
+      visible: !!t.getClientRects().length};
+  });
+  var bf = document.querySelector('.bars .fill');
+  out.barFill = null;
+  if (bf) {
+    var bfr = bf.getBoundingClientRect();
+    var bcs = getComputedStyle(bf);
+    out.barFill = {w: Math.round(bfr.width),
+      bg: bcs.backgroundColor,
+      painted: (bcs.printColorAdjust === 'exact'
+                || bcs.webkitPrintColorAdjust === 'exact')};
+  }
   return JSON.stringify(out);})()"""
 
 
-def scan(ch, srv, quiet_first=True, break_css=None):
+def scan(ch, srv, path='/index.html', quiet_first=True,
+         break_css=None):
     page, tid = ch.new_page(1280, 900)
     try:
         # navigate 是 Chrome 实例方法，不是 page 的方法（轮181 踩过）
         bust = int(time.time()) % 100000
-        ch.navigate(page, srv.url('/index.html?prt=' + str(bust)))
+        ch.navigate(page, srv.url(path + '?prt=' + str(bust)))
         time.sleep(2.6)
         if quiet_first:
             page.eval_js("(function(){var st=document.createElement('style');"
@@ -179,7 +239,7 @@ def scan(ch, srv, quiet_first=True, break_css=None):
         ch.close_page(tid)
 
 
-def judge(d):
+def judge(d, scope='main'):
     out = []
     if not d.get('media'):
         return ['媒体未切到 print（matchMedia 不成立，未取证）']
@@ -190,15 +250,44 @@ def judge(d):
         out.append('B 文字承诺未兑现：%d 处对比不足（最差 %s，如 %r）'
                    % (len(d['badText']), d['badText'][0]['ratio'],
                       d['badText'][0]['txt']))
-    if not d['qr']['exists']:
-        out.append('C 取不到 #qr-img（未取证）')
-    elif not d['qr']['visible'] or d['qr']['w'] < 60:
-        out.append('C 二维码在打印态不可见/过小（%sx%s）'
-                   % (d['qr']['w'], d['qr']['h']))
-    if d['heroWord']['exists'] and d['heroWord']['visible']:
-        out.append('D 装饰水印 .hero-word 打印态未隐藏（白底上成脏影）')
+    # C/D 是主站专属断言：后台没有 #qr-img 与 .hero-word，
+    # 套上去会把「该页没有这个元素」误判成「未取证/缺陷」。
+    if scope == 'main':
+        if not d['qr']['exists']:
+            out.append('C 取不到 #qr-img（未取证）')
+        elif not d['qr']['visible'] or d['qr']['w'] < 60:
+            out.append('C 二维码在打印态不可见/过小（%sx%s）'
+                       % (d['qr']['w'], d['qr']['h']))
+        if d['heroWord']['exists'] and d['heroWord']['visible']:
+            out.append('D 装饰水印 .hero-word 打印态未隐藏'
+                       '（白底上成脏影）')
     if d['checkedText'] < 40:
         out.append('B 只检查了 %d 处文字，测量面不足' % d['checkedText'])
+    # G 文字 vs 白纸（真实打印落点）
+    if d.get('badPaper'):
+        out.append('G 打印落点是白纸（浏览器默认不印背景）：%d 处文字对白纸'
+                   '对比不足，最差 %s（%s 如 %r）'
+                   % (len(d['badPaper']), d['badPaper'][0]['ratio'],
+                      d['badPaper'][0]['tag'], d['badPaper'][0]['txt']))
+    if d.get('checkedPaper', 0) < 40:
+        out.append('G 只对 %d 处文字算了白纸对比，测量面不足'
+                   % d.get('checkedPaper', 0))
+    # E 后台专属（有 tables 字段才判，主站不受影响）
+    tabs = d.get('tables') or {}
+    if tabs:
+        empty = [k for k, v in sorted(tabs.items())
+                 if not v.get('visible') or v.get('rows', 0) <= 0]
+        if empty:
+            out.append('E 表格在打印态无可见数据行（隐藏图表后数据丢失）：%s'
+                       % '、'.join(empty))
+        bf = d.get('barFill')
+        if bf is None:
+            out.append('E 取不到 .bars .fill（未取证）')
+        elif not bf.get('painted'):
+            out.append('E 条形填充未被强制绘制（print-color-adjust 未生效，'
+                       '长度这个视觉编码在纸上会消失）')
+        elif bf.get('w', 0) <= 0:
+            out.append('E 条形填充宽度为 0（长度编码丢失）')
     return out
 
 
@@ -247,6 +336,38 @@ def main():
                   d['heroWord']['visible']))
         for x in probs:
             print('      -', x[:126])
+        allprobs = list(probs)
+
+        # ---- 后台一趟 ----
+        # 一手实测（轮182）：后台原先 0 个 @media print。浏览器默认不印
+        # 背景，body color=var(--fg)=#EDE6DC 对白纸对比只有 1.24 ——
+        # 整张报表打印出来完全不可读；只跟屏幕深底比会误判成达标。
+        ab = scan(ch, srv, path='/admin/index.html',
+                  break_css=ADMIN_BREAK_CSS)
+        ab_probs = judge(ab, 'admin')
+        ab_ok = bool(ab_probs) and ab['darkBlocks'] > 0
+        print('[%s] 后台自检：撤销 admin 令牌翻转后报出 %d 条'
+              '（暗底块=%d、白纸不达标=%d）' % (
+                  'PASS' if ab_ok else 'FAIL', len(ab_probs),
+                  ab['darkBlocks'], len(ab.get('badPaper') or [])))
+        if not ab_ok:
+            print('RESULT: FAIL  后台自检不通过：撤销修复后判据没反应')
+            for x in ab_probs[:3]:
+                print('      ', x[:120])
+            return 1
+        for x in ab_probs[:2]:
+            print('      抓到:', x[:116])
+        ad = scan(ch, srv, path='/admin/index.html')
+        aprobs = judge(ad, 'admin')
+        print('[%s] 后台打印态：暗底块 %d、文字对白纸不达标 %d、'
+              '表格 %d 张、条形绘制=%s' % (
+                  'PASS' if not aprobs else 'FAIL', ad['darkBlocks'],
+                  len(ad.get('badPaper') or []),
+                  len(ad.get('tables') or {}),
+                  bool((ad.get('barFill') or {}).get('painted'))))
+        for x in aprobs:
+            print('      -', x[:126])
+        allprobs += aprobs
     except Exception as e:
         print('RESULT: SKIP  真判阶段探针异常（环境问题）: %s: %s'
               % (type(e).__name__, str(e)[:110]))
@@ -259,13 +380,15 @@ def main():
             pass
 
     print()
-    if probs:
-        print('RESULT: FAIL  打印态可读性 %d 处问题' % len(probs))
-        for f in probs:
+    if allprobs:
+        print('RESULT: FAIL  打印态可读性（主站 + 后台）'
+              '%d 处问题' % len(allprobs))
+        for f in allprobs:
             print('  -', f)
         return 1
-    print('RESULT: PASS  打印态无暗底块、%d 处文字对比全达标、'
-          '二维码可见、装饰水印已隐藏' % d['checkedText'])
+    print('RESULT: PASS  主站与后台打印态均无暗底块、文字对白纸'
+          '（真实落点）全达标、主站二维码可见、装饰水印已隐藏、'
+          '后台表格与条形编码完整')
     return 0
 
 
