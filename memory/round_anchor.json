@@ -1,6 +1,6 @@
 {
-  "round": 178,
-  "source": "goal_round 头部 Round: 178/256；get_goal roundsStarted=178",
+  "round": 179,
+  "source": "goal_round 头部 Round: 179/256；get_goal roundsStarted=179",
   "note": "每轮开始时应把权威轮次写入此文件；round_anchor_guard 据此校验台账标注",
   "updated": "2026-10-24"
 }
