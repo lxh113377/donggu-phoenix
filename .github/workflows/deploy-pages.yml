@@ -185,6 +185,14 @@ jobs:
           # 判据查四条：A 无暗底块 B 全部文字对比达标 C 二维码可见且够大
           # D 装饰水印已隐藏。切媒体前注入 QUIET（否则读到过渡中间色，实测会误报 4 处）。
           python tools/print_readability_test.py
+          # 轮184/185：文档大纲。一手实测后台 admin/index.html 的 h1 数量为 0 ——
+          # 页面主标识「访问后台」用 <b> 承载（纯强调元素、无语义层级），下面 9 个 h2
+          # 平铺无上级；读屏用户靠 heading 跳转，大纲里没有一级标题等于目录缺首页。
+          # 修法是把 <b> 升格 h1 并显式重置 margin/font-size（像素级 A/B 证明零变化）。
+          # 判据四条：A h1 唯一 B 层级不跳 C h1 非空 D h1 渲染后真可见。
+          # D 用标准 API checkVisibility，专门防「塞一个 display:none 的 h1 凑数」——
+          # 那能过 A 却对读屏无用；无障碍判据要测可达性，不是存在性。
+          python tools/heading_outline_test.py
           # AR 焦点闭环 7 项（a11y）
           python tools/ar_focus_test.py
           # defer 后功能回归 5 项

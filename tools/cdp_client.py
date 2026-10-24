@@ -27,6 +27,7 @@ import shutil
 import socket
 import subprocess
 import tempfile
+import atexit
 import threading
 import time
 import urllib.request
@@ -85,7 +86,12 @@ class SiteServer:
         except OSError:
             self.srv = None
             return
+        self._stopped = False
         threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+        # 轮185：注册退出兜底 —— 判据忘了 stop() 也不会把端口和
+        # 服务线程留到进程结束（daemon 线程随进程退出，但端口在
+        # 某些平台上不会立刻可复用，且泄漏会累积）。
+        atexit.register(self.stop)
 
     @property
     def ok(self):
@@ -95,8 +101,17 @@ class SiteServer:
         return 'http://127.0.0.1:%d%s' % (self.port, path)
 
     def stop(self):
+        # 幂等：判据内显式 stop() 与 atexit 兜底会各调一次，
+        # 而 ThreadingHTTPServer.shutdown() 重复调用可能挂住。
+        if self.srv is None or getattr(self, '_stopped', False):
+            return
+        self._stopped = True
         try:
             self.srv.shutdown()
+        except Exception:
+            pass
+        try:
+            self.srv.server_close()
         except Exception:
             pass
 
@@ -143,7 +158,13 @@ class Cdp:
 
 
 class Chrome:
-    """起 headless chrome + devtools，提供建页/导航/截图。"""
+    """起 headless chrome + devtools，提供建页/导航/截图。
+
+    轮185：构造成功后注册 atexit 兜底。判据若忘了 close()，残留的
+    chrome 进程会持续抢 CPU —— 实测这是「单跑绿、回归红」的根因
+    （engine_behavior 测 calls/s，被前面判据泄漏的 chrome 压到
+    可测门槛 30 以下就报「未测得」）。
+    """
 
     def __init__(self, window='1600,1100', extra_flags=()):
         self.chrome = find_chrome()
@@ -171,6 +192,11 @@ class Chrome:
         if not self.version:
             raise RuntimeError('devtools 未就绪')
         self.browser = Cdp(self.version['webSocketDebuggerUrl'])
+        self._closed = False
+        # 轮185：注册退出兜底。判据若忘了 close()，残留 chrome
+        # 会持续抢 CPU；atexit 里 close() 幂等，显式调用过也不会
+        # 二次报错。
+        atexit.register(self.close)
 
     def new_page(self, width, height, mobile=False):
         """建一个 page 并返回 (Cdp, targetId)。"""
@@ -233,6 +259,10 @@ class Chrome:
         return base64.b64decode(data) if data else None
 
     def close(self):
+        # 幂等：判据内显式 close() 与 atexit 兜底会各调一次
+        if getattr(self, '_closed', False):
+            return
+        self._closed = True
         try:
             self.browser.close()
         except Exception:

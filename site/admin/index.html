@@ -44,7 +44,12 @@ table{border-collapse:collapse;width:100%}
 header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
   padding:12px 20px;background:rgba(11,9,8,.92);border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
 .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-right:auto}
-.brand b{font-size:var(--fs-l);letter-spacing:.14em;color:var(--fg)}
+/* 品牌标识「访问后台」是本页主标识（对应 <title> 首段），用 h1 承载：
+ * 原先是 <b>，纯强调元素无语义层级，导致后台大纲里**没有一级标题**，
+ * 读屏用户只能从 9 个平铺的 h2 里跳。h1 有默认 margin 与 font-size，
+ * 这里全部显式重置，保证视觉与改前逐像素一致（实测见判据）。 */
+.brand h1{margin:0;font-weight:700;font-size:var(--fs-l);
+  letter-spacing:.14em;color:var(--fg);line-height:inherit}
 .brand span{font-size:var(--fs-xs);letter-spacing:.22em;color:var(--gold-dim)}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;min-height:44px;border:1px solid var(--line);
   border-radius:4px;background:var(--panel);color:var(--fg-dim);font-size:var(--fs-s);
@@ -158,7 +163,7 @@ footer a:active{color:var(--gold);text-decoration-thickness:1px}
 @media (max-width:840px){
   .grid.two{grid-template-columns:1fr}
   header{padding:10px 14px}
-  .brand b{font-size:var(--fs-m)}
+  .brand h1{font-size:var(--fs-m)}
   main{padding:16px 14px 46px}
 }
 /* 键盘焦点指示（WCAG 2.4.7）：select 的 outline:none 会抹掉默认焦点环。
@@ -231,7 +236,7 @@ select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 <body>
 
 <header>
-  <div class="brand"><b>访问后台</b><span>畲 · 凤鸣东固</span></div>
+  <div class="brand"><h1>访问后台</h1><span>畲 · 凤鸣东固</span></div>
   <button class="btn" id="btn-export" type="button">导出 CSV</button>
 </header>
 
