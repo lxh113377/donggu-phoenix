@@ -199,16 +199,30 @@ def main():
     else:
         print('[SKIP] 密度探针无数据：%s' % (d.get('why') if d else 'eval 失败'))
 
-    h = run_probe('hud', HUD_PROBE)
-    if h and not h.get('skip'):
+    # 帧率不足是可测性问题而非产品缺陷：满载实测 calls/s 会从 58 掉到
+    # 33~34，而可测门槛是 30（轮183 取证）。回归里 87 条串行更易跌破，
+    # 造成「单跑绿、回归红」的假红。做法：不可测时重测（最多 3 次），
+    # 拿到可测读数就用它；三次都不可测仍报红 —— 不降门槛、不假绿。
+    secs = 3.0
+    cps = wps = None
+    f = []
+    for attempt in range(3):
+        h = run_probe('hud', HUD_PROBE)
+        if not h or h.get('skip'):
+            break
         got_any = True
-        secs = 3.0
         cps = (h['calls'][1] - h['calls'][0]) / secs
         wps = (h['writes'][1] - h['writes'][0]) / secs
-        print('HUD: calls %.0f/s（每帧） writes %.1f/s periodMs=%s fps=%s' % (
-            cps, wps, h.get('periodMs'), h.get('fps')))
+        f, unmeas = judge_hud(cps, wps)
+        print('HUD: calls %.0f/s（每帧） writes %.1f/s periodMs=%s fps=%s%s' % (
+            cps, wps, h.get('periodMs'), h.get('fps'),
+            '' if not unmeas else '  <- 帧率不足，重测'))
+        if not unmeas:
+            break
+        checked = 0   # 本轮不可测，不计入已检项
+        time.sleep(1.5)
+    if h and not h.get('skip') and cps is not None:
         checked += 1
-        f, _unmeas = judge_hud(cps, wps)
         if f:
             fails.extend(f)
         else:
