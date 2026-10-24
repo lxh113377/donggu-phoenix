@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:75;
+  --build:76;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -207,7 +207,23 @@ body::after{
 
 /* 移动端全屏菜单 */
 .menu{
-  position:fixed;inset:0;z-index:55;display:grid;align-content:center;
+  position:fixed;inset:0;z-index:55;display:grid;
+  align-content:center;
+  /* 轮179：原先只有 align-content:center —— 内容高于视口时它会**双向**溢出，
+   * 而可滚动区域不包含 block-start 方向，于是上方溢出的部分永远滚不到。
+   * 一手实测（汉堡菜单是窄屏唯一导航入口，.nav-toggle 断点 max-width:860px，
+   * 故 844x390 横屏用户确实能打开）：
+   *   844x390 首项 top=-112、末项 bottom=474（视口 390）
+   *   740x360 首项 top=-127、末项 bottom=459
+   *   667x375 首项 top=-119、末项 bottom=466
+   * 且 overflowY 是 visible 根本不可滚 —— 7 节里首尾两项**永久点不到**，
+   * 比难看严重得多：那是内容不可达。
+   * 三层兜底：① safe center（放得下才居中，放不下贴顶，Chrome93/FF63/
+   *    Safari16.4+；不支持时上一行 center 仍生效）② overflow-y:auto 让它可滚
+   * ③ 下面的 max-height:640px 媒体查询给矮屏显式贴顶 + 收紧行高，
+   *    即使浏览器不认 safe 也保证每一项都能滚到。 */
+  align-content:safe center;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:96px var(--gut) 48px;
   background:radial-gradient(120% 80% at 80% 0%, rgba(179,32,44,.22), transparent 60%), rgba(9,8,7,.97);
   backdrop-filter:blur(14px);
@@ -1212,6 +1228,19 @@ section.foot{padding-top:var(--sec-y-loose)}
   /* 矮屏只有一段中文正文（#ar-body），其 margin-bottom 是唯一可再省的
    * 空隙；去掉它让 740x360 也不必滚动（实测省 4px 即免滚）。 */
   .ar-copy p{line-height:1.6;margin-bottom:0}
+}
+/* === MENU-SHORT-SCREEN（轮179） ===
+ * 汉堡菜单是窄屏唯一导航入口（.nav-toggle 断点 max-width:860px，横屏手机
+ * 用户确实能打开）。一手实测矮横屏上 7 节里首尾两项永久点不到：
+ *   844x390 首项 top=-112 末项 bottom=474；740x360 -127/459；667x375 -119/466
+ * 根因是 align-content:center 双向溢出而可滚区不含上方。基础规则已改
+ * safe center + overflow-y:auto；这里再给矮屏显式贴顶 + 收紧，兜底那些
+ * 不认 safe 关键字的老 Safari（<16.4），保证每一项都滚得到。
+ * 菜单内容实测约 550px 高，故阈值取 600px：竖屏(844)与平板(1024)仍居中。 */
+@media (max-height:600px){
+  .menu{align-content:safe start;padding-top:72px;padding-bottom:24px}
+  .menu a{padding:10px 0}
+  .menu .menu-foot{margin-top:16px}
 }
 @media (hover:none){
   .ar-card:hover,.road-item:hover{transform:none}

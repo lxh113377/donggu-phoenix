@@ -161,6 +161,14 @@ jobs:
           # 但只测触控与对比度；multi_viewport 测页面不测 overlay。
           # 自带「撤销矮屏适配必须报红」的自检（实测注入后报 top=-48 顶穿）。
           python tools/ar_landscape_bounds_test.py
+          # 轮179：汉堡菜单项可达性。一手实测缺陷比触控/对比度更严重 ——
+          # 它是窄屏唯一导航入口（.nav-toggle 断点 max-width:860px，横屏手机
+          # 用户真能打开），而矮横屏上 align-content:center 双向溢出 +
+          # overflow:visible 不可滚，7 节里首尾两项**永久点不到**
+          # （844x390 首项 top=-112、末项 bottom=474）。这是内容不可达。
+          # 判据先验 nav-toggle 用户可点（防探针假象），再逐项 scrollIntoView
+          # 确认真能滚进视口；自检注入撤销修复必须报红（实测报 4/7 不可达）。
+          python tools/menu_reachability_test.py
           # AR 焦点闭环 7 项（a11y）
           python tools/ar_focus_test.py
           # defer 后功能回归 5 项
