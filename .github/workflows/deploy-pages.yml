@@ -154,6 +154,13 @@ jobs:
           python tools/ar_scenes_test.py
           # 集章生效 + 持久化 + 防重复
           python tools/ar_stamp_test.py
+          # 轮179：AR 面板在矮横屏的排版边界。一手实测缺陷 —— 横屏手机上
+          # 正文顶穿面板并与导览点重叠（844x390 top=-36、740x360 top=-76），
+          # 竖屏正常故只在矮横屏出现；现场观众大量横屏扫码，被顶出去的中文
+          # 正是展陈内容本身。既有判据看不见：touch/contrast 虽已展开面板，
+          # 但只测触控与对比度；multi_viewport 测页面不测 overlay。
+          # 自带「撤销矮屏适配必须报红」的自检（实测注入后报 top=-48 顶穿）。
+          python tools/ar_landscape_bounds_test.py
           # AR 焦点闭环 7 项（a11y）
           python tools/ar_focus_test.py
           # defer 后功能回归 5 项

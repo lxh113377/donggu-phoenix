@@ -23,7 +23,7 @@
 :root{
   /* 构建标记：与 index.html 的 BUILD 常量对齐。老访客的 Service Worker 若还返回上一版
      CSS，两者不等 ⇒ 页面自己清缓存重载一次，避免「新 HTML + 旧 CSS」版式崩坏。 */
-  --build:74;
+  --build:75;
 
   /* 色 · 取自凤凰装实物：红、黑、蓝，金为线，银为饰 */
   --she-red:#B3202C;
@@ -1183,6 +1183,35 @@ section.foot{padding-top:var(--sec-y-loose)}
 @media (max-height:520px) and (orientation:landscape){
   .hero{min-height:auto;padding-block:96px 48px}
   .hero-visual{display:none}
+}
+/* === AR-LANDSCAPE-BOUND（轮179） ===
+ * 一手实测：AR 面板在矮横屏上正文顶穿面板并与导览点重叠 ——
+ *   844x390 .ar-copy top=-36（面板内高 276，dots 底 118 到进度条顶 253
+ *   只有 135px 可用）；740x360 top=-76（可用 114）；667x375 top=-61。
+ *   竖屏 390x844 正常（top=370），故这是**只在此视口**出现的盲区；
+ *   现有两处 max-height 媒体查询都只适配 hero，overlay 从没管过。
+ * 现场观众大量是横屏手机扫码看 AR，这段中文解说正是展陈内容本身，
+ * 被顶出屏幕等于内容丢失。
+ * 解法（按实测占位定参，不拍脑袋）：
+ *   1) 改为顶锚定并把文字夹在「导览点下方 8px ~ 进度条上方 12px」之间：
+ *      top=122（dots 底 110~118）；max-height=calc(100% - 264px)
+ *      → 390 高得 126、360 得 96、375 得 111，均落在进度条之上。
+ *   2) 隐藏三条**装饰性英文副标题**（场景英文 / 章节英文 / 正文英文），
+ *      共约 91px。中文正文与章节标题是内容本体，一律保留；
+ *      这与 .hero-lead 在矮屏 display:none 是同一取舍口径。
+ *   3) 极端长文用 overflow-y:auto 兜底，绝不裁切（滚动优于丢字）。
+ */
+@media (max-height:520px) and (orientation:landscape){
+  .ar-copy{top:122px;bottom:auto;max-height:calc(100% - 264px);
+    overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px}
+  .ar-copy h2{font-size:var(--fs-xl);line-height:1.15}
+  /* 章节小标题降一档：矮屏上它是次级信息，与正文的层级差靠字重/颜色
+   * 已足够；省下的约 7px 让最长中文正文在最矮的 740x360 也免滚动。 */
+  .ar-copy h3{font-size:var(--fs-base)}
+  .ar-copy .ar-en,.ar-copy .ar-chapter-en,.ar-copy .ar-body-en{display:none}
+  /* 矮屏只有一段中文正文（#ar-body），其 margin-bottom 是唯一可再省的
+   * 空隙；去掉它让 740x360 也不必滚动（实测省 4px 即免滚）。 */
+  .ar-copy p{line-height:1.6;margin-bottom:0}
 }
 @media (hover:none){
   .ar-card:hover,.road-item:hover{transform:none}
