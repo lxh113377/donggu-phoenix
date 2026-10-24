@@ -42,7 +42,17 @@ if BASE not in sys.path:
 from tools.admin_contrast_test import (find_chrome, free_port, read_admin_key,
                                        start_pages_dev, dump_dom)
 
-VIEWPORTS = [(320, 700), (390, 844), (768, 1024), (1440, 900)]
+# 轮183：补两个矮视口。原先四个 (320x700 / 390x844 /
+# 768x1024 / 1440x900) 全是「高」视口，没有 一个矮的 ——
+# 但后台是给人看报表的，iPad 横屏 1024x768 与笔电
+# 1366x768 才是最常遇到的姿势（768 高 扣掉浏览器 chrome
+# 后可视高只剩 ~660）。主站轮179 正是在矮横屏抓到汉堡
+# 菜单不可达，后台同一维度 却从没测过。实测这两个视口
+# 当前健康（无横向溢出、无 越界、触控除 footer 行内链接外
+# 全达标 —— 后者按 WCAG 2.5.8 Inline 豁免），本条是补覆盖、
+# 防未来改动在矮视口退化。
+VIEWPORTS = [(320, 700), (390, 844), (768, 1024), (1440, 900),
+             (1024, 768), (1366, 768)]
 MIN_PX = 44   # 产品自立触控基线
 
 PROBE = r"""<!doctype html><html><head><meta charset="utf-8"><title>pending</title>
