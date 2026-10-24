@@ -169,6 +169,14 @@ jobs:
           # 判据先验 nav-toggle 用户可点（防探针假象），再逐项 scrollIntoView
           # 确认真能滚进视口；自检注入撤销修复必须报红（实测报 4/7 不可达）。
           python tools/menu_reachability_test.py
+          # 轮180：ARIA 角色必需状态属性。一手实测缺陷 —— 雕刻台画布挂了
+          # role=slider 与 aria-valuemin/max，却从不设 aria-valuenow：
+          # 拖到 50%、键盘推到 60% 后它仍是 null，读屏聚焦画布只听到
+          # 「滑块」报不出进度；这比不声明 role 更糟（无障碍树里多了个空值控件）。
+          # 判据查两条：A 完备性（slider/checkbox/radio/switch/tab 的必需属性齐、
+          # 且 valuenow 是落在 min~max 内的数）B 活性（改进度后 valuenow 必须跟着变，
+          # 否则「写死一个值」就能骗过 A）。自检双向：该报的必须报、有值的不许误报。
+          python tools/aria_required_state_test.py
           # AR 焦点闭环 7 项（a11y）
           python tools/ar_focus_test.py
           # defer 后功能回归 5 项

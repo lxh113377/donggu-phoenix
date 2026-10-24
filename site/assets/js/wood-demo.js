@@ -79,6 +79,7 @@
     E.draw(ctx, W, H, p, now, { box: box, moteCount: 24, backdrop: true });
     paintChrome();
     if (pct) { pct.textContent = "已成 " + Math.round(p * 100) + "%"; }
+    syncAria();   /* 自动播放时 p 不走 setP，这里补同步 */
   }
 
   function start() {
@@ -88,6 +89,20 @@
   }
   function stop() { if (raf) { cancelAnimationFrame(raf); raf = null; } }
 
+  /* 雕刻画布是 role=slider，必须同步 aria-valuenow / aria-valuetext，
+   * 否则读屏聚焦到画布只报「滑块」而报不出进度（轮180 实测恒为 null）。
+   * frame 每帧都跑，故只在取整值变化时写 DOM。 */
+  var lastAriaNow = -1;
+  function syncAria() {
+    var now = Math.round(p * 100);
+    if (now === lastAriaNow) { return; }
+    lastAriaNow = now;
+    canvas.setAttribute("aria-valuenow", String(now));
+    var st = (E.STAGES && E.STAGES[stageIndex()]) || null;
+    canvas.setAttribute("aria-valuetext",
+      st ? ("已成 " + now + "% · " + st.name) : ("已成 " + now + "%"));
+  }
+
   function setPlayLabel() {
     if (!playBtn) { return; }
     playBtn.textContent = playing ? "暂停" : (p >= 1 ? "再雕一遍" : "继续");
@@ -96,6 +111,7 @@
 
   function setP(v) {
     p = clamp(v, 0, 1);
+    syncAria();
     if (slider) { slider.value = String(Math.round(p * 1000)); }
   }
 
